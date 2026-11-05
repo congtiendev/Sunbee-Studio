@@ -1,70 +1,81 @@
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "src/lib/utils"
+import { cn } from "@/utils";
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
 
 const alertVariants = cva(
-  "relative w-full rounded-lg  p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
+  "group/alert relative grid w-full gap-0.5 rounded-xl border px-2.5 py-2 text-start text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pe-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-background text-foreground",
-        primary: "bg-primary text-white",
-        secondary:"bg-secondary text-white",
-        success:"bg-success text-white",
-        error:"bg-error text-white",
-        warning:"bg-warning text-white",
-        info:"bg-info text-white",
-        lightprimary:"bg-lightprimary text-primary [&>svg]:text-primary",
-        lightsecondary:"bg-lightsecondary text-secondary [&>svg]:text-secondary",
-        lightsuccess:"bg-lightsuccess text-success [&>svg]:text-success",
-        lightwarning:"bg-lightwarning text-warning [&>svg]:text-warning",
-        lighterror:"bg-lighterror text-error [&>svg]:text-error",
-        lightinfo:"bg-lightinfo text-info [&>svg]:text-info",
+        default:
+          "border-gray-200 bg-white text-gray-700 dark:border-gray-800 dark:bg-[#1E2634] dark:text-gray-300",
+        success:
+          "border-green-500 bg-green-50 dark:border-green-500/30 dark:bg-green-500/10 *:[svg]:text-green-500 dark:*:[svg]:text-green-400",
+        warning:
+          "border-amber-500 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10 *:[svg]:text-amber-500 dark:*:[svg]:text-amber-400",
         destructive:
-          "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive",
+          "border-red-500 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 *:[svg]:text-red-500 dark:*:[svg]:text-red-400",
+        info: "border-sky-500 bg-sky-50 dark:border-sky-500/30 dark:bg-sky-500/10 *:[svg]:text-sky-500 dark:*:[svg]:text-sky-400",
       },
     },
     defaultVariants: {
       variant: "default",
     },
-  }
-)
+  },
+);
 
-const Alert = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
->(({ className, variant, ...props }, ref) => (
-  <div
-    ref={ref}
-    role="alert"
-    className={cn(alertVariants({ variant }), className)}
-    {...props}
-  />
-))
-Alert.displayName = "Alert"
+function Alert({
+  className,
+  variant,
+  ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
+  return (
+    <div
+      data-slot="alert"
+      role="alert"
+      className={cn(alertVariants({ variant }), className)}
+      {...props}
+    />
+  );
+}
 
-const AlertTitle = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
-  <h5
-    ref={ref}
-    className={cn("mb-1 font-medium leading-none tracking-tight", className)}
-    {...props}
-  />
-))
-AlertTitle.displayName = "AlertTitle"
+function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="alert-title"
+      className={cn(
+        "[&_a]:hover:text-foreground text-base font-medium text-gray-800 group-has-[>svg]/alert:col-start-2 dark:text-white/90 [&_a]:underline [&_a]:underline-offset-3",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
 
-const AlertDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("text-sm [&_p]:leading-relaxed", className)}
-    {...props}
-  />
-))
-AlertDescription.displayName = "AlertDescription"
+function AlertDescription({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="alert-description"
+      className={cn(
+        "[&_a]:hover:text-foreground text-sm text-balance text-gray-500 md:text-pretty dark:text-gray-400 [&_a]:underline [&_a]:underline-offset-3 [&_p:not(:last-child)]:mb-4",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
 
-export { Alert, AlertTitle, AlertDescription }
+function AlertAction({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="alert-action"
+      className={cn("absolute inset-e-2 top-2", className)}
+      {...props}
+    />
+  );
+}
+
+export { Alert, AlertAction, AlertDescription, AlertTitle };

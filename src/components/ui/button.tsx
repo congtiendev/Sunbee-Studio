@@ -1,88 +1,54 @@
-import * as React from 'react'
-import { Slot } from '@radix-ui/react-slot'
-import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from 'src/lib/utils'
+import { cn } from "@/utils";
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { cva, type VariantProps } from "class-variance-authority";
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:cursor-pointer',
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:outline-hidden active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none aria-invalid:border-red-500 aria-invalid:ring-3 aria-invalid:ring-red-500/20 dark:aria-invalid:border-red-500/50 dark:aria-invalid:ring-red-500/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
-        default: 'bg-primary text-white hover:bg-primaryemphasis',
-        destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        default:
+          "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:bg-brand-200 disabled:text-white dark:bg-brand-500 dark:hover:bg-brand-600 dark:disabled:bg-brand-800 dark:disabled:text-brand-400",
         outline:
-          'border border-primary text-primary bg-transparent hover:bg-primary hover:text-white',
-        outlinesecondary:
-          'border border-secondary text-secondary bg-transparent hover:bg-secondary hover:text-white',
-        outlinesuccess:
-          'border border-success bg-transparent hover:bg-success text-success hover:text-white',
-        outlinewarning:
-          'border border-warning bg-transparent hover:bg-warning text-warning hover:text-white',
-        outlineinfo:
-          'border border-info bg-transparent hover:bg-info text-info hover:text-white',
-        outlineerror:
-          'border border-error bg-transparent hover:bg-error text-error hover:text-white',
-        secondary: 'bg-secondary text-white hover:bg-secondaryemphasis',
-        success: 'bg-success text-white hover:bg-successemphasis',
-        warning: 'bg-warning text-white hover:bg-warningemphasis',
-        info: 'bg-info text-white hover:bg-infoemphasis',
-        error: 'bg-error text-white hover:bg-erroremphasis',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        ghostprimary: 'hover:bg-lightprimary hover:text-primary text-primary',
-        ghostsecondary:
-          'hover:bg-lightsecondary hover:text-secondary text-secondary',
-        ghostsuccess: 'hover:bg-lightsuccess hover:text-success text-success',
-        ghostwarning: 'hover:bg-lightwarning hover:text-warning text-warning',
-        ghosterror: 'hover:bg-lighterror hover:text-error text-error',
-        ghostinfo: 'hover:bg-lightinfo hover:text-info text-info',
-        link: 'text-primary underline-offset-4 hover:underline',
-        lightprimary:
-          'bg-lightprimary text-primary hover:bg-primary hover:text-white',
-        lightsecondary:
-          'bg-lightsecondary text-secondary hover:bg-secondary hover:text-white',
-        lightsuccess:
-          'bg-lightsuccess text-success hover:bg-success hover:text-white',
-        lightwarning:
-          'bg-lightwarning text-warning hover:bg-warning hover:text-white',
-        lightinfo: 'bg-lightinfo text-info hover:bg-info hover:text-white',
-        lighterror: 'bg-lighterror text-error hover:bg-error hover:text-white',
+          "border-gray-300 bg-transparent text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 focus-visible:ring-3 focus-visible:ring-gray-300/50 disabled:border-gray-200 disabled:bg-white disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-white dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-600",
+        ghost:
+          "border-none bg-transparent text-gray-700 hover:bg-gray-50 hover:text-gray-800 focus-visible:ring-3 focus-visible:ring-gray-300/50 disabled:border-gray-200 disabled:bg-white disabled:text-gray-300 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-white dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-600",
+        destructive:
+          "bg-red-500 text-white shadow-theme-xs hover:bg-red-600 focus-visible:ring-3 focus-visible:ring-red-500/20 disabled:bg-red-200 disabled:text-white dark:bg-red-500 dark:hover:bg-red-600 dark:disabled:bg-red-950 dark:disabled:text-red-400",
+        link: "h-auto! p-0! font-normal text-brand-500 underline-offset-4 hover:underline dark:text-brand-400",
       },
       size: {
-        default: 'h-10 px-5 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
-      },
-      shape: {
-        pill: 'rounded-full',
+        default:
+          "h-10 gap-2 rounded-[10px] px-4 py-2.5 [&:has(>svg:first-child)]:ps-3 [&:has(>svg:last-child)]:pe-3",
+        xs: "h-8 gap-1.5 rounded-lg px-3 py-1.5 in-data-[slot=button-group]:rounded-lg [&:has(>svg:first-child)]:ps-2.5 [&:has(>svg:last-child)]:pe-2.5",
+        sm: "h-9 gap-1.5 rounded-lg px-4 py-2 in-data-[slot=button-group]:rounded-lg [&:has(>svg:first-child)]:ps-3 [&:has(>svg:last-child)]:pe-3",
+        lg: "h-11 gap-2 rounded-[10px] px-5 py-3 [&:has(>svg:first-child)]:ps-4 [&:has(>svg:last-child)]:pe-4",
+        icon: "size-10 rounded-[10px]",
+        "icon-xs": "size-8 rounded-lg in-data-[slot=button-group]:rounded-lg",
+        "icon-sm": "size-9 rounded-lg in-data-[slot=button-group]:rounded-lg",
+        "icon-lg": "size-11 rounded-[10px]",
       },
     },
     defaultVariants: {
-      variant: 'default',
-      size: 'default',
+      variant: "default",
+      size: "default",
     },
-  }
-)
+  },
+);
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean
+function Button({
+  className,
+  variant = "default",
+  size = "default",
+  ...props
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  return (
+    <ButtonPrimitive
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  );
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, shape, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button'
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, shape, className }))}
-        ref={ref}
-        {...props}
-      />
-    )
-  }
-)
-Button.displayName = 'Button'
-
-export { Button, buttonVariants }
+export { Button, buttonVariants };

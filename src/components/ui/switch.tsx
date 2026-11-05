@@ -1,29 +1,54 @@
-import * as React from "react"
-import * as SwitchPrimitive from "@radix-ui/react-switch"
+import { cn } from "@/utils";
+import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
 
-import { cn } from "src/lib/utils"
+export interface SwitchProps extends SwitchPrimitive.Root.Props {
+  size?: "sm" | "default";
+}
 
-function Switch({
-  className,
-  ...props
-}: React.ComponentProps<typeof SwitchPrimitive.Root>) {
+const switchVariants = {
+  default: {
+    root: "h-6 w-13 p-0.5",
+    thumb:
+      "h-5 w-[30px] data-checked:translate-x-[18px] rtl:data-checked:-translate-x-[18px]",
+  },
+  sm: {
+    root: "h-5 w-11 p-[1.5px]",
+    thumb:
+      "h-[17px] w-[26px] data-checked:translate-x-[15px] rtl:data-checked:-translate-x-[15px]",
+  },
+} as const;
+
+function Switch({ className, size = "default", ...props }: SwitchProps) {
+  const currentVariant = switchVariants[size] ?? switchVariants.default;
+
   return (
     <SwitchPrimitive.Root
       data-slot="switch"
+      data-size={size}
       className={cn(
-        "peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:border-ring focus-visible:ring-ring/50 dark:data-[state=unchecked]:bg-input/80 inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className
+        "peer relative inline-flex shrink-0 cursor-pointer items-center rounded-full outline-hidden transition-colors select-none",
+        "focus-visible:ring-2 focus-visible:ring-brand-500/20 focus-visible:outline-hidden dark:focus-visible:ring-brand-500/30",
+        "bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600",
+        "data-checked:bg-brand-500 data-checked:hover:bg-brand-600 dark:data-checked:bg-brand-500 dark:data-checked:hover:bg-brand-600",
+        "data-disabled:cursor-not-allowed data-disabled:bg-gray-100 data-disabled:hover:bg-gray-100 dark:data-disabled:bg-gray-800 dark:data-disabled:hover:bg-gray-800",
+        "data-disabled:data-checked:bg-gray-100 data-disabled:data-checked:hover:bg-gray-100 dark:data-disabled:data-checked:bg-gray-800 dark:data-disabled:data-checked:hover:bg-gray-800",
+        "group-has-focus-visible/field-label:ring-0 after:absolute after:-inset-x-3 after:-inset-y-2",
+        "aria-invalid:ring-error-500/20 dark:aria-invalid:ring-error-500/40 aria-invalid:ring-3",
+        currentVariant.root,
+        className,
       )}
       {...props}
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
         className={cn(
-          "bg-background dark:data-[state=unchecked]:bg-foreground dark:data-[state=checked]:bg-primary-foreground pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0"
+          "pointer-events-none block shrink-0 rounded-full bg-white shadow-theme-sm ring-0 transition-transform duration-150 ease-linear",
+          "data-unchecked:translate-x-0 rtl:data-unchecked:translate-x-0",
+          currentVariant.thumb,
         )}
       />
     </SwitchPrimitive.Root>
-  )
+  );
 }
 
-export { Switch }
+export { Switch };
