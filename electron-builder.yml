@@ -1,0 +1,31 @@
+appId: com.sunbee.editor
+productName: Sunbee Editor
+publish:
+  provider: github
+  owner: congtiendev
+  repo: Sunbee-Editor
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - build/icon.png
+  - package.json
+asarUnpack:
+  - build/icon.png
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility
+  icon: build/icon.png
+  synopsis: Sunbee Editor
+  syncDesktopName: true
+win:
+  target:
+    - nsis
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

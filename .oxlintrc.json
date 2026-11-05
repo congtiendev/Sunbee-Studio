@@ -2,7 +2,18 @@
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "typescript", "oxc"],
   "options": { "typeAware": true },
-  "ignorePatterns": ["public/maplibre/**", "dist/**"],
+  "ignorePatterns": [
+    "public/maplibre/**",
+    "dist/**",
+    "dist-electron/**",
+    "release/**"
+  ],
+  "overrides": [
+    {
+      "files": ["electron/**/*.ts"],
+      "env": { "node": true, "builtin": true }
+    }
+  ],
   "rules": {
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "warn",

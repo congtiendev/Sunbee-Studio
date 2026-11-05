@@ -7,9 +7,10 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  globalIgnores(["dist", "public/maplibre"]),
+  globalIgnores(["dist", "dist-electron", "release", "public/maplibre"]),
   {
     files: ["**/*.{ts,tsx}"],
+    ignores: ["electron/**"],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended, // non-type-aware only; Oxlint owns type-aware
@@ -17,6 +18,15 @@ export default defineConfig([
       reactRefresh.configs.vite,
     ],
     languageOptions: { ecmaVersion: "latest", globals: globals.browser },
+  },
+  {
+    files: ["electron/**/*.ts"],
+    extends: [js.configs.recommended, tseslint.configs.recommended],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: globals.node,
+    },
   },
   // MUST be last: disables every rule already enabled in .oxlintrc.json
   ...oxlint.buildFromOxlintConfigFile("./.oxlintrc.json", {
