@@ -1,4 +1,4 @@
-import type { Transaction } from "./types";
+import type { Transaction } from "@/pages/main/tables/basic-tables/table-three/types";
 
 export const latestTransactionsData: Transaction[] = [
   {

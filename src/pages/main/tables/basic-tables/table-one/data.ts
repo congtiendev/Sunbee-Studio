@@ -1,4 +1,4 @@
-import type { Order } from "./types";
+import type { Order } from "@/pages/main/tables/basic-tables/table-one/types";
 
 export const tableData: Order[] = [
   {

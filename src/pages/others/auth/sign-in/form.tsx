@@ -1,3 +1,4 @@
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -8,15 +9,20 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
-import { Link } from "react-router";
+import { useAuth } from "@/contexts";
+import { apiClient } from "@/lib/api-client";
+import { Link, useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { signInSchema, type SignInFormData } from "./schema";
+import { signInSchema, type SignInFormData } from "@/pages/others/auth/sign-in/schema";
 
 export default function SignInFormFields() {
   const [showPassword, setShowPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { refresh } = useAuth();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -33,8 +39,19 @@ export default function SignInFormFields() {
     mode: "onTouched",
   });
 
-  const handleFormSubmit = async (_data: SignInFormData) => {
-    // handle submit action
+  const handleFormSubmit = async (data: SignInFormData) => {
+    setSubmitError(null);
+    try {
+      await apiClient.auth.login({
+        email: data.email,
+        password: data.password,
+        remember: data.keepLoggedIn ?? false,
+      });
+      await refresh();
+      navigate("/");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (
@@ -43,6 +60,12 @@ export default function SignInFormFields() {
       className="space-y-5"
       noValidate
     >
+      {submitError && (
+        <Alert variant="destructive">
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
+
       <Field data-invalid={Boolean(errors.email)}>
         <FieldLabel className="mb-1.5 block">
           Email <span className="text-red-500">*</span>

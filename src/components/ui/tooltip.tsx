@@ -28,7 +28,7 @@ function TooltipPortal({ ...props }: TooltipPrimitive.Portal.Props) {
 }
 
 const tooltipContentVariants = cva(
-  "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-outfit text-xs font-medium whitespace-nowrap shadow-tooltip transition-opacity duration-150 outline-none select-none",
+  "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-lg px-3.5 py-1.5 font-comfortaa text-xs font-medium whitespace-nowrap shadow-tooltip transition-opacity duration-150 outline-none select-none",
   {
     variants: {
       variant: {

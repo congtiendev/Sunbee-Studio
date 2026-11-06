@@ -8,7 +8,7 @@ export default function Videos() {
     <>
       <PageMeta
         title="React.js Videos Tabs"
-        description="This is React.js Videos page for Sunbee Editor"
+        description="This is React.js Videos page for Sunbee Studio"
       />
       <PageBreadcrumb pageTitle="Videos" />
 

@@ -14,8 +14,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import flatpickr from "flatpickr";
 import React, { useEffect, useRef, useState } from "react";
-import { CloseIcon } from "./icons";
-import type { CalendarEvent, EventFormData } from "./types";
+import { CloseIcon } from "@/pages/main/calendar/icons";
+import type { CalendarEvent, EventFormData } from "@/pages/main/calendar/types";
 
 export interface CalendarEventModalProps {
   isOpen: boolean;

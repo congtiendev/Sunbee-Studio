@@ -1,7 +1,7 @@
 import { useTranslations } from "@/i18n";
 import { cn } from "@/utils";
 import { Link } from "react-router";
-import type { SubItem } from "./types";
+import type { SubItem } from "@/components/layout/app-layout/sidebar/types";
 
 interface SidebarSubmenuItemProps {
   subItem: SubItem;

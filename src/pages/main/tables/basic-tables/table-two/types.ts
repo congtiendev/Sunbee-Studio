@@ -1,5 +1,5 @@
 import type { Table } from "@tanstack/react-table";
-import type { tableTwoFeatures } from "./utils";
+import type { tableTwoFeatures } from "@/pages/main/tables/basic-tables/table-two/utils";
 
 export type DealStatus = "complete" | "pending" | "cancel";
 

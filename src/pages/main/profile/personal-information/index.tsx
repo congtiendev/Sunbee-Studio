@@ -6,11 +6,11 @@ import { Card } from "@/components/ui/card";
 import { PencilIcon } from "@/icons";
 import { cn } from "@/utils";
 import { useState } from "react";
-import { defaultPersonalInfo } from "./data";
-import EditPersonalInfoDialog from "./edit-dialog";
-import InfoField from "./info-field";
-import SocialLinks from "./social-links";
-import type { PersonalInfo, PersonalInfoCardProps } from "./types";
+import { defaultPersonalInfo } from "@/pages/main/profile/personal-information/data";
+import EditPersonalInfoDialog from "@/pages/main/profile/personal-information/edit-dialog";
+import InfoField from "@/pages/main/profile/personal-information/info-field";
+import SocialLinks from "@/pages/main/profile/personal-information/social-links";
+import type { PersonalInfo, PersonalInfoCardProps } from "@/pages/main/profile/personal-information/types";
 
 export default function PersonalInformationSection({
   data = defaultPersonalInfo,

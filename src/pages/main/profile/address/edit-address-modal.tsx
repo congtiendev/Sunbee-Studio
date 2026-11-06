@@ -15,8 +15,8 @@ import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { addressSchema, type AddressFormData } from "./schema";
-import type { EditAddressModalProps } from "./types";
+import { addressSchema, type AddressFormData } from "@/pages/main/profile/address/schema";
+import type { EditAddressModalProps } from "@/pages/main/profile/address/types";
 
 export default function EditAddressModal({
   isOpen,

@@ -1,7 +1,7 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import ComboboxSelectInput from "./combobox-select-input";
-import MultipleSelectInput from "./multiple-select-input";
-import SelectInput from "./select-input";
+import ComboboxSelectInput from "@/pages/main/forms/form-elements/select-inputs/combobox-select-input";
+import MultipleSelectInput from "@/pages/main/forms/form-elements/select-inputs/multiple-select-input";
+import SelectInput from "@/pages/main/forms/form-elements/select-inputs/select-input";
 
 export default function SelectInputs() {
   return (

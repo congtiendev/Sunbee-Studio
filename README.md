@@ -1,4 +1,4 @@
-# Sunbee Editor
+# Sunbee Studio
 
 React 19 admin dashboard built with Vite, TypeScript, and Tailwind CSS v4.
 

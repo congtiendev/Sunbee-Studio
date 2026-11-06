@@ -1,4 +1,4 @@
-import type { CrmOrder } from "./types";
+import type { CrmOrder } from "@/pages/main/tables/basic-tables/table-two/types";
 
 export const recentOrdersData: CrmOrder[] = [
   {

@@ -1,5 +1,5 @@
 import { cn } from "@/utils";
-import type { InfoFieldProps } from "./types";
+import type { InfoFieldProps } from "@/pages/main/profile/personal-information/types";
 
 export default function InfoField({ label, value, className }: InfoFieldProps) {
   return (

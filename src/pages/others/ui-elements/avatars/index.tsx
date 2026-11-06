@@ -1,18 +1,18 @@
 import { ComponentCard } from "@/components/shared/component-card";
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
-import AvatarGroupPreview from "./components/avatar-group";
-import BusyIndicator from "./components/busy-indicator";
-import DefaultAvatar from "./components/default-avatar";
-import OfflineIndicator from "./components/offline-indicator";
-import OnlineIndicator from "./components/online-indicator";
+import AvatarGroupPreview from "@/pages/others/ui-elements/avatars/components/avatar-group";
+import BusyIndicator from "@/pages/others/ui-elements/avatars/components/busy-indicator";
+import DefaultAvatar from "@/pages/others/ui-elements/avatars/components/default-avatar";
+import OfflineIndicator from "@/pages/others/ui-elements/avatars/components/offline-indicator";
+import OnlineIndicator from "@/pages/others/ui-elements/avatars/components/online-indicator";
 
 export default function Avatars() {
   return (
     <>
       <PageMeta
         title="React.js Avatars Dashboard"
-        description="This is React.js Avatars Dashboard page for Sunbee Editor"
+        description="This is React.js Avatars Dashboard page for Sunbee Studio"
       />
       <PageBreadcrumb pageTitle="Avatars" />
 

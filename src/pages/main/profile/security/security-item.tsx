@@ -1,5 +1,5 @@
 import { cn } from "@/utils";
-import type { SecurityItemProps } from "./types";
+import type { SecurityItemProps } from "@/pages/main/profile/security/types";
 
 export default function SecurityItem({
   title,

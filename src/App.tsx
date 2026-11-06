@@ -1,10 +1,20 @@
 import AppLayout from "@/components/layout/app-layout";
+import {
+  RedirectIfAuthed,
+  RequireAdmin,
+  RequireAuth,
+} from "@/components/shared/route-guards";
+import DatabaseAdminPage from "@/pages/main/database-admin";
 import CalendarPage from "@/pages/main/calendar";
-import EcommercePage from "@/pages/main/dashboard/ecommerce";
+import OverviewPage from "@/pages/main/dashboard/overview";
 import FormElementsPage from "@/pages/main/forms/form-elements";
 import { BlankPage, Error404Page } from "@/pages/main/pages";
 import ProfilePage from "@/pages/main/profile";
+import SettingsPage from "@/pages/main/settings";
 import BasicTablesPage from "@/pages/main/tables/basic-tables";
+import VideoStudioPage from "@/pages/main/video-studio";
+import VideoStudioCategoriesPage from "@/pages/main/video-studio/categories";
+import VideoStudioProjectsPage from "@/pages/main/video-studio/projects";
 import { AuthLayout, SignInPage, SignUpPage } from "@/pages/others/auth";
 import BarChartPage from "@/pages/others/charts/bar-chart";
 import LineChartPage from "@/pages/others/charts/line-chart";
@@ -21,13 +31,31 @@ export default function App() {
   return (
     <Routes>
       {/* Dashboard Layout */}
-      <Route element={<AppLayout />}>
-        <Route index element={<EcommercePage />} />
+      <Route
+        element={
+          <RequireAuth>
+            <AppLayout />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<OverviewPage />} />
 
         {/* Others Page */}
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/video-studio" element={<VideoStudioPage />} />
+        <Route path="/video-studio/projects" element={<VideoStudioProjectsPage />} />
+        <Route path="/video-studio/categories" element={<VideoStudioCategoriesPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/blank" element={<BlankPage />} />
+        <Route
+          path="/database-admin"
+          element={
+            <RequireAdmin>
+              <DatabaseAdminPage />
+            </RequireAdmin>
+          }
+        />
 
         {/* Forms */}
         <Route path="/form-elements" element={<FormElementsPage />} />
@@ -49,7 +77,13 @@ export default function App() {
       </Route>
 
       {/* Auth Layout */}
-      <Route element={<AuthLayout />}>
+      <Route
+        element={
+          <RedirectIfAuthed>
+            <AuthLayout />
+          </RedirectIfAuthed>
+        }
+      >
         <Route path="/signin" element={<SignInPage />} />
         <Route path="/signup" element={<SignUpPage />} />
       </Route>

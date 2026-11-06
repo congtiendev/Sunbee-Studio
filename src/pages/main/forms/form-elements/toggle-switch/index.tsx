@@ -1,5 +1,5 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import ToggleSwitchInput from "./toggle-switch-input";
+import ToggleSwitchInput from "@/pages/main/forms/form-elements/toggle-switch/toggle-switch-input";
 
 export default function ToggleSwitch() {
   return (

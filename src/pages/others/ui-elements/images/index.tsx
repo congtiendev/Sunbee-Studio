@@ -1,16 +1,16 @@
 import { ComponentCard } from "@/components/shared/component-card";
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
-import ResponsiveImage from "./components/responsive";
-import ThreeColumnImageGrid from "./components/three-column-greed";
-import TwoColumnImageGrid from "./components/two-column-grid";
+import ResponsiveImage from "@/pages/others/ui-elements/images/components/responsive";
+import ThreeColumnImageGrid from "@/pages/others/ui-elements/images/components/three-column-greed";
+import TwoColumnImageGrid from "@/pages/others/ui-elements/images/components/two-column-grid";
 
 export default function Images() {
   return (
     <>
       <PageMeta
         title="React.js Images Dashboard"
-        description="This is React.js Images page for Sunbee Editor"
+        description="This is React.js Images page for Sunbee Studio"
       />
       <PageBreadcrumb pageTitle="Images" />
 

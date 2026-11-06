@@ -1,10 +1,12 @@
 import { Link } from "react-router";
 import { ChevronLeftIcon } from "@/icons";
 import { cn } from "@/utils";
-import AuthDivider from "../divider";
-import SignUpFormFields from "./form";
-import SignUpHeader from "./header";
-import { SocialButtons } from "./social-button";
+import SignUpFormFields from "@/pages/others/auth/sign-up/form";
+import SignUpHeader from "@/pages/others/auth/sign-up/header";
+
+// Social sign-up is temporarily hidden (not wired to real OAuth yet).
+// import AuthDivider from "@/pages/others/auth/divider";
+// import { SocialButtons } from "@/pages/others/auth/sign-up/social-button";
 
 export default function SignUp() {
   return (
@@ -28,8 +30,6 @@ export default function SignUp() {
           <SignUpHeader />
 
           <div>
-            <SocialButtons />
-            <AuthDivider />
             <SignUpFormFields />
 
             <div className="mt-5">

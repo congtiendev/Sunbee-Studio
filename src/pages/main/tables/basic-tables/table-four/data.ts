@@ -1,4 +1,4 @@
-import type { Campaign } from "./types";
+import type { Campaign } from "@/pages/main/tables/basic-tables/table-four/types";
 
 export const featuredCampaignsData: Campaign[] = [
   {

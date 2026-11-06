@@ -6,15 +6,15 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
-import CardHeader from "./card-header";
-import { recentOrdersData } from "./data";
-import OrdersTable from "./orders-table";
-import type { CrmOrder, DealStatus, TableTwoProps } from "./types";
+import CardHeader from "@/pages/main/tables/basic-tables/table-two/card-header";
+import { recentOrdersData } from "@/pages/main/tables/basic-tables/table-two/data";
+import OrdersTable from "@/pages/main/tables/basic-tables/table-two/orders-table";
+import type { CrmOrder, DealStatus, TableTwoProps } from "@/pages/main/tables/basic-tables/table-two/types";
 import {
   tableTwoColumns,
   tableTwoFeatures,
   tableTwoGlobalFilterFn,
-} from "./utils";
+} from "@/pages/main/tables/basic-tables/table-two/utils";
 
 export default function TableTwo({
   data = recentOrdersData,
@@ -63,7 +63,7 @@ export default function TableTwo({
   return (
     <Card
       className={cn(
-        "w-full max-w-full min-w-0 gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 sm:p-0 dark:border-gray-800 dark:bg-white/3",
+        "card-surface w-full max-w-full min-w-0 gap-0 overflow-hidden p-0 sm:p-0",
         className,
       )}
     >

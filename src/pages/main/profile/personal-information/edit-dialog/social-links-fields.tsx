@@ -2,7 +2,7 @@
 
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import type { SocialLinksFieldsProps } from "./types";
+import type { SocialLinksFieldsProps } from "@/pages/main/profile/personal-information/edit-dialog/types";
 
 export default function SocialLinksFields({
   register,

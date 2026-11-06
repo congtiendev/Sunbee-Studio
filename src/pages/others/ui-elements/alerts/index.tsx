@@ -1,18 +1,18 @@
 import { ComponentCard } from "@/components/shared/component-card";
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
-import DefaultAlert from "./components/default-alert";
-import ErrorAlert from "./components/error-alert";
-import InfoAlert from "./components/info-alert";
-import SuccessAlert from "./components/success-alert";
-import WarningAlert from "./components/warning-alert";
+import DefaultAlert from "@/pages/others/ui-elements/alerts/components/default-alert";
+import ErrorAlert from "@/pages/others/ui-elements/alerts/components/error-alert";
+import InfoAlert from "@/pages/others/ui-elements/alerts/components/info-alert";
+import SuccessAlert from "@/pages/others/ui-elements/alerts/components/success-alert";
+import WarningAlert from "@/pages/others/ui-elements/alerts/components/warning-alert";
 
 export default function Alerts() {
   return (
     <>
       <PageMeta
         title="React.js Alerts Dashboard"
-        description="This is React.js Alerts Dashboard page for Sunbee Editor"
+        description="This is React.js Alerts Dashboard page for Sunbee Studio"
       />
       <PageBreadcrumb pageTitle="Alerts" />
 

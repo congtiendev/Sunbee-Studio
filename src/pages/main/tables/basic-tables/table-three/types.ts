@@ -1,5 +1,5 @@
 import type { Table } from "@tanstack/react-table";
-import type { tableThreeFeatures } from "./utils";
+import type { tableThreeFeatures } from "@/pages/main/tables/basic-tables/table-three/utils";
 
 export type TransactionStatus = "Success" | "Pending" | "Failed";
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { SignInFormData } from "./schema";
+import type { SignInFormData } from "@/pages/others/auth/sign-in/schema";
 
 export interface SocialAuthProvider {
   id: string;

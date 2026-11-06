@@ -1,4 +1,4 @@
-import type { NotificationItem } from "./types";
+import type { NotificationItem } from "@/components/shared/header/notification-dropdown/types";
 
 export const notifications: NotificationItem[] = [
   {

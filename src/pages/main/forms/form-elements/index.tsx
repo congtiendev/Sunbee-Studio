@@ -1,22 +1,22 @@
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
-import CheckboxInputs from "./checkbox-inputs";
-import DefaultInputs from "./default-inputs";
-import Dropzone from "./dropzone";
-import FileInput from "./file-input";
-import InputGroup from "./input-group";
-import InputStates from "./input-states";
-import RadioButtons from "./radio-buttons";
-import SelectInputs from "./select-inputs";
-import TextAreaInput from "./textarea-input";
-import ToggleSwitch from "./toggle-switch";
+import CheckboxInputs from "@/pages/main/forms/form-elements/checkbox-inputs";
+import DefaultInputs from "@/pages/main/forms/form-elements/default-inputs";
+import Dropzone from "@/pages/main/forms/form-elements/dropzone";
+import FileInput from "@/pages/main/forms/form-elements/file-input";
+import InputGroup from "@/pages/main/forms/form-elements/input-group";
+import InputStates from "@/pages/main/forms/form-elements/input-states";
+import RadioButtons from "@/pages/main/forms/form-elements/radio-buttons";
+import SelectInputs from "@/pages/main/forms/form-elements/select-inputs";
+import TextAreaInput from "@/pages/main/forms/form-elements/textarea-input";
+import ToggleSwitch from "@/pages/main/forms/form-elements/toggle-switch";
 
 export default function FormElementsPage() {
   return (
     <div>
       <PageMeta
         title="React.js Form Elements Dashboard"
-        description="This is React.js Form Elements  Dashboard page for Sunbee Editor"
+        description="This is React.js Form Elements  Dashboard page for Sunbee Studio"
       />
       <PageBreadcrumb pageTitle="Form Elements" />
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">

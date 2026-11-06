@@ -7,7 +7,7 @@ export default function DisabledInput() {
       <FieldLabel className="text-gray-400 dark:text-gray-500">
         Email
       </FieldLabel>
-      <Input type="email" defaultValue="info@tailadmin.com" disabled />
+      <Input type="email" defaultValue="info@sunbee.vn" disabled />
     </Field>
   );
 }

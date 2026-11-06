@@ -15,8 +15,8 @@ import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { changePasswordSchema } from "./schema";
-import type { ChangePasswordFormData, ChangePasswordModalProps } from "./types";
+import { changePasswordSchema } from "@/pages/main/profile/security/schema";
+import type { ChangePasswordFormData, ChangePasswordModalProps } from "@/pages/main/profile/security/types";
 
 export default function ChangePasswordModal({
   isOpen,

@@ -1,4 +1,4 @@
-import type { AddressData } from "./types";
+import type { AddressData } from "@/pages/main/profile/address/types";
 
 export const defaultAddressData: AddressData = {
   country: "United Kingdom",

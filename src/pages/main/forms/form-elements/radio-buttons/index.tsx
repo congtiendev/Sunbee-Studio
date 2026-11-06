@@ -1,6 +1,6 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import DefaultRadioButtons from "./default-radio-buttons";
-import LabeledRadioButtons from "./labeled-radio-buttons";
+import DefaultRadioButtons from "@/pages/main/forms/form-elements/radio-buttons/default-radio-buttons";
+import LabeledRadioButtons from "@/pages/main/forms/form-elements/radio-buttons/labeled-radio-buttons";
 
 export default function RadioButtons() {
   return (

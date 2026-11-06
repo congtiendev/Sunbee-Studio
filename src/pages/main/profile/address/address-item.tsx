@@ -1,5 +1,5 @@
 import { cn } from "@/utils";
-import type { AddressItemProps } from "./types";
+import type { AddressItemProps } from "@/pages/main/profile/address/types";
 
 export default function AddressItem({
   label,

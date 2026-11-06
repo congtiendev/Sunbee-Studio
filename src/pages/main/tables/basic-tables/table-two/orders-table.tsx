@@ -7,9 +7,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/utils";
-import EmptyState from "./empty-state";
-import OrderRow from "./order-row";
-import type { OrdersTableProps } from "./types";
+import EmptyState from "@/pages/main/tables/basic-tables/table-two/empty-state";
+import OrderRow from "@/pages/main/tables/basic-tables/table-two/order-row";
+import type { OrdersTableProps } from "@/pages/main/tables/basic-tables/table-two/types";
 
 export default function OrdersTable({
   table,

@@ -16,7 +16,7 @@ export default function Badges() {
     <div>
       <PageMeta
         title="React.js Badges Dashboard"
-        description="This is React.js Badges Dashboard page for Sunbee Editor"
+        description="This is React.js Badges Dashboard page for Sunbee Studio"
       />
       <PageBreadcrumb pageTitle="Badges" />
 

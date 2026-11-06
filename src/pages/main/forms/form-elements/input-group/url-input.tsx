@@ -18,7 +18,7 @@ export default function UrlInput() {
             http://
           </span>
         </InputGroupAddon>
-        <InputGroupInput type="text" placeholder="www.tailadmin.com" />
+        <InputGroupInput type="text" placeholder="www.sunbee.vn" />
       </InputGroup>
     </Field>
   );

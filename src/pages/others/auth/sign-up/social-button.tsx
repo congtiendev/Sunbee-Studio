@@ -1,6 +1,6 @@
 import { cn } from "@/utils";
-import { socialProviders } from "./data";
-import { type SocialAuthProvider } from "./types";
+import { socialProviders } from "@/pages/others/auth/sign-up/data";
+import { type SocialAuthProvider } from "@/pages/others/auth/sign-up/types";
 
 export interface SocialButtonProps {
   provider: SocialAuthProvider;

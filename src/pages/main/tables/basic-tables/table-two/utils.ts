@@ -8,7 +8,7 @@ import {
   rowSelectionFeature,
   tableFeatures,
 } from "@tanstack/react-table";
-import type { CrmOrder, DealStatus } from "./types";
+import type { CrmOrder, DealStatus } from "@/pages/main/tables/basic-tables/table-two/types";
 
 export const tableTwoFeatures = tableFeatures({
   columnFilteringFeature,

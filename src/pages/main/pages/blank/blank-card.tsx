@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils";
-import type { BlankCardProps } from "./types";
+import type { BlankCardProps } from "@/pages/main/pages/blank/types";
 
 export default function BlankCard({
   title = "Card Title Here",
@@ -10,7 +10,7 @@ export default function BlankCard({
   return (
     <Card
       className={cn(
-        "flex min-h-screen items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-7 shadow-none xl:px-10 xl:py-12 dark:border-gray-800 dark:bg-white/3",
+        "card-surface flex min-h-screen items-center justify-center px-5 py-7 shadow-none xl:px-10 xl:py-12",
         className,
       )}
     >

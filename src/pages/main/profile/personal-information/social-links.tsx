@@ -6,7 +6,7 @@ import {
   TwitterXIcon,
 } from "@/icons";
 import { cn } from "@/utils";
-import type { SocialLinksProps } from "./types";
+import type { SocialLinksProps } from "@/pages/main/profile/personal-information/types";
 
 export default function SocialLinks({
   socialLinks,

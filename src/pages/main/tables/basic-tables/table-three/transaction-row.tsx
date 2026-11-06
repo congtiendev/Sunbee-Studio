@@ -13,7 +13,7 @@ import {
 } from "@/icons";
 import { cn } from "@/utils";
 import type { ReactNode } from "react";
-import type { Transaction, TransactionBrand } from "./types";
+import type { Transaction, TransactionBrand } from "@/pages/main/tables/basic-tables/table-three/types";
 
 interface TransactionRowProps {
   transaction: Transaction;

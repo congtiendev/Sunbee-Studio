@@ -12,11 +12,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import type { PersonalInfo } from "../types";
-import AvatarUploadSection from "./avatar-upload-section";
-import PersonalDetailsFields from "./personal-details-fields";
-import { personalInfoSchema, type PersonalInfoFormData } from "./schema";
-import SocialLinksFields from "./social-links-fields";
+import type { PersonalInfo } from "@/pages/main/profile/personal-information/types";
+import AvatarUploadSection from "@/pages/main/profile/personal-information/edit-dialog/avatar-upload-section";
+import PersonalDetailsFields from "@/pages/main/profile/personal-information/edit-dialog/personal-details-fields";
+import { personalInfoSchema, type PersonalInfoFormData } from "@/pages/main/profile/personal-information/edit-dialog/schema";
+import SocialLinksFields from "@/pages/main/profile/personal-information/edit-dialog/social-links-fields";
 
 interface EditPersonalInfoDialogProps {
   isOpen: boolean;

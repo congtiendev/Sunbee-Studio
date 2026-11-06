@@ -1,15 +1,60 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap")
-layer(base);
-
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/forms";
 
+@layer base {
+  @font-face {
+    font-family: "Comfortaa";
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url("/fonts/comfortaa/comfortaa-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+      U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+      U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+
+  @font-face {
+    font-family: "Comfortaa";
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url("/fonts/comfortaa/comfortaa-latin-ext.woff2") format("woff2");
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+      U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+      U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  }
+
+  @font-face {
+    font-family: "Comfortaa";
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url("/fonts/comfortaa/comfortaa-vietnamese.woff2") format("woff2");
+    unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+      U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
+      U+1EA0-1EF9, U+20AB;
+  }
+
+  @font-face {
+    font-family: "JetBrains Mono";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/jetbrains-mono/jetbrains-mono-latin.woff2") format("woff2");
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+      U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+      U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
+@custom-variant liquid (&:is(.liquid *));
 
 @theme {
   --font-*: initial;
-  --font-outfit: Outfit, sans-serif;
+  --font-comfortaa: Comfortaa, sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
@@ -44,17 +89,17 @@ layer(base);
   --color-white: #ffffff;
   --color-black: #101828;
 
-  --color-brand-50: rgba(236, 243, 255, 1);
-  --color-brand-100: rgba(221, 233, 255, 1);
-  --color-brand-200: rgba(194, 214, 255, 1);
-  --color-brand-300: rgba(156, 185, 255, 1);
-  --color-brand-400: rgba(117, 146, 255, 1);
-  --color-brand-500: rgba(70, 95, 255, 1);
-  --color-brand-600: rgba(54, 65, 245, 1);
-  --color-brand-700: rgba(42, 49, 216, 1);
-  --color-brand-800: rgba(37, 45, 174, 1);
-  --color-brand-900: rgba(38, 46, 137, 1);
-  --color-brand-950: rgba(22, 25, 80, 1);
+  --color-brand-50: #ebfaff;
+  --color-brand-100: #d1f4ff;
+  --color-brand-200: #a5e8fe;
+  --color-brand-300: #68d8fd;
+  --color-brand-400: #1fc7ff;
+  --color-brand-500: #00b3ec;
+  --color-brand-600: #007ec2;
+  --color-brand-700: #0254a2;
+  --color-brand-800: #023178;
+  --color-brand-900: #021e57;
+  --color-brand-950: #011648;
 
   --shadow-theme-md:
     0px 4px 8px -2px rgba(16, 24, 40, 0.1),
@@ -101,6 +146,27 @@ layer(base);
       opacity: 0;
     }
   }
+
+  --animate-scroll-up: scroll-up 8s linear infinite;
+  --animate-scroll-down: scroll-down 8s linear infinite;
+
+  @keyframes scroll-up {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(-50%);
+    }
+  }
+
+  @keyframes scroll-down {
+    from {
+      transform: translateY(-50%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 }
 
 /*
@@ -126,7 +192,39 @@ layer(base);
   }
 
   body {
-    @apply relative z-1 bg-gray-50 font-outfit font-normal;
+    @apply relative z-1 bg-gray-50 font-comfortaa font-normal;
+  }
+}
+
+/*
+  Liquid Glass UI style. Opt-in alternate visual skin toggled via the
+  `.liquid` class on <html> (see `useStyle`/`StyleProvider`). Classic mode
+  (no `.liquid` class) renders exactly as before these variables exist.
+*/
+@layer base {
+  @property --hl {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 0;
+  }
+
+  :root.liquid {
+    --wash-h: 199;
+    --lg-surf: 255 255 255;
+    --lg-shadow-color: 11 19 36;
+    --lg-a: 0.62;
+    --wash-1: hsl(var(--wash-h) 55% 92% / 0.22);
+    --wash-2: hsl(var(--wash-h) 55% 90% / 0.42);
+    --wash-3: hsl(var(--wash-h) 55% 88% / 0.6);
+  }
+
+  :root.liquid.dark {
+    --lg-surf: 13 19 33;
+    --lg-shadow-color: 0 0 0;
+    --lg-a: 0.6;
+    --wash-1: hsl(var(--wash-h) 55% 10% / 0.55);
+    --wash-2: hsl(var(--wash-h) 55% 8% / 0.68);
+    --wash-3: hsl(var(--wash-h) 55% 6% / 0.8);
   }
 }
 
@@ -136,6 +234,20 @@ layer(base);
 
 @utility menu-item-active {
   @apply bg-brand-50 text-brand-500 dark:bg-brand-500/12 dark:text-brand-400;
+
+  &:where(.liquid *) {
+    border-radius: 14px;
+    background: linear-gradient(
+      135deg,
+      rgb(255 255 255 / 0.28),
+      rgb(255 255 255 / 0.1)
+    ) !important;
+    box-shadow: inset 0 1px 1px rgb(255 255 255 / 0.4);
+  }
+
+  &:where(.liquid.dark *) {
+    background: rgb(255 255 255 / 0.1) !important;
+  }
 }
 
 @utility menu-item-inactive {
@@ -581,14 +693,14 @@ span.flatpickr-weekday,
 .flatpickr-day.selected.nextMonthDay,
 .flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
-  background: #465fff;
+  background: #00b3ec;
   @apply border-brand-500! bg-brand-500! hover:border-brand-500! hover:bg-brand-500!;
 }
 
 .flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.startRange.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.endRange.startRange + .endRange:not(:nth-child(7n + 1)) {
-  box-shadow: -10px 0 0 #465fff;
+  box-shadow: -10px 0 0 #00b3ec;
 }
 
 [dir="rtl"]
@@ -600,7 +712,7 @@ span.flatpickr-weekday,
 [dir="rtl"]
   .flatpickr-day.endRange.startRange
   + .endRange:not(:nth-child(7n + 1)) {
-  box-shadow: 10px 0 0 #465fff;
+  box-shadow: 10px 0 0 #00b3ec;
 }
 
 .flatpickr-months .flatpickr-prev-month svg,
@@ -742,20 +854,20 @@ pre[class*="language-"].line-numbers {
   @apply fill-gray-300! hover:fill-brand-500! dark:fill-gray-700! dark:hover:fill-brand-500!;
 }
 #mapTwo .jvectormap-region.jvectormap-element {
-  fill: #9cb9ff !important;
+  fill: #68d8fd !important;
   stroke: transparent !important;
 }
 #mapTwo .jvectormap-region.jvectormap-element:hover {
   fill: #8098f9 !important;
 }
 .dark #mapTwo .jvectormap-region.jvectormap-element {
-  fill: #9cb9ff !important;
+  fill: #68d8fd !important;
 }
 #mapTwo .jvectormap-region[data-code="US"] {
-  fill: #465fff !important;
+  fill: #00b3ec !important;
 }
 #mapTwo .jvectormap-marker.jvectormap-element {
-  fill: #465fff !important;
+  fill: #00b3ec !important;
   stroke: #ffffff !important;
   stroke-width: 1.5 !important;
   fill-opacity: 1 !important;
@@ -784,7 +896,7 @@ pre[class*="language-"].line-numbers {
 }
 #mapCustomerPinPoint .jvm-region[data-code="US-CA"],
 #mapCustomerPinPoint .jvectormap-region[data-code="US-CA"] {
-  fill: #465fff !important;
+  fill: #00b3ec !important;
 }
 #mapCustomerPinPoint .jvm-region[data-code="US-NY"],
 #mapCustomerPinPoint .jvm-region[data-code="US-FL"],
@@ -816,11 +928,11 @@ pre[class*="language-"].line-numbers {
 #mapCustomerPinPoint .jvm-region[data-code="US-AZ"],
 #mapCustomerPinPoint .jvectormap-region[data-code="US-CO"],
 #mapCustomerPinPoint .jvectormap-region[data-code="US-AZ"] {
-  fill: #9cb9ff !important;
+  fill: #68d8fd !important;
 }
 #mapCustomerPinPoint .jvm-region.jvm-element:hover,
 #mapCustomerPinPoint .jvectormap-region.jvectormap-element:hover {
-  fill: #465fff !important;
+  fill: #00b3ec !important;
 }
 .dark #mapCustomerPinPoint .jvm-region.jvm-element,
 .dark #mapCustomerPinPoint .jvectormap-region.jvm-element,
@@ -832,7 +944,7 @@ pre[class*="language-"].line-numbers {
 /* Customer map markers: solid filled circles with white ring */
 #mapCustomerPinPoint .jvm-marker.jvm-element,
 #mapCustomerPinPoint .jvectormap-marker.jvectormap-element {
-  fill: #465fff !important;
+  fill: #00b3ec !important;
   stroke: white !important;
   stroke-width: 2 !important;
   fill-opacity: 1 !important;
@@ -977,5 +1089,275 @@ pre[class*="language-"].line-numbers {
 @media (max-width: 640px) {
   .custom-calendar .fc-timegrid {
     min-width: 580px;
+  }
+}
+
+/* ── Liquid Glass surfaces ──────────────────────────────────────────── */
+
+@utility card-surface {
+  @apply rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3;
+
+  &:where(.liquid *) {
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--lg-radius, 28px);
+    border-width: 0 !important;
+    border-color: transparent !important;
+    background:
+      radial-gradient(
+        340px circle at var(--mx, 50%) var(--my, 0%),
+        rgb(255 255 255 / var(--hl)),
+        transparent 70%
+      ),
+      linear-gradient(
+        150deg,
+        rgb(var(--lg-surf) / calc(var(--lg-a) + 0.14)),
+        rgb(var(--lg-surf) / calc(var(--lg-a) - 0.08)) 48%,
+        rgb(var(--lg-surf) / calc(var(--lg-a) + 0.04))
+      ) !important;
+    -webkit-backdrop-filter: blur(var(--lg-blur, 16px)) saturate(1.7) brightness(1.06);
+    backdrop-filter: blur(var(--lg-blur, 16px)) saturate(1.7) brightness(1.06);
+    box-shadow:
+      inset 0 1.5px 1px rgb(255 255 255 / 0.85),
+      inset 0 -1.5px 1px rgb(255 255 255 / 0.3),
+      inset 1px 0 1px rgb(255 255 255 / 0.32),
+      inset -1px 0 1px rgb(255 255 255 / 0.2),
+      inset 0 0 28px rgb(255 255 255 / 0.14),
+      0 2px 4px rgb(15 25 50 / 0.06),
+      0 16px 44px rgb(var(--lg-shadow-color) / 0.14);
+    transition:
+      --hl 0.4s ease,
+      box-shadow 0.35s ease;
+  }
+
+  &:where(.liquid *)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: 1.25px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(255 255 255 / 0.22) 28%,
+      rgb(255 255 255 / 0.04) 52%,
+      rgb(255 255 255 / 0.26) 78%,
+      rgb(255 255 255 / 0.85) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+
+  &:where(.liquid.dark *) {
+    box-shadow:
+      inset 0 1.5px 1px rgb(255 255 255 / 0.28),
+      inset 0 -1.5px 1px rgb(255 255 255 / 0.08),
+      inset 1px 0 1px rgb(255 255 255 / 0.1),
+      inset -1px 0 1px rgb(255 255 255 / 0.06),
+      0 1px 3px rgb(0 0 0 / 0.14),
+      0 10px 28px rgb(0 0 0 / 0.22);
+  }
+
+  &:where(.liquid.dark *)::before {
+    opacity: 0.55;
+  }
+
+  &:where(.liquid *):hover {
+    --hl: 0.24;
+  }
+
+  &:where(.liquid[data-scrolling] *) {
+    -webkit-backdrop-filter: blur(8px) saturate(1.4) !important;
+    backdrop-filter: blur(8px) saturate(1.4) !important;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    &:where(.liquid *) {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+      background: rgb(var(--lg-surf) / 0.92) !important;
+    }
+  }
+}
+
+/* Floating overlays (dropdown, select, dialog, combobox): identical glass
+   recipe to card-surface, but classic mode keeps the existing solid dark
+   background these need for legibility over arbitrary page content. */
+@utility popover-surface {
+  @apply rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-[#1E2635];
+
+  &:where(.liquid *) {
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--lg-radius, 28px);
+    border-width: 0 !important;
+    border-color: transparent !important;
+    background:
+      radial-gradient(
+        340px circle at var(--mx, 50%) var(--my, 0%),
+        rgb(255 255 255 / var(--hl)),
+        transparent 70%
+      ),
+      linear-gradient(
+        150deg,
+        rgb(var(--lg-surf) / calc(var(--lg-a) + 0.14)),
+        rgb(var(--lg-surf) / calc(var(--lg-a) - 0.08)) 48%,
+        rgb(var(--lg-surf) / calc(var(--lg-a) + 0.04))
+      ) !important;
+    -webkit-backdrop-filter: blur(var(--lg-blur, 16px)) saturate(1.7) brightness(1.06);
+    backdrop-filter: blur(var(--lg-blur, 16px)) saturate(1.7) brightness(1.06);
+    box-shadow:
+      inset 0 1.5px 1px rgb(255 255 255 / 0.85),
+      inset 0 -1.5px 1px rgb(255 255 255 / 0.3),
+      inset 1px 0 1px rgb(255 255 255 / 0.32),
+      inset -1px 0 1px rgb(255 255 255 / 0.2),
+      inset 0 0 28px rgb(255 255 255 / 0.14),
+      0 2px 4px rgb(15 25 50 / 0.06),
+      0 16px 44px rgb(var(--lg-shadow-color) / 0.14);
+    transition:
+      --hl 0.4s ease,
+      box-shadow 0.35s ease;
+  }
+
+  &:where(.liquid *)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: 1.25px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(255 255 255 / 0.22) 28%,
+      rgb(255 255 255 / 0.04) 52%,
+      rgb(255 255 255 / 0.26) 78%,
+      rgb(255 255 255 / 0.85) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+
+  &:where(.liquid.dark *) {
+    box-shadow:
+      inset 0 1.5px 1px rgb(255 255 255 / 0.28),
+      inset 0 -1.5px 1px rgb(255 255 255 / 0.08),
+      inset 1px 0 1px rgb(255 255 255 / 0.1),
+      inset -1px 0 1px rgb(255 255 255 / 0.06),
+      0 1px 3px rgb(0 0 0 / 0.14),
+      0 10px 28px rgb(0 0 0 / 0.22);
+  }
+
+  &:where(.liquid.dark *)::before {
+    opacity: 0.55;
+  }
+
+  &:where(.liquid *):hover {
+    --hl: 0.24;
+  }
+
+  &:where(.liquid[data-scrolling] *) {
+    -webkit-backdrop-filter: blur(8px) saturate(1.4) !important;
+    backdrop-filter: blur(8px) saturate(1.4) !important;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    &:where(.liquid *) {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+      background: rgb(var(--lg-surf) / 0.92) !important;
+    }
+  }
+}
+
+/* Edge-to-edge chrome (sidebar, header): same glass recipe as card-surface
+   but without rounding the panel's own corners. Adds nothing in classic
+   mode — only the liquid override applies. */
+@utility glass-chrome {
+  &:where(.liquid *) {
+    position: relative;
+    isolation: isolate;
+    border-color: transparent !important;
+    background:
+      radial-gradient(
+        340px circle at var(--mx, 50%) var(--my, 0%),
+        rgb(255 255 255 / var(--hl)),
+        transparent 70%
+      ),
+      linear-gradient(
+        150deg,
+        rgb(var(--lg-surf) / calc(var(--lg-a) + 0.1)),
+        rgb(var(--lg-surf) / calc(var(--lg-a) - 0.05)) 60%,
+        rgb(var(--lg-surf) / calc(var(--lg-a) + 0.02))
+      ) !important;
+    -webkit-backdrop-filter: blur(var(--lg-blur, 16px)) saturate(1.6) brightness(1.05);
+    backdrop-filter: blur(var(--lg-blur, 16px)) saturate(1.6) brightness(1.05);
+    box-shadow:
+      inset -1px 0 0 rgb(255 255 255 / 0.14),
+      0 0 24px rgb(var(--lg-shadow-color) / 0.12);
+    transition:
+      --hl 0.4s ease,
+      box-shadow 0.35s ease;
+  }
+
+  &:where(.liquid *):hover {
+    --hl: 0.18;
+  }
+
+  &:where(.liquid[data-scrolling] *) {
+    -webkit-backdrop-filter: blur(8px) saturate(1.3) !important;
+    backdrop-filter: blur(8px) saturate(1.3) !important;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    &:where(.liquid *) {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+      background: rgb(var(--lg-surf) / 0.95) !important;
+    }
+  }
+}
+
+@utility glass-wash {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  display: none;
+  background:
+    linear-gradient(180deg, var(--wash-1), var(--wash-2) 55%, var(--wash-3)),
+    var(--lg-bg-image, none) center / cover no-repeat,
+    radial-gradient(
+      60% 50% at 85% -10%,
+      color-mix(in srgb, var(--color-brand-400) 30%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      55% 45% at 0% 100%,
+      color-mix(in srgb, var(--color-brand-950) 40%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      40% 35% at 95% 90%,
+      color-mix(in srgb, #fcb701 18%, transparent),
+      transparent
+    );
+  background-color: var(--color-gray-50);
+
+  &:where(.liquid *) {
+    display: block;
+  }
+
+  &:where(.liquid.dark *) {
+    background-color: var(--color-gray-900);
   }
 }

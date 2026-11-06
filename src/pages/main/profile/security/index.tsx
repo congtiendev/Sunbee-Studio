@@ -6,10 +6,10 @@ import { Switch } from "@/components/ui/switch";
 import { PencilIcon } from "@/icons";
 import { cn } from "@/utils";
 import { useState } from "react";
-import ChangePasswordModal from "./change-password-modal";
-import { defaultSecuritySettings } from "./data";
-import SecurityItem from "./security-item";
-import type { ChangePasswordFormData, SecurityProps } from "./types";
+import ChangePasswordModal from "@/pages/main/profile/security/change-password-modal";
+import { defaultSecuritySettings } from "@/pages/main/profile/security/data";
+import SecurityItem from "@/pages/main/profile/security/security-item";
+import type { ChangePasswordFormData, SecurityProps } from "@/pages/main/profile/security/types";
 
 export default function SecuritySection({
   initialSettings = defaultSecuritySettings,
@@ -35,7 +35,7 @@ export default function SecuritySection({
     <>
       <Card
         className={cn(
-          "rounded-2xl border border-gray-200 bg-white p-5 lg:p-6 dark:border-gray-700 dark:bg-white/3",
+          "card-surface p-5 lg:p-6",
           className,
         )}
       >

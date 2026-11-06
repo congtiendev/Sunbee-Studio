@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 
-type ThemeMode = "light" | "dark" | "auto";
+export type ThemeMode = "light" | "dark" | "auto";
 type ResolvedTheme = "light" | "dark";
 
 type ThemeContextType = {

@@ -40,9 +40,9 @@ export default function LineChartOne() {
       legend: {
         show: false,
       },
-      colors: ["#465FFF"],
+      colors: ["#00B3EC"],
       chart: {
-        fontFamily: "Outfit, sans-serif",
+        fontFamily: "Comfortaa, sans-serif",
         height: 310,
         type: "area",
         toolbar: {
@@ -63,7 +63,7 @@ export default function LineChartOne() {
       markers: {
         size: 0,
         colors: ["#ffffff"],
-        strokeColors: ["#465FFF"],
+        strokeColors: ["#00B3EC"],
         strokeWidth: 2,
         hover: {
           size: 5,
@@ -100,14 +100,14 @@ export default function LineChartOne() {
             w.globals?.categoryLabels?.[dataPointIndex] ??
             w.config.xaxis?.categories?.[dataPointIndex] ??
             "";
-          const colors = w.config.colors ?? ["#465FFF"];
+          const colors = w.config.colors ?? ["#00B3EC"];
           const seriesList =
             (w.config.series as unknown as TooltipSeriesItem[]) ?? [];
 
           const rows = seriesList
             .map((s, idx) => {
               const val = chartSeries[idx]?.[dataPointIndex];
-              const color = colors[idx] ?? "#465FFF";
+              const color = colors[idx] ?? "#00B3EC";
               const formattedVal =
                 typeof val === "number" ? val.toLocaleString() : (val ?? "");
               return `
@@ -156,7 +156,7 @@ export default function LineChartOne() {
             gradient: {
               colorFrom:
                 theme === "dark" ? "rgba(255, 255, 255, 0.1)" : "#ffffff",
-              colorTo: "#9CB9FF",
+              colorTo: "#68D8FD",
               stops: [0, 100],
               opacityFrom: 1,
               opacityTo: 1,
@@ -166,7 +166,7 @@ export default function LineChartOne() {
         labels: {
           style: {
             fontSize: "12px",
-            fontFamily: "Outfit, sans-serif",
+            fontFamily: "Comfortaa, sans-serif",
             colors: theme === "dark" ? "#94A3B8" : "#6B7280",
           },
         },
@@ -185,7 +185,7 @@ export default function LineChartOne() {
           },
           style: {
             fontSize: "12px",
-            fontFamily: "Outfit, sans-serif",
+            fontFamily: "Comfortaa, sans-serif",
             colors: theme === "dark" ? "#94A3B8" : "#6B7280",
           },
         },

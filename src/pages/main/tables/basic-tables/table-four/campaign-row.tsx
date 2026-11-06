@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
-import type { Campaign } from "./types";
+import type { Campaign } from "@/pages/main/tables/basic-tables/table-four/types";
 
 export interface CampaignRowProps {
   campaign: Campaign;

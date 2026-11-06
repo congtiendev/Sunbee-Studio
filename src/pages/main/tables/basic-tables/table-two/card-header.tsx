@@ -12,7 +12,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { HorizontalSlideIcon, SearchIcon } from "@/icons";
-import type { DealStatus } from "./types";
+import type { DealStatus } from "@/pages/main/tables/basic-tables/table-two/types";
 
 export interface CardHeaderProps {
   searchQuery: string;

@@ -1,2 +1,2 @@
-export { cn } from "./cn";
-export { getInitials } from "./get-initials";
+export { cn } from "@/utils/cn";
+export { getInitials } from "@/utils/get-initials";

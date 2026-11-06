@@ -1,3 +1,4 @@
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -8,15 +9,21 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group";
+import { useAuth } from "@/contexts";
+import { apiClient } from "@/lib/api-client";
 import { EyeCloseIcon, EyeIcon } from "@/icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { signUpSchema, type SignUpFormData } from "./schema";
+import { useNavigate } from "react-router";
+import { signUpSchema, type SignUpFormData } from "@/pages/others/auth/sign-up/schema";
 
 export default function SignUpFormFields() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { refresh } = useAuth();
+  const navigate = useNavigate();
 
   const {
     register,
@@ -36,8 +43,19 @@ export default function SignUpFormFields() {
     mode: "onTouched",
   });
 
-  const handleFormSubmit = async (_data: SignUpFormData) => {
-    // handle submit action
+  const handleFormSubmit = async (data: SignUpFormData) => {
+    setSubmitError(null);
+    try {
+      await apiClient.auth.register({
+        email: data.email,
+        name: `${data.fname} ${data.lname}`.trim(),
+        password: data.password,
+      });
+      await refresh();
+      navigate("/");
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (
@@ -46,6 +64,12 @@ export default function SignUpFormFields() {
       className="space-y-5"
       noValidate
     >
+      {submitError && (
+        <Alert variant="destructive">
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field data-invalid={Boolean(errors.fname)}>
           <FieldLabel className="mb-1.5 block">

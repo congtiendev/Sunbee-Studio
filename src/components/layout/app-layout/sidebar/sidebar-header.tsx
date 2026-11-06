@@ -14,18 +14,18 @@ export default function AppSidebarHeader({
         {showContent ? (
           <>
             <img
-              className="h-10 w-37.5 dark:hidden"
-              src="/images/logo/logo.svg"
+              className="h-10 w-auto dark:hidden"
+              src="/images/logo/logo.png"
               alt="Logo"
             />
             <img
-              className="hidden h-10 w-37.5 dark:block"
-              src="/images/logo/logo-dark.svg"
+              className="hidden h-10 w-auto dark:block"
+              src="/images/logo/logo-dark.png"
               alt="Logo"
             />
           </>
         ) : (
-          <img src="/images/logo/logo-icon.svg" alt="Logo" className="size-8" />
+          <img src="/images/logo/logo-icon.png" alt="Logo" className="size-8" />
         )}
       </Link>
     </SidebarHeader>

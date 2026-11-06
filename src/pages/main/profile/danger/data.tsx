@@ -1,5 +1,5 @@
 import { LogOutIcon, TrashBinIcon } from "@/icons";
-import type { DangerActionItem } from "./types";
+import type { DangerActionItem } from "@/pages/main/profile/danger/types";
 
 export const defaultDangerActions: DangerActionItem[] = [
   {

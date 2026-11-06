@@ -5,8 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { TrashBinIcon } from "@/icons";
 import { cn } from "@/utils";
-import type { CrmOrder } from "./types";
-import { statusBadgeConfig } from "./utils";
+import type { CrmOrder } from "@/pages/main/tables/basic-tables/table-two/types";
+import { statusBadgeConfig } from "@/pages/main/tables/basic-tables/table-two/utils";
 
 export interface OrderRowProps {
   order: CrmOrder;

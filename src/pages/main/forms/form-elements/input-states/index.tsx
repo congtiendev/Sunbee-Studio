@@ -1,7 +1,7 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import DisabledInput from "./disabled-input";
-import ErrorInput from "./error-input";
-import SuccessInput from "./success-input";
+import DisabledInput from "@/pages/main/forms/form-elements/input-states/disabled-input";
+import ErrorInput from "@/pages/main/forms/form-elements/input-states/error-input";
+import SuccessInput from "@/pages/main/forms/form-elements/input-states/success-input";
 
 export default function InputStates() {
   return (

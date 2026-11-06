@@ -6,9 +6,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/utils";
-import { tableData as defaultTableData } from "./data";
-import TableOneRow from "./table-one-row";
-import type { TableOneProps } from "./types";
+import { tableData as defaultTableData } from "@/pages/main/tables/basic-tables/table-one/data";
+import TableOneRow from "@/pages/main/tables/basic-tables/table-one/table-one-row";
+import type { TableOneProps } from "@/pages/main/tables/basic-tables/table-one/types";
 
 export default function TableOne({
   data = defaultTableData,

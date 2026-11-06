@@ -2,16 +2,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/utils";
 import { type PaginationState, useTable } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
-import CardFooter from "./card-footer";
-import CardHeader from "./card-header";
-import { latestTransactionsData } from "./data";
-import TransactionTable from "./transaction-table";
-import type { TableThreeProps, Transaction } from "./types";
+import CardFooter from "@/pages/main/tables/basic-tables/table-three/card-footer";
+import CardHeader from "@/pages/main/tables/basic-tables/table-three/card-header";
+import { latestTransactionsData } from "@/pages/main/tables/basic-tables/table-three/data";
+import TransactionTable from "@/pages/main/tables/basic-tables/table-three/transaction-table";
+import type { TableThreeProps, Transaction } from "@/pages/main/tables/basic-tables/table-three/types";
 import {
   tableThreeColumns,
   tableThreeFeatures,
   tableThreeGlobalFilterFn,
-} from "./utils";
+} from "@/pages/main/tables/basic-tables/table-three/utils";
 
 export default function TableThree({
   data = latestTransactionsData,
@@ -72,7 +72,7 @@ export default function TableThree({
   return (
     <Card
       className={cn(
-        "w-full max-w-full min-w-0 gap-0 overflow-hidden rounded-2xl border border-gray-200 bg-white p-0 sm:p-0 dark:border-gray-800 dark:bg-white/3",
+        "card-surface w-full max-w-full min-w-0 gap-0 overflow-hidden p-0 sm:p-0",
         className,
       )}
     >

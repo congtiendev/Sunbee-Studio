@@ -8,9 +8,9 @@ import {
 } from "@/components/ui/table";
 import { HorizontalSlideIcon } from "@/icons";
 import { cn } from "@/utils";
-import { recentOrdersData } from "./data";
-import OrderRow from "./order-row";
-import type { TableFiveProps } from "./types";
+import { recentOrdersData } from "@/pages/main/tables/basic-tables/table-five/data";
+import OrderRow from "@/pages/main/tables/basic-tables/table-five/order-row";
+import type { TableFiveProps } from "@/pages/main/tables/basic-tables/table-five/types";
 
 export default function TableFive({
   data = recentOrdersData,
@@ -19,7 +19,7 @@ export default function TableFive({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pt-4 pb-3 sm:px-6 dark:border-gray-800 dark:bg-white/3",
+        "card-surface overflow-hidden px-4 pt-4 pb-3 sm:px-6",
         className,
       )}
     >

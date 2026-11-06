@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
-import type { Order } from "./types";
+import type { Order } from "@/pages/main/tables/basic-tables/table-one/types";
 
 export interface TableOneRowProps {
   order: Order;

@@ -1,4 +1,4 @@
-import type { AnalyticsOrder } from "./types";
+import type { AnalyticsOrder } from "@/pages/main/tables/basic-tables/table-five/types";
 
 export const recentOrdersData: AnalyticsOrder[] = [
   {

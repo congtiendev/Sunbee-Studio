@@ -6,8 +6,8 @@ import {
 import { useTranslations } from "@/i18n";
 import { HorizontalDotsIcon } from "@/icons";
 import { cn } from "@/utils";
-import SidebarMenuItem from "./sidebar-menu-item";
-import type { MenuType, NavItem } from "./types";
+import SidebarMenuItem from "@/components/layout/app-layout/sidebar/sidebar-menu-item";
+import type { MenuType, NavItem } from "@/components/layout/app-layout/sidebar/types";
 
 interface SidebarNavGroupProps {
   labelKey: string;

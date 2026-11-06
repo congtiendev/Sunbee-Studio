@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import i18n from "./config";
-import { type Locale, isLocale, routing } from "./routing";
-import type { Namespace, TranslationValues, Translator } from "./types";
+import i18n from "@/i18n/config";
+import { type Locale, isLocale, routing } from "@/i18n/routing";
+import type { Namespace, TranslationValues, Translator } from "@/i18n/types";
 
 /** Drop-in for next-intl `useTranslations(namespace?)`. */
 export function useTranslations(namespace?: Namespace): Translator {

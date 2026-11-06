@@ -1,5 +1,5 @@
-appId: com.sunbee.editor
-productName: Sunbee Editor
+appId: com.sunbee.studio
+productName: Sunbee Studio
 publish:
   provider: github
   owner: congtiendev
@@ -9,18 +9,21 @@ directories:
   buildResources: build
 files:
   - dist/**
+  - dist-server/**
   - dist-electron/**
   - build/icon.png
   - package.json
 asarUnpack:
   - build/icon.png
+  - node_modules/better-sqlite3/**
+npmRebuild: true
 linux:
   target:
     - AppImage
     - deb
   category: Utility
   icon: build/icon.png
-  synopsis: Sunbee Editor
+  synopsis: Sunbee Studio
   syncDesktopName: true
 win:
   target:

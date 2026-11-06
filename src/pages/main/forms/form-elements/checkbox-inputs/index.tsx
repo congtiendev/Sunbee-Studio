@@ -1,6 +1,6 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import DefaultCheckbox from "./default-checkbox";
-import LabeledCheckbox from "./labeled-checkbox";
+import DefaultCheckbox from "@/pages/main/forms/form-elements/checkbox-inputs/default-checkbox";
+import LabeledCheckbox from "@/pages/main/forms/form-elements/checkbox-inputs/labeled-checkbox";
 
 export default function CheckboxInputs() {
   return (

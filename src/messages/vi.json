@@ -1,0 +1,1300 @@
+{
+  "common": {
+    "home": "Trang chủ",
+    "edit": "Chỉnh sửa",
+    "close": "Đóng",
+    "saveChanges": "Lưu thay đổi",
+    "viewMore": "Xem thêm",
+    "delete": "Xoá",
+    "filter": "Lọc",
+    "seeAll": "Xem tất cả",
+    "confirm": "Xác nhận",
+    "cancel": "Huỷ"
+  },
+  "sidebar": {
+    "groups": {
+      "menu": "Menu",
+      "support": "Hỗ trợ",
+      "others": "Khác"
+    },
+    "badges": {
+      "new": "mới",
+      "pro": "pro"
+    },
+    "items": {
+      "dashboard": "Tổng quan",
+      "templateDemos": "Trang mẫu",
+      "ecommerceHome": "Thương mại điện tử",
+      "analytics": "Phân tích",
+      "marketing": "Marketing",
+      "crm": "CRM",
+      "stocks": "Chứng khoán",
+      "saas": "SaaS",
+      "logistics": "Vận chuyển",
+      "ai": "AI",
+      "sales": "Bán hàng",
+      "finance": "Tài chính",
+      "aiAssistant": "Trợ lý AI",
+      "textGenerator": "Sinh văn bản",
+      "imageGenerator": "Sinh hình ảnh",
+      "codeGenerator": "Sinh mã nguồn",
+      "videoGenerator": "Sinh video",
+      "aiSettings": "Cài đặt AI",
+      "ecommerce": "Thương mại điện tử",
+      "products": "Sản phẩm",
+      "addProduct": "Thêm sản phẩm",
+      "billing": "Thanh toán",
+      "invoices": "Hoá đơn",
+      "singleInvoice": "Chi tiết hoá đơn",
+      "createInvoice": "Tạo hoá đơn",
+      "transactions": "Giao dịch",
+      "singleTransaction": "Chi tiết giao dịch",
+      "calendar": "Lịch",
+      "userProfile": "Hồ sơ người dùng",
+      "task": "Công việc",
+      "taskList": "Danh sách",
+      "kanban": "Kanban",
+      "forms": "Biểu mẫu",
+      "formElements": "Thành phần biểu mẫu",
+      "formLayout": "Bố cục biểu mẫu",
+      "tables": "Bảng dữ liệu",
+      "basicTables": "Bảng cơ bản",
+      "dataTables": "Bảng dữ liệu nâng cao",
+      "pages": "Trang",
+      "fileManager": "Quản lý tệp",
+      "pricingTables": "Bảng giá",
+      "faq": "Câu hỏi thường gặp",
+      "apiKeys": "API Key",
+      "integrations": "Tích hợp",
+      "blankPage": "Trang trống",
+      "error404": "Lỗi 404",
+      "error500": "Lỗi 500",
+      "error503": "Lỗi 503",
+      "comingSoon": "Sắp ra mắt",
+      "maintenance": "Bảo trì",
+      "successPage": "Thành công",
+      "layouts": "Bố cục",
+      "layoutOne": "Bố cục 1",
+      "layoutTwo": "Bố cục 2",
+      "layoutThree": "Bố cục 3",
+      "layoutFour": "Bố cục 4",
+      "layoutFive": "Bố cục 5",
+      "layoutSix": "Bố cục 6",
+      "charts": "Biểu đồ",
+      "lineChart": "Biểu đồ đường",
+      "barChart": "Biểu đồ cột",
+      "pieChart": "Biểu đồ tròn",
+      "radarChart": "Biểu đồ radar",
+      "radialChart": "Biểu đồ hướng tâm",
+      "maps": "Bản đồ",
+      "mapsGoogle": "Bản đồ",
+      "vectorMap": "Bản đồ vector",
+      "uiElements": "Thành phần giao diện",
+      "alerts": "Thông báo",
+      "avatar": "Ảnh đại diện",
+      "badge": "Huy hiệu",
+      "breadcrumb": "Breadcrumb",
+      "buttons": "Nút bấm",
+      "buttonsGroup": "Nhóm nút bấm",
+      "cards": "Thẻ",
+      "carousel": "Carousel",
+      "dropdowns": "Dropdown",
+      "images": "Hình ảnh",
+      "links": "Liên kết",
+      "listView": "Danh sách",
+      "dialogs": "Hộp thoại",
+      "notificationUi": "Thông báo",
+      "pagination": "Phân trang",
+      "popovers": "Popover",
+      "progressbar": "Thanh tiến trình",
+      "ribbons": "Ribbon",
+      "spinners": "Spinner",
+      "tabs": "Tab",
+      "tooltips": "Tooltip",
+      "videos": "Video",
+      "authentication": "Xác thực",
+      "signIn": "Đăng nhập",
+      "signUp": "Đăng ký",
+      "resetPassword": "Đặt lại mật khẩu",
+      "twoStepVerification": "Xác minh hai bước",
+      "chat": "Trò chuyện",
+      "supportMenu": "Hỗ trợ",
+      "supportList": "Danh sách hỗ trợ",
+      "supportReply": "Phản hồi hỗ trợ",
+      "email": "Email",
+      "inbox": "Hộp thư",
+      "inboxDetails": "Chi tiết",
+      "hr": "Nhân sự",
+      "emptyState": "Trạng thái trống",
+      "variants01": "Biến thể 01",
+      "variants02": "Biến thể 02",
+      "variants03": "Biến thể 03",
+      "variants04": "Biến thể 04",
+      "variants05": "Biến thể 05",
+      "videoStudio": "Video Studio",
+      "videoStudioCreate": "Tạo video",
+      "videoStudioProjects": "Quản lí dự án",
+      "videoStudioCategories": "Quản lí danh mục",
+      "settings": "Cài đặt",
+      "databaseAdmin": "Quản trị dữ liệu"
+    }
+  },
+  "header": {
+    "searchPlaceholder": "Tìm kiếm hoặc nhập lệnh...",
+    "toggleSidebar": "Ẩn/hiện thanh bên",
+    "notifications": {
+      "title": "Thông báo",
+      "requestsPermission": "yêu cầu quyền thay đổi",
+      "project": "Dự án",
+      "minAgo": "{count} phút trước",
+      "hrAgo": "{count} giờ trước",
+      "viewAll": "Xem tất cả thông báo"
+    }
+  },
+  "userDropdown": {
+    "editProfile": "Chỉnh sửa hồ sơ",
+    "accountSettings": "Cài đặt tài khoản",
+    "support": "Hỗ trợ",
+    "language": "Ngôn ngữ",
+    "signOut": "Đăng xuất"
+  },
+  "ecommerce": {
+    "title": "Bảng điều khiển thương mại điện tử",
+    "metrics": {
+      "customers": "Khách hàng",
+      "orders": "Đơn hàng"
+    },
+    "months": {
+      "jan": "Th1",
+      "feb": "Th2",
+      "mar": "Th3",
+      "apr": "Th4",
+      "may": "Th5",
+      "jun": "Th6",
+      "jul": "Th7",
+      "aug": "Th8",
+      "sep": "Th9",
+      "oct": "Th10",
+      "nov": "Th11",
+      "dec": "Th12"
+    },
+    "monthlySales": {
+      "title": "Doanh số theo tháng",
+      "series": "Doanh số"
+    },
+    "monthlyTarget": {
+      "title": "Chỉ tiêu tháng",
+      "subtitle": "Chỉ tiêu bạn đặt ra cho mỗi tháng",
+      "earned": "Hôm nay bạn đạt {amount}, cao hơn tháng trước. Tiếp tục phát huy nhé!",
+      "target": "Chỉ tiêu",
+      "revenue": "Doanh thu",
+      "today": "Hôm nay"
+    },
+    "statistics": {
+      "title": "Thống kê",
+      "subtitle": "Chỉ tiêu bạn đặt ra cho mỗi tháng",
+      "overview": "Tổng quan",
+      "sales": "Doanh số",
+      "revenue": "Doanh thu",
+      "monthly": "Theo tháng",
+      "quarterly": "Theo quý",
+      "annually": "Theo năm",
+      "selectDateRange": "Chọn khoảng thời gian"
+    },
+    "recentOrders": {
+      "title": "Đơn hàng gần đây",
+      "products": "Sản phẩm",
+      "category": "Danh mục",
+      "price": "Giá",
+      "status": "Trạng thái",
+      "variants": "{count, plural, one {# biến thể} other {# biến thể}}",
+      "categories": {
+        "laptop": "Laptop",
+        "watch": "Đồng hồ",
+        "smartphone": "Điện thoại",
+        "electronics": "Điện tử",
+        "accessories": "Phụ kiện"
+      },
+      "statuses": {
+        "delivered": "Đã giao",
+        "pending": "Đang chờ",
+        "canceled": "Đã huỷ"
+      }
+    },
+    "demographic": {
+      "title": "Nhân khẩu học khách hàng",
+      "subtitle": "Số lượng khách hàng theo quốc gia",
+      "customers": "{count} khách hàng",
+      "usa": "Mỹ",
+      "france": "Pháp",
+      "yemen": "Yemen",
+      "uk": "Vương quốc Anh"
+    }
+  },
+  "analytics": {
+    "metrics": {
+      "uniqueVisitors": "Khách truy cập duy nhất",
+      "totalPageviews": "Tổng lượt xem trang",
+      "bounceRate": "Tỷ lệ thoát",
+      "visitDuration": "Thời lượng truy cập",
+      "vsLastMonth": "So với tháng trước"
+    },
+    "barChart": {
+      "title": "Phân tích",
+      "subtitle": "Phân tích khách truy cập 30 ngày qua",
+      "twelveMonths": "12 tháng",
+      "thirtyDays": "30 ngày",
+      "sevenDays": "7 ngày",
+      "twentyFourHours": "24 giờ",
+      "visitors": "Khách truy cập"
+    },
+    "topChannels": {
+      "title": "Kênh hàng đầu",
+      "source": "Nguồn",
+      "visitors": "Khách truy cập",
+      "channelsReport": "Báo cáo kênh"
+    },
+    "topPages": {
+      "title": "Trang hàng đầu",
+      "source": "Nguồn",
+      "pageview": "Lượt xem",
+      "channelsReport": "Báo cáo kênh"
+    },
+    "activeUsers": {
+      "title": "Người dùng hoạt động",
+      "liveVisitors": "Khách truy cập trực tiếp",
+      "avgDaily": "TB. theo ngày",
+      "avgWeekly": "TB. theo tuần",
+      "avgMonthly": "TB. theo tháng"
+    },
+    "acquisitionChannels": {
+      "title": "Kênh thu hút",
+      "direct": "Trực tiếp",
+      "organic": "Tự nhiên",
+      "referral": "Giới thiệu",
+      "total": "Tổng: 120k"
+    },
+    "session": {
+      "title": "Phiên truy cập theo thiết bị",
+      "total": "Tổng"
+    },
+    "recentOrders": {
+      "title": "Đơn hàng gần đây",
+      "products": "Sản phẩm",
+      "category": "Danh mục",
+      "country": "Quốc gia",
+      "cr": "CR",
+      "value": "Giá trị",
+      "categories": {
+        "uiKits": "UI Kit",
+        "templates": "Mẫu giao diện",
+        "saas": "SaaS"
+      },
+      "crDashboard": "Bảng điều khiển"
+    }
+  },
+  "notFound": {
+    "error": "LỖI",
+    "message": "Không tìm thấy trang bạn đang truy cập!",
+    "backHome": "Về trang chủ"
+  },
+  "marketing": {
+    "metrics": {
+      "avgClientRating": "Đánh giá trung bình",
+      "instagramFollowers": "Người theo dõi Instagram",
+      "totalRevenue": "Tổng doanh thu",
+      "vsLastMonth": "So với tháng trước"
+    },
+    "impressionChart": {
+      "title": "Lượt hiển thị & lưu lượng dữ liệu",
+      "totalRevenue": "Tổng doanh thu",
+      "sales": "Doanh số",
+      "revenue": "Doanh thu",
+      "selectDateRange": "Chọn khoảng thời gian"
+    },
+    "featuredCampaign": {
+      "title": "Chiến dịch nổi bật",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá",
+      "products": "Sản phẩm",
+      "campaign": "Chiến dịch",
+      "status": "Trạng thái",
+      "adsCampaign": "Chiến dịch quảng cáo",
+      "campaigns": {
+        "growBrand": "Phát triển thương hiệu của bạn bằng...",
+        "betterIdeas": "Tạo ý tưởng tốt hơn...",
+        "increaseTraffic": "Tăng lưu lượng truy cập website..."
+      },
+      "statuses": {
+        "success": "Thành công",
+        "pending": "Đang chờ",
+        "failed": "Thất bại"
+      }
+    },
+    "trafficStats": {
+      "title": "Thống kê lưu lượng",
+      "today": "Hôm nay",
+      "week": "Tuần",
+      "month": "Tháng",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá",
+      "newSubscribers": "Người đăng ký mới",
+      "conversionRate": "Tỷ lệ chuyển đổi",
+      "pageBounceRate": "Tỷ lệ thoát trang",
+      "thenLastWeek": "so với tuần trước",
+      "thanYesterday": "so với hôm qua",
+      "thanLastMonth": "so với tháng trước",
+      "newSales": "Doanh số mới"
+    },
+    "trafficSource": {
+      "title": "Nguồn truy cập hàng đầu",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá",
+      "viewAll": "Xem tất cả"
+    }
+  },
+  "crm": {
+    "metrics": {
+      "activeDeal": "Giao dịch đang hoạt động",
+      "revenueTotal": "Tổng doanh thu",
+      "closedDeals": "Giao dịch đã chốt",
+      "lastMonth": "tháng trước"
+    },
+    "statistics": {
+      "title": "Thống kê",
+      "subtitle": "Chỉ tiêu bạn đặt ra cho mỗi tháng",
+      "avgYearlyProfit": "Lợi nhuận trung bình/năm",
+      "sales": "Doanh số",
+      "revenue": "Doanh thu",
+      "monthly": "Theo tháng",
+      "quarterly": "Theo quý",
+      "annually": "Theo năm"
+    },
+    "estimatedRevenue": {
+      "title": "Doanh thu ước tính",
+      "subtitle": "Chỉ tiêu bạn đặt ra cho mỗi tháng",
+      "goals": "Mục tiêu tháng 6",
+      "marketing": "Marketing",
+      "sales": "Bán hàng"
+    },
+    "salesCategory": {
+      "title": "Danh mục bán hàng",
+      "affiliate": "Tiếp thị liên kết",
+      "direct": "Trực tiếp",
+      "adsense": "Adsense",
+      "affiliateProgram": "Chương trình liên kết",
+      "directBuy": "Mua trực tiếp",
+      "products": "Sản phẩm",
+      "total": "Tổng",
+      "usedOf": "Đã dùng trên"
+    },
+    "upcomingSchedule": {
+      "title": "Lịch trình sắp tới",
+      "schedules": {
+        "item1": {
+          "title": "Hội thảo phân tích kinh doanh",
+          "description": "Khám phá tương lai dựa trên dữ liệu +6 mục khác"
+        },
+        "item2": {
+          "title": "Business Sprint",
+          "description": "Kỹ thuật từ Business Sprint +2 mục khác"
+        },
+        "item3": {
+          "title": "Họp đánh giá khách hàng",
+          "description": "Thông tin từ buổi họp đánh giá khách hàng +8 mục khác"
+        }
+      }
+    },
+    "recentOrders": {
+      "title": "Đơn hàng gần đây",
+      "searchPlaceholder": "Tìm kiếm...",
+      "dealId": "Mã giao dịch",
+      "customer": "Khách hàng",
+      "productService": "Sản phẩm/Dịch vụ",
+      "dealValue": "Giá trị giao dịch",
+      "closeDate": "Ngày chốt",
+      "status": "Trạng thái",
+      "action": "Thao tác",
+      "products": {
+        "softwareLicense": "Bản quyền phần mềm",
+        "cloudHosting": "Lưu trữ đám mây",
+        "webDomain": "Tên miền",
+        "sslCertificate": "Chứng chỉ SSL",
+        "premiumSupport": "Hỗ trợ cao cấp"
+      },
+      "statuses": {
+        "complete": "Hoàn tất",
+        "pending": "Đang chờ",
+        "cancel": "Huỷ"
+      },
+      "noOrders": "Không tìm thấy đơn hàng",
+      "noOrdersDescription": "Hãy thử điều chỉnh tìm kiếm hoặc bộ lọc để tìm thứ bạn cần."
+    }
+  },
+  "stocks": {
+    "title": "Chứng khoán",
+    "dividend": {
+      "title": "Cổ tức",
+      "series": "Cổ tức",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá"
+    },
+    "portfolioPerformance": {
+      "title": "Hiệu suất danh mục",
+      "subtitle": "Thống kê hiệu suất của bạn theo từng tháng",
+      "series": "Hiệu suất danh mục",
+      "monthly": "Theo tháng",
+      "quarterly": "Theo quý",
+      "annually": "Theo năm"
+    },
+    "trendingStocks": {
+      "title": "Cổ phiếu nổi bật",
+      "shortStock": "Bán khống",
+      "buyStock": "Mua cổ phiếu"
+    },
+    "watchlist": {
+      "title": "Danh sách theo dõi",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá"
+    },
+    "latestTransactions": {
+      "title": "Giao dịch gần nhất",
+      "searchPlaceholder": "Tìm kiếm...",
+      "table": {
+        "name": "Tên",
+        "date": "Ngày",
+        "price": "Giá",
+        "category": "Danh mục",
+        "status": "Trạng thái"
+      },
+      "actions": {
+        "bought": "Đã mua {symbol}",
+        "sell": "Bán {symbol}"
+      },
+      "categories": {
+        "finance": "Tài chính",
+        "technology": "Công nghệ",
+        "ecommerce": "Thương mại điện tử",
+        "media": "Mạng xã hội"
+      },
+      "statuses": {
+        "success": "Thành công",
+        "pending": "Đang chờ",
+        "failed": "Thất bại"
+      }
+    }
+  },
+  "saas": {
+    "title": "SaaS",
+    "metrics": {
+      "overview": "Tổng quan",
+      "totalRevenue": "Tổng doanh thu",
+      "activeUsers": "Người dùng hoạt động",
+      "clv": "Giá trị vòng đời khách hàng",
+      "cac": "Chi phí thu hút khách hàng",
+      "weekly": "Theo tuần",
+      "monthly": "Theo tháng",
+      "yearly": "Theo năm",
+      "filter": "Lọc"
+    },
+    "churnRate": {
+      "title": "Tỷ lệ rời bỏ",
+      "subtitle": "Hạ xuống gói miễn phí",
+      "thanLastWeek": "so với tuần trước",
+      "series": "Tỷ lệ rời bỏ",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá"
+    },
+    "userGrowth": {
+      "title": "Tăng trưởng người dùng",
+      "subtitle": "Đăng ký mới từ website + ứng dụng",
+      "thanLastWeek": "so với tuần trước",
+      "series": "Doanh thu",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá"
+    },
+    "conversionFunnel": {
+      "title": "Phễu chuyển đổi",
+      "total": "Tổng: 120k",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá",
+      "series": {
+        "adImpression": "Lượt hiển thị quảng cáo",
+        "adImpressions": "Lượt hiển thị quảng cáo",
+        "websiteSession": "Phiên truy cập website",
+        "appDownload": "Lượt tải ứng dụng",
+        "newUsers": "Người dùng mới"
+      }
+    },
+    "recentInvoices": {
+      "title": "Hoá đơn gần đây",
+      "table": {
+        "serialNo": "Số thứ tự:",
+        "closeDate": "Ngày chốt",
+        "user": "Người dùng",
+        "amount": "Số tiền",
+        "status": "Trạng thái"
+      },
+      "statuses": {
+        "complete": "Hoàn tất",
+        "pending": "Đang chờ",
+        "cancelled": "Đã huỷ"
+      }
+    },
+    "productPerformance": {
+      "title": "Hiệu suất sản phẩm",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá",
+      "tabs": {
+        "dailySales": "Doanh số theo ngày",
+        "onlineSales": "Doanh số online",
+        "newUsers": "Người dùng mới"
+      },
+      "digitalProduct": "Sản phẩm số",
+      "physicalProduct": "Sản phẩm vật lý",
+      "avgDailySales": "Doanh số trung bình/ngày",
+      "totalOnlineSales": "Tổng doanh số online",
+      "addedLastMonth": "Thêm vào tháng trước",
+      "totalNewUsers": "Tổng người dùng mới",
+      "series": {
+        "sales": "Doanh số",
+        "revenue": "Doanh thu"
+      }
+    },
+    "activities": {
+      "title": "Hoạt động",
+      "viewMore": "Xem thêm",
+      "delete": "Xoá",
+      "newInvoice": "Hoá đơn mới",
+      "createdInvoice": "đã tạo hoá đơn"
+    }
+  },
+  "logistics": {
+    "title": "Vận chuyển",
+    "metrics": {
+      "totalOrders": "Tổng đơn hàng",
+      "ordersInTransit": "Đơn đang vận chuyển"
+    },
+    "deliveryStatistics": {
+      "title": "Thống kê giao hàng",
+      "subtitle": "Tổng số lượt giao hàng: 70,5K",
+      "monthly": "Theo tháng",
+      "yearly": "Theo năm",
+      "shipment": "Lô hàng",
+      "inTransit": "Đang vận chuyển",
+      "delivery": "Giao hàng"
+    },
+    "revenueEarned": {
+      "totalRevenue": "Tổng doanh thu đạt được",
+      "shippedQuantities": "Số lượng đã giao",
+      "newSales": "Doanh số mới"
+    },
+    "deliveryVehicle": {
+      "title": "Phương tiện giao hàng",
+      "subtitle": "Phương tiện đang hoạt động trên đường",
+      "thanLastWeek": "so với tuần trước",
+      "onRoute": "Đang trên đường"
+    },
+    "trackingDelivery": {
+      "title": "Theo dõi giao hàng",
+      "subtitle": "Lịch sử giao hàng xem gần nhất"
+    },
+    "trackingProgress": {
+      "trackingId": "Mã theo dõi",
+      "inTransit": "Đang vận chuyển",
+      "pickedUp": "Đã lấy hàng",
+      "delivered": "Đã giao"
+    },
+    "deliveryMan": {
+      "courier": "Người giao hàng"
+    },
+    "deliveriesActivity": {
+      "title": "Hoạt động giao hàng",
+      "subtitle": "Theo dõi hoạt động vận chuyển gần đây",
+      "tabs": {
+        "all": "Tất cả lô hàng",
+        "delivered": "Đã giao",
+        "inTransit": "Đang vận chuyển",
+        "pending": "Đang chờ",
+        "processing": "Đang xử lý"
+      },
+      "filter": {
+        "button": "Lọc",
+        "category": "Danh mục",
+        "searchCategory": "Tìm danh mục...",
+        "company": "Công ty",
+        "searchCompany": "Tìm công ty...",
+        "apply": "Áp dụng"
+      },
+      "table": {
+        "orderId": "Mã đơn hàng",
+        "category": "Danh mục",
+        "company": "Công ty",
+        "arrivalTime": "Thời gian đến",
+        "route": "Tuyến đường",
+        "price": "Giá",
+        "status": "Trạng thái"
+      },
+      "categories": {
+        "furniture": "Nội thất",
+        "clothing": "Quần áo",
+        "books": "Sách",
+        "automotive": "Ô tô",
+        "electronics": "Điện tử",
+        "health": "Sức khoẻ",
+        "toys": "Đồ chơi",
+        "kitchen": "Nhà bếp",
+        "beauty": "Làm đẹp",
+        "sports": "Thể thao"
+      },
+      "statuses": {
+        "delivered": "Đã giao",
+        "inTransit": "Đang vận chuyển",
+        "pending": "Đang chờ",
+        "processing": "Đang xử lý",
+        "canceled": "Đã huỷ"
+      },
+      "pagination": {
+        "showing": "Hiển thị",
+        "to": "đến",
+        "of": "trong",
+        "page": "Trang"
+      }
+    }
+  },
+  "aiDashboard": {
+    "stats": {
+      "users": "Người dùng",
+      "projects": "Dự án",
+      "revenue": "Doanh thu",
+      "paidUsers": "Người dùng trả phí",
+      "last30Days": "30 ngày qua"
+    },
+    "userRevenue": {
+      "title": "Thống kê người dùng & doanh thu",
+      "subtitle": "Trực quan hoá tiến độ và mức độ tương tác theo từng tháng.",
+      "users": "Người dùng",
+      "revenue": "Doanh thu",
+      "monthly": "Theo tháng",
+      "quarterly": "Theo quý",
+      "annually": "Theo năm"
+    },
+    "apiToken": {
+      "title": "Mức sử dụng API Token",
+      "totalApiTokenUsed": "Tổng API Token đã dùng",
+      "tokenUsed": "Token đã dùng",
+      "configuredKey": "{count, plural, one {# API key đã cấu hình} other {# API key đã cấu hình}}",
+      "viewAllUsageDetails": "Xem chi tiết sử dụng"
+    },
+    "userAnalytics": {
+      "title": "Phân tích người dùng",
+      "subtitle": "Thông tin chi tiết người dùng nền tảng",
+      "totalUsers": "Tổng người dùng",
+      "freeUsers": "Người dùng miễn phí",
+      "paidUsers": "Người dùng trả phí",
+      "ofTotalUser": "trên tổng người dùng",
+      "thisMonth": "Tháng này",
+      "fromLastMonth": "so với tháng trước",
+      "thisYear": "Năm nay",
+      "fromLastYear": "so với năm trước"
+    },
+    "projectAnalytics": {
+      "title": "Phân tích dự án",
+      "subtitle": "Xem thông tin chi tiết về dự án",
+      "totalProjects": "Tổng dự án",
+      "today": "Hôm nay",
+      "yesterday": "Hôm qua",
+      "projectCreated": "Dự án đã tạo",
+      "thisMonth": "Tháng này",
+      "fromLastMonth": "so với tháng trước",
+      "thisYear": "Năm nay",
+      "fromLastYear": "so với năm trước"
+    },
+    "recentTransactions": {
+      "title": "Giao dịch gần đây",
+      "searchPlaceholder": "Tìm kiếm...",
+      "filter": "Lọc",
+      "noTransactions": "Không tìm thấy giao dịch",
+      "noTransactionsDescription": "Hãy thử điều chỉnh tìm kiếm hoặc bộ lọc để tìm thứ bạn cần.",
+      "table": {
+        "paidBy": "Thanh toán bởi",
+        "packageName": "Tên gói",
+        "price": "Giá",
+        "paidDate": "Ngày thanh toán",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "packages": {
+        "starterMonthly": "Starter - Theo tháng",
+        "growthYearly": "Growth - Theo năm",
+        "premiumMonthly": "Premium - Theo tháng"
+      },
+      "statuses": {
+        "active": "Đang hoạt động",
+        "expired": "Hết hạn"
+      },
+      "pagination": {
+        "previous": "Trước",
+        "next": "Sau",
+        "pageOf": "Trang {current}/{total}"
+      }
+    }
+  },
+  "sales": {
+    "salesStats": {
+      "title": "Bảng điều khiển bán hàng",
+      "subtitle": "Theo dõi doanh thu, hiệu suất và tăng trưởng bán hàng theo thời gian thực",
+      "selectDateRange": "Chọn khoảng thời gian",
+      "export": "Xuất dữ liệu",
+      "totalRevenue": "Tổng doanh thu",
+      "totalSales": "Tổng doanh số",
+      "conversionRate": "Tỷ lệ chuyển đổi",
+      "refundRate": "Tỷ lệ hoàn tiền",
+      "vsLastMonth": "so với tháng trước",
+      "newSales": "Doanh số mới"
+    },
+    "userRevenueStats": {
+      "title": "Thống kê người dùng & doanh thu",
+      "subtitle": "Trực quan hoá tiến độ và mức độ tương tác theo từng tháng.",
+      "daily": "Theo ngày",
+      "weekly": "Theo tuần",
+      "monthly": "Theo tháng",
+      "onlineSales": "Doanh số online",
+      "offlineSales": "Doanh số offline"
+    },
+    "revenueChart": {
+      "title": "Phân tích doanh thu",
+      "subtitle": "Thông tin chi tiết & tổng quan hiệu suất doanh thu",
+      "daily": "Theo ngày",
+      "weekly": "Theo tuần",
+      "monthly": "Theo tháng",
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "userRetention": {
+      "title": "Giữ chân người dùng",
+      "subtitle": "Mức độ tương tác của người dùng theo thời gian",
+      "increasedVsLastWeek": "Tăng so với tuần trước"
+    },
+    "salesByChannel": {
+      "title": "Doanh số theo kênh",
+      "subtitle": "Tổng quan hiệu suất theo kênh",
+      "increasedVsLastWeek": "Tăng so với tuần trước",
+      "channels": {
+        "website": "Website",
+        "email": "Email",
+        "socialMedia": "Mạng xã hội"
+      },
+      "table": {
+        "channels": "Kênh",
+        "metric": "Chỉ số",
+        "total": "Tổng"
+      }
+    },
+    "salesByCountry": {
+      "title": "Doanh số theo quốc gia",
+      "subtitle": "Tổng quan doanh số theo từng quốc gia",
+      "countries": {
+        "usa": "Mỹ",
+        "france": "Pháp",
+        "japan": "Nhật Bản",
+        "egypt": "Ai Cập",
+        "germany": "Đức"
+      }
+    },
+    "topProducts": {
+      "title": "Sản phẩm bán chạy",
+      "searchPlaceholder": "Tìm kiếm...",
+      "noProducts": "Không tìm thấy sản phẩm",
+      "noProductsDescription": "Hãy thử thay đổi từ khoá tìm kiếm.",
+      "table": {
+        "productName": "Tên sản phẩm",
+        "productId": "Mã sản phẩm",
+        "category": "Danh mục",
+        "sales": "Doanh số",
+        "earnings": "Doanh thu",
+        "stocks": "Tồn kho",
+        "status": "Trạng thái"
+      },
+      "products": {
+        "classicDenimJacket": "Áo khoác denim cổ điển",
+        "slimFitChinos": "Quần chinos ôm dáng",
+        "organicCottonTShirt": "Áo thun cotton hữu cơ",
+        "leatherAnkleBoots": "Bốt da cổ ngắn",
+        "woolBlendScarf": "Khăn choàng len pha"
+      },
+      "variants": {
+        "threeSizes": "3 kích cỡ",
+        "fourColors": "4 màu",
+        "fiveColors": "5 màu",
+        "sixSizes": "6 kích cỡ",
+        "twoColors": "2 màu"
+      },
+      "categories": {
+        "jacket": "Áo khoác",
+        "pants": "Quần",
+        "tShirt": "Áo thun",
+        "footwear": "Giày dép",
+        "accessory": "Phụ kiện"
+      },
+      "statuses": {
+        "inStock": "Còn hàng",
+        "lowStock": "Sắp hết hàng",
+        "outOfStock": "Hết hàng"
+      }
+    }
+  },
+  "finance": {
+    "totalBalanceOverview": {
+      "title": "Tổng số dư",
+      "overview": "Tổng quan quỹ hiện tại của bạn",
+      "thanLastMonth": "so với tháng trước",
+      "primaryAccount": "Tài khoản chính:",
+      "seeDetails": "Xem chi tiết",
+      "transfer": "Chuyển khoản",
+      "received": "Đã nhận",
+      "balance": "Số dư"
+    },
+    "stats": {
+      "totalBalance": "Tổng số dư",
+      "monthlyIncome": "Thu nhập hàng tháng",
+      "totalSpent": "Tổng chi tiêu",
+      "savingRate": "Tỷ lệ tiết kiệm",
+      "thanLastMonth": "so với tháng trước",
+      "goalProgress": "Mục tiêu: 30% - còn 3,9%"
+    },
+    "cashflow": {
+      "title": "Tổng quan dòng tiền",
+      "totalRevenue": "Tổng doanh thu",
+      "income": "Thu",
+      "expense": "Chi"
+    },
+    "spending": {
+      "title": "Chi tiêu",
+      "yearly": "Theo năm",
+      "monthly": "Theo tháng",
+      "total": "Tổng",
+      "categories": {
+        "activity": "Hoạt động",
+        "onlinePurchases": "Mua sắm online",
+        "groceries": "Thực phẩm",
+        "digitalGoods": "Hàng hoá số",
+        "stationery": "Văn phòng phẩm",
+        "others": "Khác"
+      }
+    },
+    "quickSend": {
+      "title": "Chuyển nhanh",
+      "sendFrom": "Chuyển từ",
+      "currency": "Tiền tệ",
+      "amount": "Số tiền",
+      "sendMoney": "Chuyển tiền"
+    },
+    "myCards": {
+      "title": "Thẻ của tôi",
+      "addCard": "Thêm thẻ",
+      "virtualCard": "Thẻ ảo",
+      "recentTransactions": "Giao dịch gần đây",
+      "seeAllTransactions": "Xem tất cả giao dịch",
+      "transactions": {
+        "paymentReceived": "Đã nhận thanh toán",
+        "cashbackDesc": "Hoàn tiền từ Stellar Rewards",
+        "netflixSubscription": "Gói Netflix",
+        "netflixDesc": "Phí đăng ký tháng 9",
+        "moneyReceived": "Đã nhận tiền",
+        "paypalDesc": "Thanh toán nhận qua PayPal",
+        "googleAds": "Google Ads",
+        "googleAdsDesc": "Thanh toán nhận từ Google Ads"
+      }
+    },
+    "transactionsTable": {
+      "title": "Giao dịch gần đây",
+      "searchPlaceholder": "Tìm kiếm...",
+      "filter": "Lọc",
+      "table": {
+        "orderId": "Mã đơn hàng",
+        "activity": "Hoạt động",
+        "price": "Giá",
+        "date": "Ngày",
+        "status": "Trạng thái"
+      },
+      "activities": {
+        "hotelBooking": "Đặt khách sạn",
+        "onlineShopping": "Mua sắm online",
+        "gamePurchase": "Mua game",
+        "utilityBillPayment": "Thanh toán hoá đơn",
+        "onlineCourseEnrollment": "Đăng ký khoá học online"
+      },
+      "statuses": {
+        "completed": "Hoàn tất",
+        "inProgress": "Đang xử lý"
+      }
+    }
+  },
+  "hr": {
+    "header": {
+      "title": "Bảng điều khiển nhân sự",
+      "subtitle": "Tình hình hoạt động của đội ngũ bạn.",
+      "dateRange": "16/08/2028 - 16/09/2028",
+      "addMember": "Thêm thành viên"
+    },
+    "quickStats": {
+      "title": "Thống kê nhanh",
+      "monthly": "Theo tháng",
+      "weekly": "Theo tuần",
+      "yearly": "Theo năm",
+      "thanLastMonth": "so với tháng trước",
+      "thanLastWeek": "so với tuần trước",
+      "thanLastYear": "so với năm trước",
+      "totalEmployee": "Tổng nhân viên",
+      "activeEmployee": "Nhân viên đang làm việc",
+      "onLeave": "Đang nghỉ phép",
+      "totalPayroll": "Tổng lương"
+    },
+    "attendanceOverview": {
+      "title": "Tổng quan chuyên cần",
+      "monthly": "Theo tháng",
+      "weekly": "Theo tuần",
+      "yearly": "Theo năm",
+      "days": {
+        "mon": "T2",
+        "tue": "T3",
+        "wed": "T4",
+        "thu": "T5",
+        "fri": "T6",
+        "sat": "T7",
+        "sun": "CN"
+      }
+    },
+    "employeeByDepartment": {
+      "title": "Nhân viên theo phòng ban",
+      "thanLastMonth": "so với tháng trước",
+      "viewDetails": "Xem chi tiết",
+      "exportData": "Xuất dữ liệu",
+      "departments": {
+        "engineering": "Kỹ thuật",
+        "marketing": "Marketing",
+        "sales": "Bán hàng",
+        "hr": "Nhân sự",
+        "finance": "Tài chính",
+        "others": "Khác"
+      }
+    },
+    "interviewAndMeetings": {
+      "title": "Phỏng vấn và cuộc họp",
+      "monthYear": "Tháng 1, 2027",
+      "joinNow": "Tham gia ngay",
+      "days": {
+        "mon": "T2",
+        "tue": "T3",
+        "wed": "T4",
+        "thu": "T5",
+        "fri": "T6",
+        "sat": "T7",
+        "sun": "CN"
+      },
+      "meetings": {
+        "productSync": "Họp đồng bộ đội sản phẩm",
+        "frontendInterview": "Phỏng vấn ứng viên - Frontend Developer"
+      }
+    },
+    "jobStatistics": {
+      "title": "Thống kê tuyển dụng",
+      "monthly": "Theo tháng",
+      "weekly": "Theo tuần",
+      "yearly": "Theo năm",
+      "totalJob": "Tổng vị trí",
+      "activeJob": "Vị trí đang tuyển",
+      "interview": "Phỏng vấn",
+      "hired": "Đã tuyển"
+    },
+    "employeeGrowth": {
+      "title": "Tăng trưởng nhân sự",
+      "weekly": "Theo tuần",
+      "monthly": "Theo tháng",
+      "yearly": "Theo năm",
+      "series": "Nhân viên",
+      "days": {
+        "sat": "T7",
+        "sun": "CN",
+        "mon": "T2",
+        "tue": "T3",
+        "wed": "T4",
+        "thu": "T5",
+        "fri": "T6"
+      }
+    },
+    "employeeDirectory": {
+      "title": "Danh bạ nhân viên",
+      "searchPlaceholder": "Tìm kiếm...",
+      "filter": "Lọc",
+      "noEmployeesTitle": "Không tìm thấy nhân viên",
+      "allDepartment": "Tất cả phòng ban",
+      "allStatus": "Tất cả trạng thái",
+      "table": {
+        "users": "Người dùng",
+        "department": "Phòng ban",
+        "role": "Vai trò",
+        "status": "Trạng thái",
+        "joined": "Ngày vào",
+        "action": "Thao tác"
+      },
+      "departments": {
+        "all": "Tất cả phòng ban",
+        "engineering": "Kỹ thuật",
+        "hr": "Nhân sự",
+        "sales": "Bán hàng",
+        "marketing": "Marketing",
+        "finance": "Tài chính"
+      },
+      "statuses": {
+        "all": "Tất cả trạng thái",
+        "active": "Đang làm việc",
+        "onboarding": "Mới vào",
+        "onLeave": "Đang nghỉ phép"
+      },
+      "roles": {
+        "seniorDeveloper": "Senior Developer",
+        "juniorDeveloper": "Junior Developer",
+        "hrSpecialist": "Chuyên viên nhân sự",
+        "accountExecutive": "Account Executive"
+      },
+      "noEmployees": "Không tìm thấy nhân viên phù hợp với tiêu chí đã chọn."
+    }
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "metaTitle": "Cài đặt",
+    "metaDescription": "Quản lý API key và tuỳ chọn ứng dụng.",
+    "comingSoon": "Mục này sắp ra mắt.",
+    "categories": {
+      "apiKeys": "API Key",
+      "mcp": "MCP",
+      "general": "Chung",
+      "updates": "Cập nhật"
+    },
+    "apiKeys": {
+      "title": "API Key",
+      "description": "Các key này được lưu mã hoá trên thiết bị và cần thiết để phân tích kịch bản và sinh video.",
+      "providers": {
+        "openai": "OpenAI",
+        "anthropic": "Anthropic"
+      },
+      "openaiLabel": "OpenAI API Key",
+      "anthropicLabel": "Anthropic API Key",
+      "saved": "Đã lưu thành công.",
+      "encryptionWarning": "Thiết bị này không có keyring bảo mật — key sẽ được lưu mà không mã hoá ở cấp hệ điều hành.",
+      "backendUnavailable": "Không kết nối được tới backend của ứng dụng. Vui lòng khởi động lại ứng dụng và thử lại.",
+      "testButton": "Kiểm tra Key",
+      "testOk": "Key hợp lệ.",
+      "testRequired": "Hãy kiểm tra key trước khi lưu.",
+      "connected": "Đã kết nối",
+      "editButton": "Chỉnh sửa",
+      "cancelButton": "Huỷ"
+    },
+    "mcp": {
+      "title": "MCP Server",
+      "description": "Cho phép các AI agent như Claude Code gọi vào tài khoản Sunbee của bạn (phân tích kịch bản, skill phong cách) qua Model Context Protocol.",
+      "enabled": "Đã bật",
+      "disabled": "Đã tắt",
+      "tokenLabel": "Token truy cập",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép!",
+      "regenerate": "Tạo lại token",
+      "snippetLabel": "Kết nối từ Claude Code"
+    }
+  },
+  "videoStudio": {
+    "title": "Sản xuất Video",
+    "metaTitle": "Sản xuất Video",
+    "metaDescription": "Biến kịch bản hoặc video tham chiếu thành video hoàn chỉnh, từng bước một.",
+    "steps": {
+      "script": "Kịch bản",
+      "scriptHint": "Viết hoặc nhập",
+      "assets": "Tài nguyên",
+      "assetsHint": "Thu thập media",
+      "editPlan": "Kế hoạch dựng",
+      "editPlanHint": "Sắp xếp timeline",
+      "render": "Xuất video",
+      "renderHint": "Xuất file video"
+    },
+    "comingSoon": "Bước này sắp ra mắt.",
+    "navigation": {
+      "back": "Quay lại",
+      "next": "Tiếp theo"
+    },
+    "project": {
+      "emptyTitle": "Chưa có dự án nào",
+      "emptyDescription": "Tạo dự án đầu tiên để bắt đầu sản xuất video — lịch sử kịch bản sẽ được lưu theo dự án này.",
+      "namePlaceholder": "Tên dự án",
+      "createButton": "Tạo dự án",
+      "createNewOption": "+ Tạo dự án mới"
+    },
+    "category": {
+      "namePlaceholder": "Tên danh mục",
+      "addButton": "Thêm danh mục"
+    },
+    "video": {
+      "namePlaceholder": "Tên video",
+      "addButton": "Thêm video",
+      "selectHint": "Chọn hoặc tạo video để bắt đầu"
+    },
+    "manage": {
+      "projectsPageTitle": "Quản lý dự án",
+      "projectsPageDescription": "Đổi tên hoặc xoá dự án. Xoá ở đây là xoá mềm — chỉ ẩn đi, không mất dữ liệu.",
+      "categoriesPageTitle": "Quản lý danh mục",
+      "categoriesPageDescription": "Đổi tên hoặc xoá danh mục của mọi dự án. Xoá ở đây là xoá mềm — chỉ ẩn đi, không mất dữ liệu.",
+      "projectsTitle": "Dự án",
+      "categoriesTitle": "Danh mục",
+      "categoryCount": "Số danh mục",
+      "pickProjectPlaceholder": "Chọn dự án",
+      "categoriesEmpty": "Dự án này chưa có danh mục nào.",
+      "categoriesEmptyAll": "Chưa có danh mục nào.",
+      "saveButton": "Lưu",
+      "cancelButton": "Huỷ"
+    },
+    "script": {
+      "version": {
+        "draft": "bản nháp",
+        "analyzed": "đã phân tích"
+      },
+      "history": {
+        "openButton": "Lịch sử",
+        "title": "Lịch sử kịch bản",
+        "description": "Các version đã lưu cho dự án này, mới nhất trước.",
+        "empty": "Dự án này chưa có version nào.",
+        "sourceYoutube": "Link video",
+        "sourceImport": "Nhập tay",
+        "sceneCount": "{count, plural, one {# cảnh} other {# cảnh}}"
+      },
+      "sourceTitle": "Nguồn kịch bản",
+      "fromLink": "Từ link video",
+      "uploadVideo": "Tải video lên",
+      "importScript": "Dán kịch bản trực tiếp",
+      "urlLabel": "URL video",
+      "urlPlaceholder": "https://... (YouTube, TikTok, Vimeo, ...)",
+      "linkCaptionHint": "Chỉ hoạt động với video đã có sẵn phụ đề trên trang nguồn.",
+      "fetchingHint": "Đang lấy transcript và trích khung hình video — có thể lâu hơn so với chỉ lấy văn bản.",
+      "fetchButton": "Lấy kịch bản",
+      "uploadDropHint": "Kéo thả video vào đây, hoặc bấm để chọn (MP4, WebM, MOV, tối đa 25MB)",
+      "uploadDropActive": "Thả video vào đây",
+      "uploadRemove": "Xoá file",
+      "uploadButton": "Chuyển video thành văn bản",
+      "transcribingHint": "Đang chuyển âm thanh thành văn bản và trích khung hình video — có thể lâu hơn so với chỉ chuyển văn bản.",
+      "scriptLabel": "Kịch bản",
+      "scriptResultHint": "Transcript lấy được sẽ hiện ở đây — xem lại và chỉnh sửa trước khi phân tích.",
+      "scriptPlaceholder": "Dán hoặc chỉnh sửa kịch bản tại đây...",
+      "scriptCharCount": "{count} ký tự",
+      "framesCaptured": "Đã lấy {count} khung hình từ video — sẽ dùng để làm căn cứ cho phân tích hình ảnh.",
+      "analyzeButton": "Phân tích kịch bản",
+      "analyzingHint": "Đang phân tích kịch bản và hình ảnh — có thể mất một chút thời gian.",
+      "costEstimate": "Chi phí ước tính: ${amount} (độ tin cậy {confidence})",
+      "confidence": {
+        "low": "thấp",
+        "medium": "trung bình",
+        "high": "cao"
+      },
+      "providerLabel": "Phân tích bằng",
+      "providerOpenai": "OpenAI",
+      "providerClaude": "Claude",
+      "providerMissingKeyHint": "Thiết lập API key còn thiếu trong Settings để bật lựa chọn đó.",
+      "modelLabel": "Model",
+      "effortLabel": "Mức nỗ lực",
+      "effortLow": "Thấp",
+      "effortMedium": "Vừa",
+      "effortHigh": "Cao",
+      "styleTemplateLabel": "Skill phong cách (tuỳ chọn)",
+      "styleTemplatePlaceholder": "Giữ theo một phong cách đã lưu",
+      "styleTemplateNone": "Không dùng",
+      "checklistTitle": "Checklist sẵn sàng",
+      "checklist": {
+        "hasScenes": "Có ít nhất một cảnh",
+        "sceneDurationSane": "Thời lượng trung bình mỗi cảnh hợp lý",
+        "resourcesFilled": "Đã điền đủ tài nguyên (cảnh quay, giọng đọc, hình ảnh)",
+        "scenesHaveAssets": "Mọi cảnh đều có liệt kê tài nguyên cần thiết"
+      },
+      "scenesTitle": "Phân cảnh",
+      "sceneContent": "Nội dung",
+      "sceneVisual": "Hướng hình ảnh",
+      "sceneShot": "Cỡ cảnh",
+      "sceneAssets": "Tài nguyên cần",
+      "sceneDuration": "Thời lượng",
+      "narrativeRoles": {
+        "hook": "Mở đầu gây chú ý",
+        "context": "Bối cảnh",
+        "buildup": "Dẫn dắt",
+        "keyPoint": "Ý chính",
+        "emotionalBeat": "Cao trào cảm xúc",
+        "proof": "Bằng chứng",
+        "transition": "Chuyển cảnh",
+        "callToAction": "Kêu gọi hành động",
+        "outro": "Kết thúc"
+      },
+      "shotSizes": {
+        "extremeCloseUp": "Cực cận",
+        "closeUp": "Cận cảnh",
+        "medium": "Trung cảnh",
+        "wide": "Toàn cảnh",
+        "extremeWide": "Viễn cảnh"
+      },
+      "cameraMovements": {
+        "static": "Tĩnh",
+        "pan": "Lia ngang",
+        "tilt": "Lia dọc",
+        "zoom": "Zoom",
+        "handheld": "Cầm tay",
+        "tracking": "Theo chuyển động"
+      },
+      "resourcesTitle": "Tài nguyên cần chuẩn bị",
+      "shotCount": "Số cảnh quay cần",
+      "voiceover": "Giọng đọc",
+      "music": "Nhạc nền",
+      "images": "Hình ảnh / B-roll",
+      "notes": "Ghi chú",
+      "saveSkillTitle": "Lưu làm skill tái sử dụng",
+      "skillNameLabel": "Tên skill",
+      "skillNamePlaceholder": "VD: Review sản phẩm năng động",
+      "saveSkillButton": "Lưu skill",
+      "skillSaved": "Đã lưu skill. Bạn có thể dùng lại phong cách này cho các video sau."
+    }
+  },
+  "databaseAdmin": {
+    "title": "Quản trị dữ liệu",
+    "metaTitle": "Quản trị dữ liệu",
+    "metaDescription": "Xem và quản lý dữ liệu của tất cả tài khoản.",
+    "categories": {
+      "scriptAnalyses": "Phân tích kịch bản",
+      "styleTemplates": "Skill phong cách",
+      "users": "Người dùng",
+      "logs": "Nhật ký"
+    },
+    "scriptAnalyses": {
+      "owner": "Chủ sở hữu",
+      "createdAt": "Ngày tạo",
+      "source": "Nguồn",
+      "scenes": "Số cảnh"
+    },
+    "styleTemplates": {
+      "owner": "Chủ sở hữu",
+      "name": "Tên",
+      "genre": "Thể loại",
+      "createdAt": "Ngày tạo"
+    },
+    "users": {
+      "name": "Tên",
+      "email": "Email",
+      "role": "Vai trò",
+      "createdAt": "Ngày tạo"
+    },
+    "logs": {
+      "selectDate": "Chọn ngày",
+      "allLevels": "Tất cả mức độ",
+      "refresh": "Làm mới",
+      "empty": "Không có nhật ký cho ngày này.",
+      "time": "Thời gian",
+      "level": "Mức độ",
+      "message": "Nội dung",
+      "details": "Chi tiết"
+    }
+  }
+}

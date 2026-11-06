@@ -2,9 +2,9 @@
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils";
-import DangerItem from "./danger-item";
-import { defaultDangerActions } from "./data";
-import type { DangerZoneProps } from "./types";
+import DangerItem from "@/pages/main/profile/danger/danger-item";
+import { defaultDangerActions } from "@/pages/main/profile/danger/data";
+import type { DangerZoneProps } from "@/pages/main/profile/danger/types";
 
 export default function DangerZone({
   title = "Danger Zone",
@@ -28,7 +28,7 @@ export default function DangerZone({
   return (
     <Card
       className={cn(
-        "rounded-2xl border border-gray-200 bg-white p-5 lg:p-6 dark:border-gray-700 dark:bg-white/3",
+        "card-surface p-5 lg:p-6",
         className,
       )}
     >

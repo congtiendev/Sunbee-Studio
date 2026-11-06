@@ -21,16 +21,16 @@ import themePlugin from "@fullcalendar/react/themes/classic";
 import timeGridPlugin from "@fullcalendar/react/timegrid";
 import { useLocale } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
-import CalendarEventItem from "./event-item";
-import CalendarEventModal from "./event-modal";
+import CalendarEventItem from "@/pages/main/calendar/event-item";
+import CalendarEventModal from "@/pages/main/calendar/event-modal";
 import {
   BookmarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CloseIcon,
-} from "./icons";
-import type { CalendarEvent, EventFormData } from "./types";
-import CalendarViewSelect from "./view-selector";
+} from "@/pages/main/calendar/icons";
+import type { CalendarEvent, EventFormData } from "@/pages/main/calendar/types";
+import CalendarViewSelect from "@/pages/main/calendar/view-selector";
 
 const INITIAL_EVENTS: CalendarEvent[] = [
   {
@@ -186,7 +186,7 @@ export default function Calendar() {
 
   return (
     <div
-      className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3"
+      className="card-surface overflow-hidden"
       data-color-scheme={theme}
     >
       <div

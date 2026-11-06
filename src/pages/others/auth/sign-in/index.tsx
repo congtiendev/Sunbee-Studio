@@ -1,10 +1,12 @@
 import { Link } from "react-router";
 import { ChevronLeftIcon } from "@/icons";
 import { cn } from "@/utils";
-import AuthDivider from "../divider";
-import SignInFormFields from "./form";
-import SignInHeader from "./header";
-import { SocialButtons } from "./social-button";
+import SignInFormFields from "@/pages/others/auth/sign-in/form";
+import SignInHeader from "@/pages/others/auth/sign-in/header";
+
+// Social sign-in is temporarily hidden (not wired to real OAuth yet).
+// import AuthDivider from "@/pages/others/auth/divider";
+// import { SocialButtons } from "@/pages/others/auth/sign-in/social-button";
 
 export default function SignIn() {
   return (
@@ -24,8 +26,6 @@ export default function SignIn() {
           <SignInHeader />
 
           <div>
-            <SocialButtons />
-            <AuthDivider />
             <SignInFormFields />
 
             <div className="mt-5">

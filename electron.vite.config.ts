@@ -13,16 +13,6 @@ export default defineConfig({
       },
     },
   },
-  preload: {
-    plugins: [externalizeDepsPlugin()],
-    build: {
-      outDir: "dist-electron/preload",
-      lib: { entry: "electron/preload/index.ts" },
-      rollupOptions: {
-        output: { format: "cjs", entryFileNames: "index.cjs" },
-      },
-    },
-  },
   renderer: {
     ...rendererConfig,
     root: ".",

@@ -1,6 +1,6 @@
 import GridShape from "@/components/shared/grid-shape";
 import { Link, Outlet } from "react-router";
-import ThemeToggler from "./theme-toggler";
+import ThemeToggler from "@/pages/others/auth/theme-toggler";
 
 export default function AuthLayout() {
   return (
@@ -14,14 +14,14 @@ export default function AuthLayout() {
             <div className="flex max-w-xs flex-col items-center">
               <Link to="/" className="mb-4 block">
                 <img
-                  width={231}
-                  height={48}
-                  src="/images/logo/auth-logo.svg"
+                  width={240}
+                  height={93}
+                  src="/images/logo/auth-logo.png"
                   alt="Logo"
                 />
               </Link>
               <p className="text-center text-gray-400 dark:text-white/60">
-                Free and Open-Source Tailwind CSS Admin Dashboard Template
+                Sunbee Studio — AI-assisted video production
               </p>
             </div>
           </div>

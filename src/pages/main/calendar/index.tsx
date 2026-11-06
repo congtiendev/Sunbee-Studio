@@ -1,6 +1,6 @@
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
-import Calendar from "./calendar";
+import Calendar from "@/pages/main/calendar/calendar";
 
 import "@fullcalendar/react/skeleton.css";
 import "@fullcalendar/react/themes/classic/palette.css";
@@ -11,7 +11,7 @@ export default function CalendarPage() {
     <div>
       <PageMeta
         title="React.js Calendar Dashboard"
-        description="This is React.js Calendar Dashboard page for Sunbee Editor"
+        description="This is React.js Calendar Dashboard page for Sunbee Studio"
       />
       <PageBreadcrumb pageTitle="Calendar" />
       <Calendar />

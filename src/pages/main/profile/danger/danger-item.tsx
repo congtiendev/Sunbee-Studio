@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils";
-import type { DangerItemProps } from "./types";
+import type { DangerItemProps } from "@/pages/main/profile/danger/types";
 
 export default function DangerItem({
   title,

@@ -1,5 +1,6 @@
 import AppHeader from "@/components/layout/app-layout/header";
 import AppSidebar from "@/components/layout/app-layout/sidebar";
+import LiquidGlassPanel from "@/components/shared/liquid-glass-panel";
 import { ScrollToTop } from "@/components/shared/scroll-to-top";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { cn } from "@/utils";
@@ -21,11 +22,14 @@ export default function AppLayout({
     if (isAiRoute) {
       return "flex-1 min-h-0 flex flex-col";
     }
-    return "p-4 mx-auto w-full max-w-(--breakpoint-2xl) md:p-6";
+    return "p-4 w-full md:p-6";
   };
 
   return (
     <SidebarProvider className={cn(isAiRoute && "h-svh overflow-hidden")}>
+      <div className="glass-wash" aria-hidden="true" />
+      <LiquidGlassPanel />
+
       <AppSidebar />
 
       <SidebarInset className={cn(isAiRoute && "h-svh overflow-hidden")}>

@@ -1,11 +1,11 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import BasicInput from "./basic-input";
-import DatePickerInput from "./date-picker-input";
-import InputWithPlaceholder from "./input-with-placeholder";
-import PasswordInput from "./password-input";
-import PaymentInput from "./payment-input";
-import SelectInput from "./select-input";
-import TimeSelectInput from "./time-select-input";
+import BasicInput from "@/pages/main/forms/form-elements/default-inputs/basic-input";
+import DatePickerInput from "@/pages/main/forms/form-elements/default-inputs/date-picker-input";
+import InputWithPlaceholder from "@/pages/main/forms/form-elements/default-inputs/input-with-placeholder";
+import PasswordInput from "@/pages/main/forms/form-elements/default-inputs/password-input";
+import PaymentInput from "@/pages/main/forms/form-elements/default-inputs/payment-input";
+import SelectInput from "@/pages/main/forms/form-elements/default-inputs/select-input";
+import TimeSelectInput from "@/pages/main/forms/form-elements/default-inputs/time-select-input";
 
 export default function DefaultInputs() {
   return (

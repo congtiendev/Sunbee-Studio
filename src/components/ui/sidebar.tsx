@@ -181,18 +181,11 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset";
   collapsible?: "offcanvas" | "icon" | "none";
 }) {
-  const {
-    isMobile,
-    state,
-    openMobile,
-    setOpenMobile,
-    isHovered,
-    setIsHovered,
-  } = useSidebar();
+  const { isMobile, state, openMobile, setOpenMobile, setIsHovered } =
+    useSidebar();
 
-  // When hovered on collapsed desktop sidebar, temporarily act as expanded
-  const effectiveState =
-    !isMobile && isHovered && state === "collapsed" ? "expanded" : state;
+  // Sidebar only expands on click (toggle), not on hover.
+  const effectiveState = state;
 
   if (collapsible === "none") {
     return (
@@ -217,7 +210,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) border-e border-gray-200 bg-white p-0 text-gray-900 dark:border-gray-800 dark:bg-gray-900 [&>button]:hidden"
+          className="glass-chrome w-(--sidebar-width) border-e border-gray-200 bg-white p-0 text-gray-900 dark:border-gray-800 dark:bg-gray-900 [&>button]:hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -277,7 +270,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="flex size-full flex-col bg-white text-gray-900 group-data-[variant=floating]/sidebar:rounded-lg group-data-[variant=floating]/sidebar:shadow-sm group-data-[variant=floating]/sidebar:ring-1 group-data-[variant=floating]/sidebar:ring-gray-200 dark:bg-gray-900 dark:group-data-[variant=floating]/sidebar:ring-gray-800"
+          className="glass-chrome flex size-full flex-col bg-white text-gray-900 group-data-[variant=floating]/sidebar:rounded-lg group-data-[variant=floating]/sidebar:shadow-sm group-data-[variant=floating]/sidebar:ring-1 group-data-[variant=floating]/sidebar:ring-gray-200 dark:bg-gray-900 dark:group-data-[variant=floating]/sidebar:ring-gray-800"
         >
           {children}
         </div>

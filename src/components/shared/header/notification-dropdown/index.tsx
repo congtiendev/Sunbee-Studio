@@ -18,7 +18,7 @@ import { BellIcon, DotIcon, XIcon } from "@/icons";
 import { cn, getInitials } from "@/utils";
 import { Fragment, useState } from "react";
 import { Link } from "react-router";
-import { notifications } from "./data";
+import { notifications } from "@/components/shared/header/notification-dropdown/data";
 
 export default function NotificationDropdown() {
   const t = useTranslations("header.notifications");

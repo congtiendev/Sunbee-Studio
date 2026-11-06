@@ -1,4 +1,4 @@
-import type { PersonalInfo } from "./types";
+import type { PersonalInfo } from "@/pages/main/profile/personal-information/types";
 
 export const defaultPersonalInfo: PersonalInfo = {
   avatarUrl: "/images/user/user-01.jpg",

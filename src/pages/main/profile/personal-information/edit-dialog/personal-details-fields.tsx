@@ -3,7 +3,7 @@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { PersonalDetailsFieldsProps } from "./types";
+import type { PersonalDetailsFieldsProps } from "@/pages/main/profile/personal-information/edit-dialog/types";
 
 export default function PersonalDetailsFields({
   register,

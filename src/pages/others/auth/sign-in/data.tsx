@@ -1,5 +1,5 @@
 import { GoogleIcon, TwitterXIcon } from "@/icons";
-import { type SocialAuthProvider } from "./types";
+import { type SocialAuthProvider } from "@/pages/others/auth/sign-in/types";
 
 export const socialProviders: SocialAuthProvider[] = [
   {

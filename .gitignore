@@ -11,9 +11,18 @@ node_modules
 dist
 dist-ssr
 dist-electron
+dist-server
 release
 *.local
 .wrangler
+
+# Local server runtime data (SQLite DB, encrypted settings, encryption key)
+data/
+
+# Environment variables
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

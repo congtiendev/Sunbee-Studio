@@ -8,8 +8,8 @@ import { useTranslations } from "@/i18n";
 import { ChevronDownIcon } from "@/icons";
 import { cn } from "@/utils";
 import { Link } from "react-router";
-import SidebarSubmenuItem from "./sidebar-submenu-item";
-import type { NavItem } from "./types";
+import SidebarSubmenuItem from "@/components/layout/app-layout/sidebar/sidebar-submenu-item";
+import type { NavItem } from "@/components/layout/app-layout/sidebar/types";
 
 interface SidebarMenuItemProps {
   nav: NavItem;

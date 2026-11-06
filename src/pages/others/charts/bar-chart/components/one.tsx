@@ -6,9 +6,9 @@ export default function BarChartOne() {
   const { theme } = useTheme();
 
   const options: ApexOptions = {
-    colors: ["#465FFF"],
+    colors: ["#00B3EC"],
     chart: {
-      fontFamily: "Outfit, sans-serif",
+      fontFamily: "Comfortaa, sans-serif",
       type: "bar",
       height: 200,
       toolbar: {
@@ -32,7 +32,7 @@ export default function BarChartOne() {
       offsetY: -20,
       style: {
         fontSize: "12px",
-        fontFamily: "Outfit, sans-serif",
+        fontFamily: "Comfortaa, sans-serif",
         fontWeight: 400,
         colors: [theme === "dark" ? "#94A3B8" : "#364153"],
       },
@@ -67,7 +67,7 @@ export default function BarChartOne() {
       labels: {
         style: {
           colors: theme === "dark" ? "#94A3B8" : "#364153",
-          fontFamily: "Outfit, sans-serif",
+          fontFamily: "Comfortaa, sans-serif",
         },
       },
     },
@@ -111,12 +111,12 @@ export default function BarChartOne() {
         colorStops: [
           {
             offset: 0,
-            color: "#7592FF",
+            color: "#1FC7FF",
             opacity: 1,
           },
           {
             offset: 100,
-            color: "#465FFF",
+            color: "#00B3EC",
             opacity: 1,
           },
         ],

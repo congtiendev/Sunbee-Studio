@@ -1,8 +1,8 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import DefaultTextarea from "./default-textarea";
-import DisabledTextarea from "./disabled-textarea";
-import ErrorTextarea from "./error-textarea";
-import InputGroupTextareaExample from "./input-group-textarea";
+import DefaultTextarea from "@/pages/main/forms/form-elements/textarea-input/default-textarea";
+import DisabledTextarea from "@/pages/main/forms/form-elements/textarea-input/disabled-textarea";
+import ErrorTextarea from "@/pages/main/forms/form-elements/textarea-input/error-textarea";
+import InputGroupTextareaExample from "@/pages/main/forms/form-elements/textarea-input/input-group-textarea";
 
 export default function TextAreaInput() {
   return (

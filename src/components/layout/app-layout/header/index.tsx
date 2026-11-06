@@ -42,7 +42,7 @@ export default function AppHeader() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 flex w-full shrink-0 border-gray-200 bg-white xl:border-b dark:border-gray-800 dark:bg-gray-900">
+    <header className="glass-chrome sticky top-0 z-50 flex w-full shrink-0 border-gray-200 bg-white xl:border-b dark:border-gray-800 dark:bg-gray-900">
       <div className="flex grow flex-col items-center justify-between xl:flex-row xl:px-6">
         {/* Left side content */}
         <div className="flex w-full items-center justify-between gap-2 border-b border-gray-200 px-3 py-3 sm:gap-4 xl:justify-normal xl:border-b-0 xl:px-0 xl:py-4 dark:border-gray-800">
@@ -62,13 +62,13 @@ export default function AppHeader() {
 
           <Link to="/" className="xl:hidden">
             <img
-              className="h-8 w-38.5 dark:hidden"
-              src="/images/logo/logo.svg"
+              className="h-8 w-auto dark:hidden"
+              src="/images/logo/logo.png"
               alt="Logo"
             />
             <img
-              className="hidden h-8 w-38.5 dark:block"
-              src="/images/logo/logo-dark.svg"
+              className="hidden h-8 w-auto dark:block"
+              src="/images/logo/logo-dark.png"
               alt="Logo"
             />
           </Link>

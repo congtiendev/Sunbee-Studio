@@ -10,7 +10,7 @@ import { ChevronDownIcon } from "@/icons";
 import { cn } from "@/utils";
 import React from "react";
 import { createPortal } from "react-dom";
-import { CALENDAR_VIEW_OPTIONS } from "./types";
+import { CALENDAR_VIEW_OPTIONS } from "@/pages/main/calendar/types";
 
 export interface CalendarViewSelectProps {
   currentView: string;

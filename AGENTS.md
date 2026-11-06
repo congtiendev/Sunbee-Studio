@@ -1,4 +1,4 @@
-# AGENTS.md — Sunbee Editor
+# AGENTS.md — Sunbee Studio
 
 React 19 admin dashboard template: Vite 8 · TypeScript ~6 · Tailwind CSS v4 · React Router 8 · Base UI · react-i18next. Client-only SPA with no backend, auth, or global store.
 
@@ -74,7 +74,7 @@ Path alias: `@/*` → `src/*`.
 ## i18n
 
 - Never reinitialize i18next (`src/i18n/config.ts`; provider mounted once in `main.tsx`).
-- Locales `en` (fallback), `ar` (RTL), `es`, `de`. **Every new user-facing string goes into all four `src/messages/*.json` files.** ICU syntax for interpolation/plurals.
+- Single locale: `en` only (`src/messages/en.json`). ICU syntax for interpolation/plurals.
 - Use wrappers from `@/i18n`:
 
   ```tsx

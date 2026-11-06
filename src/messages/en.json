@@ -23,7 +23,7 @@
     },
     "items": {
       "dashboard": "Dashboard",
-      "ecommerceHome": "Ecommerce",
+      "templateDemos": "Demo Pages",
       "analytics": "Analytics",
       "marketing": "Marketing",
       "crm": "CRM",
@@ -129,7 +129,13 @@
       "variants02": "Variants 02",
       "variants03": "Variants 03",
       "variants04": "Variants 04",
-      "variants05": "Variants 05"
+      "variants05": "Variants 05",
+      "videoStudio": "Video Studio",
+      "videoStudioCreate": "Create video",
+      "videoStudioProjects": "Manage projects",
+      "videoStudioCategories": "Manage categories",
+      "settings": "Settings",
+      "databaseAdmin": "Database Admin"
     }
   },
   "header": {
@@ -151,77 +157,51 @@
     "language": "Language",
     "signOut": "Sign out"
   },
-  "ecommerce": {
-    "title": "E-commerce Dashboard",
+  "overview": {
+    "title": "Overview",
     "metrics": {
-      "customers": "Customers",
-      "orders": "Orders"
+      "projects": "Projects",
+      "scriptAnalyses": "Script Analyses",
+      "scenesPlanned": "Scenes Planned",
+      "styleTemplates": "Style Templates"
     },
-    "months": {
-      "jan": "Jan",
-      "feb": "Feb",
-      "mar": "Mar",
-      "apr": "Apr",
-      "may": "May",
-      "jun": "Jun",
-      "jul": "Jul",
-      "aug": "Aug",
-      "sep": "Sep",
-      "oct": "Oct",
-      "nov": "Nov",
-      "dec": "Dec"
+    "activity": {
+      "title": "Script Analysis Activity",
+      "subtitle": "Analyses created over the last 14 days",
+      "series": "Analyses"
     },
-    "monthlySales": {
-      "title": "Monthly Sales",
-      "series": "Sales"
+    "providerStatus": {
+      "title": "AI Providers",
+      "subtitle": "API keys configured for script analysis",
+      "openai": "OpenAI",
+      "claude": "Claude",
+      "mcp": "MCP",
+      "connected": "Connected",
+      "notConnected": "Not set",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "keys": "{count, plural, one {# key} other {# keys}}"
     },
-    "monthlyTarget": {
-      "title": "Monthly Target",
-      "subtitle": "Target you’ve set for each month",
-      "earned": "You earn {amount} today, it's higher than last month. Keep up your good work!",
-      "target": "Target",
-      "revenue": "Revenue",
-      "today": "Today"
-    },
-    "statistics": {
-      "title": "Statistics",
-      "subtitle": "Target you've set for each month",
-      "overview": "Overview",
-      "sales": "Sales",
-      "revenue": "Revenue",
-      "monthly": "Monthly",
-      "quarterly": "Quarterly",
-      "annually": "Annually",
-      "selectDateRange": "Select date range"
-    },
-    "recentOrders": {
-      "title": "Recent Orders",
-      "products": "Products",
-      "category": "Category",
-      "price": "Price",
+    "recentAnalyses": {
+      "title": "Recent Script Analyses",
+      "empty": "No script analyses yet.",
+      "source": "Source",
+      "scenes": "Scenes",
       "status": "Status",
-      "variants": "{count, plural, one {# Variant} other {# Variants}}",
-      "categories": {
-        "laptop": "Laptop",
-        "watch": "Watch",
-        "smartphone": "SmartPhone",
-        "electronics": "Electronics",
-        "accessories": "Accessories"
-      },
+      "createdAt": "Created",
       "statuses": {
-        "delivered": "Delivered",
-        "pending": "Pending",
-        "canceled": "Canceled"
+        "draft": "Draft",
+        "analyzed": "Analyzed"
+      },
+      "sourceTypes": {
+        "youtube": "YouTube",
+        "import": "Import"
       }
     },
-    "demographic": {
-      "title": "Customers Demographic",
-      "subtitle": "Number of customer based on country",
-      "customers": "{count} Customers",
-      "usa": "USA",
-      "france": "France",
-      "yemen": "Yemen",
-      "uk": "United Kingdom"
+    "recentProjects": {
+      "title": "Recent Projects",
+      "empty": "No projects yet.",
+      "updatedAt": "Updated {date}"
     }
   },
   "analytics": {
@@ -1054,5 +1034,281 @@
       },
       "noEmployees": "No employees found matching the selected criteria."
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "metaTitle": "Settings",
+    "metaDescription": "Manage your API keys and app preferences.",
+    "comingSoon": "This section is coming soon.",
+    "categories": {
+      "apiKeys": "API Keys",
+      "mcp": "MCP",
+      "general": "General",
+      "updates": "Updates",
+      "backup": "Backup"
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "description": "These keys are stored encrypted on this device and are required to analyze scripts and generate videos.",
+      "providers": {
+        "openai": "OpenAI",
+        "anthropic": "Anthropic"
+      },
+      "openaiLabel": "OpenAI API Key",
+      "anthropicLabel": "Anthropic API Key",
+      "saved": "Saved successfully.",
+      "encryptionWarning": "This device has no secure keyring available — keys will be stored without OS-level encryption.",
+      "backendUnavailable": "Couldn't reach the app backend. Please restart the app and try again.",
+      "testButton": "Test Key",
+      "testOk": "Key is valid.",
+      "testRequired": "Test the key before saving.",
+      "connected": "Connected",
+      "editButton": "Edit",
+      "cancelButton": "Cancel",
+      "activeBadge": "Active",
+      "useButton": "Use",
+      "keyNameLabel": "Key name",
+      "keyNamePlaceholder": "e.g. Primary, Backup",
+      "addKeyButton": "Add another key",
+      "addButton": "Add",
+      "renameButton": "Rename"
+    },
+    "mcp": {
+      "title": "MCP Server",
+      "description": "Let AI agents like Claude Code call into your Sunbee account (script analysis, style templates) over the Model Context Protocol.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "tokenLabel": "Access token",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "regenerate": "Regenerate token",
+      "snippetLabel": "Connect from Claude Code"
+    },
+    "backup": {
+      "title": "Backup & Restore",
+      "description": "Export your projects, videos, script analyses, style templates, and API keys into one file — import it on another machine to bring your data with you.",
+      "exportButton": "Export data",
+      "importButton": "Import data",
+      "importSummary": "Imported {projects} projects, {categories} categories, {videos} videos, {scriptAnalyses} script analyses, {styleTemplates} style templates, {anthropicKeys} Claude keys.",
+      "warning": "The exported file contains your API keys in plain text. Keep it somewhere private and don't share it.",
+      "importOpenaiKey": "OpenAI key imported too."
+    }
+  },
+  "videoStudio": {
+    "title": "Video Production",
+    "metaTitle": "Video Production",
+    "metaDescription": "Turn a script or reference video into a finished video, step by step.",
+    "steps": {
+      "script": "Script",
+      "scriptHint": "Write or import",
+      "assets": "Assets",
+      "assetsHint": "Gather media",
+      "editPlan": "Edit Plan",
+      "editPlanHint": "Arrange the timeline",
+      "render": "Render & Export",
+      "renderHint": "Export the video"
+    },
+    "comingSoon": "This step is coming soon.",
+    "navigation": {
+      "back": "Back",
+      "next": "Next"
+    },
+    "project": {
+      "emptyTitle": "No projects yet",
+      "emptyDescription": "Create your first project to start producing a video — your script history will be saved under it.",
+      "namePlaceholder": "Project name",
+      "createButton": "Create project",
+      "createNewOption": "+ New project"
+    },
+    "category": {
+      "namePlaceholder": "Category name",
+      "addButton": "Add category"
+    },
+    "video": {
+      "namePlaceholder": "Video name",
+      "addButton": "Add video",
+      "selectHint": "Choose or create a video to get started"
+    },
+    "manage": {
+      "projectsPageTitle": "Manage projects",
+      "projectsPageDescription": "Rename or remove projects. Removing is a soft delete — it just hides the item.",
+      "categoriesPageTitle": "Manage categories",
+      "categoriesPageDescription": "Rename or remove categories across every project. Removing is a soft delete — it just hides the item.",
+      "projectsTitle": "Projects",
+      "categoriesTitle": "Categories",
+      "categoryCount": "Categories",
+      "pickProjectPlaceholder": "Pick a project",
+      "categoriesEmpty": "This project has no categories yet.",
+      "categoriesEmptyAll": "No categories yet.",
+      "saveButton": "Save",
+      "cancelButton": "Cancel"
+    },
+    "script": {
+      "version": {
+        "draft": "draft",
+        "analyzed": "analyzed"
+      },
+      "history": {
+        "openButton": "History",
+        "title": "Script history",
+        "description": "Versions saved for this project, most recent first.",
+        "empty": "No versions saved for this project yet.",
+        "sourceYoutube": "Video link",
+        "sourceImport": "Imported",
+        "sceneCount": "{count, plural, one {# scene} other {# scenes}}"
+      },
+      "sourceTitle": "Script source",
+      "fromLink": "From a video link",
+      "uploadVideo": "Upload a video",
+      "importScript": "Paste a script directly",
+      "urlLabel": "Video URL",
+      "urlPlaceholder": "https://... (YouTube, TikTok, Vimeo, ...)",
+      "linkCaptionHint": "Only works for videos that already have captions/subtitles on the source site.",
+      "fetchingHint": "Fetching the transcript and sampling video frames — this can take a bit longer than a text-only fetch.",
+      "fetchButton": "Fetch script",
+      "uploadDropHint": "Drag and drop a video here, or click to browse (MP4, WebM, MOV, up to 25MB)",
+      "uploadDropActive": "Drop the video here",
+      "uploadRemove": "Remove file",
+      "uploadButton": "Transcribe video",
+      "transcribingHint": "Transcribing audio and sampling video frames — this can take a bit longer than a text-only transcription.",
+      "scriptLabel": "Script",
+      "scriptResultHint": "The fetched transcript will appear here — review and edit it before analyzing.",
+      "scriptPlaceholder": "Paste or edit the script here...",
+      "scriptCharCount": "{count} characters",
+      "framesCaptured": "{count} frame(s) captured from the video — these will be used to ground the visual analysis.",
+      "analyzeButton": "Analyze script",
+      "analyzingHint": "Analyzing the script and visuals — this can take a little while.",
+      "costEstimate": "Estimated cost: ${amount} ({confidence} confidence)",
+      "confidence": {
+        "low": "low",
+        "medium": "medium",
+        "high": "high"
+      },
+      "providerLabel": "Analyze with",
+      "providerOpenai": "OpenAI",
+      "providerClaude": "Claude",
+      "providerMissingKeyHint": "Set up the missing API key in Settings to enable that option.",
+      "modelLabel": "Model",
+      "effortLabel": "Effort",
+      "effortLow": "Low",
+      "effortMedium": "Medium",
+      "effortHigh": "High",
+      "styleTemplateLabel": "Style template (optional)",
+      "styleTemplatePlaceholder": "Keep a saved style",
+      "styleTemplateNone": "None",
+      "checklistTitle": "Readiness checklist",
+      "checklist": {
+        "hasScenes": "Has at least one scene",
+        "sceneDurationSane": "Average scene duration looks reasonable",
+        "resourcesFilled": "Resources (shots, voiceover, images) are filled in",
+        "scenesHaveAssets": "Every scene lists the assets it needs"
+      },
+      "scenesTitle": "Scene breakdown",
+      "sceneContent": "Content",
+      "sceneVisual": "Visual direction",
+      "sceneShot": "Shot",
+      "sceneAssets": "Assets needed",
+      "sceneDuration": "Duration",
+      "narrativeRoles": {
+        "hook": "Hook",
+        "context": "Context",
+        "buildup": "Build-up",
+        "keyPoint": "Key point",
+        "emotionalBeat": "Emotional beat",
+        "proof": "Proof",
+        "transition": "Transition",
+        "callToAction": "Call to action",
+        "outro": "Outro"
+      },
+      "shotSizes": {
+        "extremeCloseUp": "Extreme close-up",
+        "closeUp": "Close-up",
+        "medium": "Medium",
+        "wide": "Wide",
+        "extremeWide": "Extreme wide"
+      },
+      "cameraMovements": {
+        "static": "Static",
+        "pan": "Pan",
+        "tilt": "Tilt",
+        "zoom": "Zoom",
+        "handheld": "Handheld",
+        "tracking": "Tracking"
+      },
+      "resourcesTitle": "Resources needed",
+      "shotCount": "Shots needed",
+      "voiceover": "Voiceover",
+      "music": "Music",
+      "images": "Images / b-roll",
+      "notes": "Notes",
+      "saveSkillTitle": "Save as reusable skill",
+      "skillNameLabel": "Skill name",
+      "skillNamePlaceholder": "e.g. Energetic product review",
+      "saveSkillButton": "Save skill",
+      "skillSaved": "Skill saved. You'll be able to reuse this style for future videos."
+    }
+  },
+  "databaseAdmin": {
+    "title": "Database Admin",
+    "metaTitle": "Database Admin",
+    "metaDescription": "View and manage all accounts' data.",
+    "categories": {
+      "scriptAnalyses": "Script Analyses",
+      "styleTemplates": "Style Templates",
+      "users": "Users",
+      "logs": "Logs"
+    },
+    "scriptAnalyses": {
+      "owner": "Owner",
+      "createdAt": "Created At",
+      "source": "Source",
+      "scenes": "Scenes"
+    },
+    "styleTemplates": {
+      "owner": "Owner",
+      "name": "Name",
+      "genre": "Genre",
+      "createdAt": "Created At"
+    },
+    "users": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "createdAt": "Created At"
+    },
+    "logs": {
+      "selectDate": "Select date",
+      "allLevels": "All levels",
+      "refresh": "Refresh",
+      "empty": "No log entries for this day.",
+      "time": "Time",
+      "level": "Level",
+      "message": "Message",
+      "details": "Details"
+    }
+  },
+  "liquidGlassPanel": {
+    "open": "Open appearance settings",
+    "close": "Close",
+    "title": "Appearance",
+    "styleLabel": "Style",
+    "styleClassic": "Classic",
+    "styleLiquid": "Liquid Glass",
+    "themeLabel": "Theme",
+    "themeAuto": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "scaleLabel": "Scale",
+    "scaleMedium": "Medium",
+    "scaleAuto": "Large (fit width)",
+    "scaleOff": "100%",
+    "uploadBackground": "Upload image",
+    "defaultBackground": "Default",
+    "urlPlaceholder": "Or paste an image URL",
+    "apply": "Apply",
+    "opacityLabel": "Opacity",
+    "radiusLabel": "Roundness",
+    "backgroundInfo": "{label} · hue {hue}°, saturation {sat}%.",
+    "backgroundNeutral": "(near-monochrome image)"
   }
 }

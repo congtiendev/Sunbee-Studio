@@ -7,9 +7,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/utils";
-import EmptyState from "./empty-state";
-import TransactionRow from "./transaction-row";
-import type { TransactionTableProps } from "./types";
+import EmptyState from "@/pages/main/tables/basic-tables/table-three/empty-state";
+import TransactionRow from "@/pages/main/tables/basic-tables/table-three/transaction-row";
+import type { TransactionTableProps } from "@/pages/main/tables/basic-tables/table-three/types";
 
 export default function TransactionTable({
   table,

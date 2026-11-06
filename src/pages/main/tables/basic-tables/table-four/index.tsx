@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/table";
 import { VerticalDotsIcon } from "@/icons";
 import { cn } from "@/utils";
-import CampaignRow from "./campaign-row";
-import { featuredCampaignsData } from "./data";
-import type { TableFourProps } from "./types";
+import CampaignRow from "@/pages/main/tables/basic-tables/table-four/campaign-row";
+import { featuredCampaignsData } from "@/pages/main/tables/basic-tables/table-four/data";
+import type { TableFourProps } from "@/pages/main/tables/basic-tables/table-four/types";
 
 export default function TableFour({
   data = featuredCampaignsData,
@@ -25,7 +25,7 @@ export default function TableFour({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-4 pb-3 sm:px-6 dark:border-gray-800 dark:bg-white/3",
+        "card-surface overflow-hidden px-5 pt-4 pb-3 sm:px-6",
         className,
       )}
     >

@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PencilIcon } from "@/icons";
 import { useState } from "react";
-import AddressItem from "./address-item";
-import { defaultAddressData } from "./data";
-import EditAddressModal from "./edit-address-modal";
-import type { AddressData } from "./types";
+import AddressItem from "@/pages/main/profile/address/address-item";
+import { defaultAddressData } from "@/pages/main/profile/address/data";
+import EditAddressModal from "@/pages/main/profile/address/edit-address-modal";
+import type { AddressData } from "@/pages/main/profile/address/types";
 
 export default function AddressSection() {
   const [address, setAddress] = useState<AddressData>(defaultAddressData);

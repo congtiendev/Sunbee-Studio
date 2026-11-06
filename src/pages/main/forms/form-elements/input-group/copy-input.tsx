@@ -8,7 +8,7 @@ import { CheckIcon, CopyIcon } from "@/icons";
 import { useState } from "react";
 
 export default function CopyInput() {
-  const [value, setValue] = useState("www.tailadmin.com");
+  const [value, setValue] = useState("www.sunbee.vn");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -29,7 +29,7 @@ export default function CopyInput() {
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="www.tailadmin.com"
+          placeholder="www.sunbee.vn"
         />
         <InputGroupAddon
           align="inline-end"

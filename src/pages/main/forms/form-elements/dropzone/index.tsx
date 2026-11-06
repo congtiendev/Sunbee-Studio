@@ -1,5 +1,5 @@
 import { ComponentCard } from "@/components/shared/component-card";
-import DropzoneInput from "./dropzone-input";
+import DropzoneInput from "@/pages/main/forms/form-elements/dropzone/dropzone-input";
 
 export default function Dropzone() {
   return (
