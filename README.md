@@ -104,6 +104,8 @@ API key **không** nằm trong `.env` — nhập trực tiếp trong app, đư�
 2. Vào **Cài đặt → API Keys**, dán OpenAI API key và/hoặc Anthropic (Claude) API key.
 3. Trong bước Phân tích kịch bản, chọn provider (OpenAI/Claude) và model tương ứng.
 
+> **OpenAI key luôn bắt buộc**, kể cả khi bạn chỉ muốn dùng Claude để phân tích — bước "Chuyển video thành văn bản" (tải video lên) dùng Whisper của OpenAI để phiên âm, không có lựa chọn thay thế. Anthropic key là **tuỳ chọn nhưng nên có**: khi video không có lời thoại thật (chỉ nhạc nền, video câm/meme), app tự nhận diện và dùng AI (ưu tiên Claude, có chọn model/ngôn ngữ riêng ở bước upload) để mô tả lại nội dung từ khung hình thành kịch bản thay thế — thiếu Anthropic key thì bước này tự động dùng GPT-4.1 thay thế, vẫn chạy được nhưng không có lựa chọn Claude.
+
 ## Các lệnh
 
 | Lệnh | Mục đích |
