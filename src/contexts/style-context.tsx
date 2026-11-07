@@ -172,24 +172,30 @@ export function StyleProvider({ children }: { children: ReactNode }) {
 
   const applyBackground = useCallback(
     (src: string, label: string, { analyzeSrc = src, cors = false } = {}) => {
+      // Showing the image is never subject to CORS — only *reading its
+      // pixels* (for hue extraction, below) is. Apply it unconditionally so
+      // a CORS-protected URL still works as a background, it just won't
+      // retint the wash.
+      document.documentElement.style.setProperty("--lg-bg-image", `url("${src}")`);
+      setBackgroundLabel(label);
+      setBackgroundError(null);
+
       loadImage(analyzeSrc, cors)
         .then((img) => {
           const dominant = extractDominant(img);
-          document.documentElement.style.setProperty("--lg-bg-image", `url("${src}")`);
           if (dominant) {
             document.documentElement.style.setProperty("--wash-h", String(dominant.h));
             setBackgroundInfo(dominant);
           }
-          setBackgroundLabel(label);
-          setBackgroundError(null);
         })
-        .catch((err: unknown) => {
-          const isSecurityError = err instanceof DOMException && err.name === "SecurityError";
-          setBackgroundError(
-            isSecurityError
-              ? "Ảnh này không cho phép đọc màu (CORS). Hãy tải ảnh lên từ máy."
-              : "Không đọc được ảnh.",
-          );
+        .catch(() => {
+          // Extraction is best-effort: the background above already applied,
+          // so a failure here just means the wash keeps its previous tint.
+          if (cors) {
+            setBackgroundError(
+              "Đã áp dụng ảnh, nhưng không đọc được màu chủ đạo vì ảnh này chặn CORS.",
+            );
+          }
         });
     },
     [],

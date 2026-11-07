@@ -37,7 +37,7 @@ const CalendarViewSelect: React.FC<CalendarViewSelectProps> = ({
           render={
             <button
               type="button"
-              className="group calendar-view-btn flex h-9 w-full min-w-18 items-center justify-center gap-1 rounded-lg border border-gray-300 ps-2.5 pe-1.5 text-xs font-medium text-gray-700 shadow-xs sm:min-w-20 sm:gap-1.5 sm:ps-3 sm:pe-2 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+              className="glass-flat group calendar-view-btn flex h-9 w-full min-w-18 items-center justify-center gap-1 rounded-lg border border-gray-300 ps-2.5 pe-1.5 text-xs font-medium text-gray-700 shadow-xs sm:min-w-20 sm:gap-1.5 sm:ps-3 sm:pe-2 sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
             />
           }
         >
@@ -49,7 +49,7 @@ const CalendarViewSelect: React.FC<CalendarViewSelectProps> = ({
           align="end"
           side="bottom"
           sideOffset={6}
-          className="calendar-view-menu w-36 max-w-[calc(100vw-32px)] min-w-0 gap-0.5 rounded-xl border border-gray-200 bg-white p-1.5 shadow-lg sm:w-38 dark:border-gray-700 dark:bg-gray-900"
+          className="calendar-view-menu popover-surface w-36 max-w-[calc(100vw-32px)] min-w-0 gap-0.5 p-1.5 shadow-lg sm:w-38"
         >
           {CALENDAR_VIEW_OPTIONS.map((view) => (
             <DropdownMenuItem

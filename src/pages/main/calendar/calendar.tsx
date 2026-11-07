@@ -480,7 +480,7 @@ export default function Calendar() {
           rowEventClass="bg-transparent! border-0! px-1! py-0.5! shadow-none! hover:shadow-none! focus:outline-none"
           rowEventInnerClass="p-0! border-0! bg-transparent!"
           popoverFormat={{ month: "short", day: "numeric", year: "numeric" }}
-          popoverClass="z-99999! w-72 max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-800 dark:bg-gray-900"
+          popoverClass="popover-surface z-99999! w-72 max-w-[calc(100vw-32px)] overflow-hidden shadow-theme-lg"
           popoverCloseClass="absolute end-3 top-2.5 flex size-7 cursor-pointer items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white"
           popoverCloseContent={() => <CloseIcon className="size-4" />}
           datesSet={(arg) => {

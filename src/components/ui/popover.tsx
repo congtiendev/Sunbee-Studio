@@ -44,7 +44,7 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            "z-50 w-full max-w-97.5 origin-(--transform-origin) rounded-xl border-none bg-white text-gray-800 shadow-theme-md duration-100 outline-none dark:bg-[#1E2635] dark:text-gray-300",
+            "popover-surface z-50 w-full max-w-97.5 origin-(--transform-origin) border-none text-gray-800 shadow-theme-md duration-100 outline-none dark:text-gray-300",
             "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
             "data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
             className,
@@ -61,7 +61,7 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="popover-header"
       className={cn(
-        "rounded-t-xl border-b border-gray-200 bg-gray-100 px-5 py-3 dark:border-gray-800 dark:bg-gray-800",
+        "glass-flat rounded-t-xl border-b border-gray-200 bg-gray-100 px-5 py-3 dark:border-gray-800 dark:bg-gray-800",
         className,
       )}
       {...props}

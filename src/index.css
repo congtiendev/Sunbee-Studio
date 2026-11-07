@@ -1282,6 +1282,45 @@ pre[class*="language-"].line-numbers {
 /* Edge-to-edge chrome (sidebar, header): same glass recipe as card-surface
    but without rounding the panel's own corners. Adds nothing in classic
    mode — only the liquid override applies. */
+/* Form controls (input, textarea, select trigger): these usually sit nested
+   inside an already-blurred card-surface, so they don't need their own
+   backdrop-filter — just a translucent fill so they don't read as a flat
+   opaque hole inside the glass. */
+@utility glass-flat {
+  &:where(.liquid *) {
+    background: rgb(var(--lg-surf) / calc(var(--lg-a) - 0.3)) !important;
+    border-color: rgb(255 255 255 / 0.18) !important;
+  }
+
+  &:where(.liquid.dark *) {
+    background: rgb(var(--lg-surf) / calc(var(--lg-a) - 0.15)) !important;
+    border-color: rgb(255 255 255 / 0.08) !important;
+  }
+}
+
+/* Subtle internal separators (card headers/footers, tab underlines, table
+   rows) are opaque gray by default — translucent them too so they don't
+   read as flat lines cutting across the glass. Uses attribute-substring
+   selectors (not class selectors) so it matches regardless of variant
+   prefix — Tailwind compiles `dark:border-gray-800` to a literal class
+   named "dark:border-gray-800", which a plain `.border-gray-800` selector
+   never matches. */
+.liquid [class*="border-gray-100"],
+.liquid [class*="border-gray-200"],
+.liquid [class*="border-gray-300"],
+.liquid [class*="divide-gray-100"] > :not(:last-child),
+.liquid [class*="divide-gray-200"] > :not(:last-child),
+.liquid [class*="divide-gray-300"] > :not(:last-child) {
+  border-color: rgb(255 255 255 / 0.14) !important;
+}
+
+.liquid [class*="border-gray-700"],
+.liquid [class*="border-gray-800"],
+.liquid [class*="divide-gray-700"] > :not(:last-child),
+.liquid [class*="divide-gray-800"] > :not(:last-child) {
+  border-color: rgb(255 255 255 / 0.07) !important;
+}
+
 @utility glass-chrome {
   &:where(.liquid *) {
     position: relative;

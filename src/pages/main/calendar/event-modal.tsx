@@ -218,7 +218,7 @@ export default function CalendarEventModal({
         showCloseButton={false}
         className="overflow-visible border-none bg-transparent p-0 shadow-none sm:max-w-175"
       >
-        <Card className="relative w-full rounded-3xl border border-gray-200 bg-white p-6 shadow-theme-lg sm:p-11 dark:border-gray-800 dark:bg-[#1E2635]">
+        <Card className="relative w-full rounded-3xl p-6 shadow-theme-lg sm:p-11">
           {/* Top-end circular close button (Figma large design) */}
           <DialogClose
             render={

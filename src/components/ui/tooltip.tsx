@@ -33,7 +33,7 @@ const tooltipContentVariants = cva(
     variants: {
       variant: {
         default: "bg-gray-900 text-white dark:bg-gray-800",
-        line: "border border-gray-200 bg-white text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200",
+        line: "glass-flat border border-gray-200 bg-white text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200",
       },
     },
     defaultVariants: {

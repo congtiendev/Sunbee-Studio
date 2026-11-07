@@ -51,7 +51,7 @@ function SheetContent({
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          "fixed z-101 flex flex-col gap-4 border-gray-200 bg-white p-6 text-sm text-gray-700 shadow-theme-lg duration-200 outline-none data-closed:animate-out data-open:animate-in dark:border-gray-800 dark:bg-[#1E2635] dark:text-gray-300",
+          "glass-chrome fixed z-101 flex flex-col gap-4 border-gray-200 bg-white p-6 text-sm text-gray-700 shadow-theme-lg duration-200 outline-none data-closed:animate-out data-open:animate-in dark:border-gray-800 dark:bg-[#1E2635] dark:text-gray-300",
           "data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:max-h-[85vh] data-[side=bottom]:border-t data-[side=bottom]:data-closed:slide-out-to-bottom data-[side=bottom]:data-open:slide-in-from-bottom",
           "data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:max-h-[85vh] data-[side=top]:border-b data-[side=top]:data-closed:slide-out-to-top data-[side=top]:data-open:slide-in-from-top",
           "data-[side=left]:inset-y-0 data-[side=left]:inset-s-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-e data-[side=left]:data-closed:slide-out-to-start data-[side=left]:data-open:slide-in-from-start data-[side=left]:sm:max-w-sm",

@@ -26,7 +26,7 @@ const tabsListVariants = cva(
     variants: {
       variant: {
         default:
-          "w-fit rounded-lg bg-gray-100 p-1 group-data-[orientation=horizontal]/tabs:h-11 group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col dark:bg-gray-900",
+          "glass-flat w-fit rounded-lg bg-gray-100 p-1 group-data-[orientation=horizontal]/tabs:h-11 group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col dark:bg-gray-900",
         line: "w-full justify-start gap-2 border-b border-gray-200 bg-transparent p-0 group-data-[orientation=horizontal]/tabs:h-12 group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col group-data-[orientation=vertical]/tabs:gap-1 group-data-[orientation=vertical]/tabs:border-e group-data-[orientation=vertical]/tabs:border-b-0 dark:border-gray-800",
       },
     },

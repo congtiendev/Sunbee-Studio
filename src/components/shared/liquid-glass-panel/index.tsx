@@ -222,7 +222,7 @@ export default function LiquidGlassPanel() {
           </p>
         ) : (
           backgroundInfo && (
-            <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+            <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
               {t("backgroundInfo", {
                 label: backgroundLabel,
                 hue: Math.round(backgroundInfo.h),
@@ -240,7 +240,7 @@ export default function LiquidGlassPanel() {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-20 shrink-0 text-gray-600 dark:text-gray-400">{label}</span>
+      <span className="w-20 shrink-0 text-gray-700 dark:text-gray-200">{label}</span>
       {children}
     </div>
   );
