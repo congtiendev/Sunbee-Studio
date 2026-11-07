@@ -178,8 +178,11 @@ export default function ScriptStep({
     // Dense binary "data stream" look — one continuous wrapped string per
     // column (no per-line gaps), duplicated once for a seamless scroll loop.
     return [0, 1, 2, 3, 4, 5, 6, 7].map(() => {
+      // Generous length so every column's duplicated content comfortably
+      // covers more than 2x the overlay's height at any wrap width/line
+      // height, so the scroll loop never shows a blank tail.
       let bits = "";
-      for (let i = 0; i < 500; i++) {
+      for (let i = 0; i < 2000; i++) {
         bits += Math.random() < 0.5 ? "0" : "1";
       }
       return bits + bits;
@@ -453,7 +456,7 @@ export default function ScriptStep({
                     <div
                       key={col}
                       className={cn(
-                        "overflow-hidden font-jetbrains-mono text-sm leading-[0.65] font-medium break-all whitespace-pre-wrap blur-[0.5px] text-gray-700/25 dark:text-gray-200/20",
+                        "overflow-hidden font-jetbrains-mono text-sm leading-[0.85] font-medium break-all whitespace-pre-wrap blur-[0.5px] text-gray-700/25 dark:text-gray-200/20",
                         col % 2 === 0 ? "animate-scroll-up" : "animate-scroll-down",
                       )}
                       style={{
