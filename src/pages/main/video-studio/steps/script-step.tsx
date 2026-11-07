@@ -2,6 +2,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,6 +78,7 @@ export default function ScriptStep({
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [transcribing, setTranscribing] = useState(false);
   const [frames, setFrames] = useState<string[]>([]);
+  const [previewFrame, setPreviewFrame] = useState<string | null>(null);
   const [provider, setProvider] = useState<AnalyzeProvider>("openai");
   const [model, setModel] = useState<string>(defaultModelFor("openai"));
   const [effort, setEffort] = useState<"low" | "medium" | "high">("medium");
@@ -85,10 +87,20 @@ export default function ScriptStep({
   >({ openai: true, claude: true });
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
   const [versionSheetOpen, setVersionSheetOpen] = useState(false);
+  const [noSpeechHint, setNoSpeechHint] = useState(false);
+  const [aiDescribed, setAiDescribed] = useState(false);
+  const [describeProvider, setDescribeProvider] = useState<AnalyzeProvider>("claude");
+  const [describeModel, setDescribeModel] = useState<string>(defaultModelFor("claude"));
+  const [scriptLanguage, setScriptLanguage] = useState<"vi" | "en">("vi");
 
   const handleProviderChange = (next: AnalyzeProvider) => {
     setProvider(next);
     setModel(defaultModelFor(next));
+  };
+
+  const handleDescribeProviderChange = (next: AnalyzeProvider) => {
+    setDescribeProvider(next);
+    setDescribeModel(defaultModelFor(next));
   };
 
   useEffect(() => {
@@ -164,25 +176,25 @@ export default function ScriptStep({
     );
     setTemplateName("");
     setTemplateSaved(false);
+    setNoSpeechHint(false);
+    setAiDescribed(false);
   };
 
   const costEstimate = useMemo(
     () =>
-      scriptText
+      scriptText || frames.length > 0
         ? estimateAnalyzeScriptCost(scriptText, frames.length, provider, model)
         : null,
     [scriptText, frames.length, provider, model],
   );
 
   const scrollColumns = useMemo(() => {
-    // Dense binary "data stream" look — one continuous wrapped string per
-    // column (no per-line gaps), duplicated once for a seamless scroll loop.
-    return [0, 1, 2, 3, 4, 5, 6, 7].map(() => {
-      // Generous length so every column's duplicated content comfortably
-      // covers more than 2x the overlay's height at any wrap width/line
-      // height, so the scroll loop never shows a blank tail.
+    // Classic "digital rain" look: each column is only ~1 character wide, so
+    // every wrapped line is a single digit — there's no multi-char row/grid
+    // feel, just one continuous falling stream of bits.
+    return Array.from({ length: 16 }, () => {
       let bits = "";
-      for (let i = 0; i < 2000; i++) {
+      for (let i = 0; i < 400; i++) {
         bits += Math.random() < 0.5 ? "0" : "1";
       }
       return bits + bits;
@@ -193,11 +205,14 @@ export default function ScriptStep({
     setError(null);
     setFetching(true);
     setFrames([]);
+    setNoSpeechHint(false);
+    setAiDescribed(false);
     try {
       const res = await apiClient.script.fetchTranscript({ url, videoId });
       setScriptText(res.scriptText);
       setFrames(res.frames ?? []);
       setCurrentVersionId(res.versionId ?? null);
+      setNoSpeechHint(Boolean(res.noSpeechDetected));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -222,11 +237,21 @@ export default function ScriptStep({
     setError(null);
     setTranscribing(true);
     setFrames([]);
+    setNoSpeechHint(false);
+    setAiDescribed(false);
     try {
-      const res = await apiClient.script.transcribeUpload(uploadFile, videoId);
+      const res = await apiClient.script.transcribeUpload(
+        uploadFile,
+        videoId,
+        describeProvider,
+        describeModel,
+        scriptLanguage,
+      );
       setScriptText(res.scriptText);
       setFrames(res.frames ?? []);
       setCurrentVersionId(res.versionId ?? null);
+      setNoSpeechHint(Boolean(res.noSpeechDetected));
+      setAiDescribed(Boolean(res.aiDescribed));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -417,6 +442,86 @@ export default function ScriptStep({
               </div>
             )}
 
+            <div className="mt-3 flex flex-wrap items-end gap-3">
+              <Field className="w-auto">
+                <FieldLabel>{t("describeProviderLabel")}</FieldLabel>
+                <Tabs
+                  value={describeProvider}
+                  onValueChange={(value) =>
+                    handleDescribeProviderChange(value as AnalyzeProvider)
+                  }
+                >
+                  <TabsList>
+                    <TabsTrigger
+                      value="openai"
+                      className="gap-1.5"
+                      disabled={!availableProviders.openai}
+                    >
+                      <GptIcon className="size-4" />
+                      {t("providerOpenai")}
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="claude"
+                      className="gap-1.5"
+                      disabled={!availableProviders.claude}
+                    >
+                      <ClaudeIcon className="size-4" />
+                      {t("providerClaude")}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </Field>
+
+              <Field className="w-56">
+                <FieldLabel>{t("modelLabel")}</FieldLabel>
+                <Select
+                  value={describeModel}
+                  onValueChange={(value) => setDescribeModel(value as string)}
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {() =>
+                        ANALYZE_MODELS[describeProvider].find((m) => m.id === describeModel)
+                          ?.label ?? describeModel
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ANALYZE_MODELS[describeProvider].map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+
+              <Field className="w-40">
+                <FieldLabel>{t("scriptLanguageLabel")}</FieldLabel>
+                <Select
+                  value={scriptLanguage}
+                  onValueChange={(value) => setScriptLanguage(value as "vi" | "en")}
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {() =>
+                        scriptLanguage === "vi"
+                          ? t("scriptLanguageVi")
+                          : t("scriptLanguageEn")
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="vi">{t("scriptLanguageVi")}</SelectItem>
+                    <SelectItem value="en">{t("scriptLanguageEn")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+              {t("describeProviderHint")}
+            </p>
+
             <Button
               type="button"
               className="mt-3"
@@ -445,23 +550,24 @@ export default function ScriptStep({
             <Textarea
               rows={20}
               value={scriptText}
-              onChange={(e) => setScriptText(e.target.value)}
+              onChange={(e) => {
+                setScriptText(e.target.value);
+                setNoSpeechHint(false);
+                setAiDescribed(false);
+              }}
               placeholder={t("scriptPlaceholder")}
               className="resize-y text-[15px] leading-relaxed"
             />
             {(fetching || transcribing || analyzing) && (
               <div className="absolute inset-0 overflow-hidden rounded-lg bg-white/85 backdrop-blur-sm dark:bg-gray-900/85">
-                <div className="absolute inset-0 grid grid-cols-8 gap-0">
+                <div className="absolute inset-0 grid grid-cols-[repeat(16,1fr)] gap-0">
                   {scrollColumns.map((bits, col) => (
                     <div
                       key={col}
-                      className={cn(
-                        "overflow-hidden font-jetbrains-mono text-sm leading-[0.85] font-medium break-all whitespace-pre-wrap blur-[0.5px] text-gray-700/25 dark:text-gray-200/20",
-                        col % 2 === 0 ? "animate-scroll-up" : "animate-scroll-down",
-                      )}
+                      className="animate-scroll-down overflow-hidden font-jetbrains-mono text-xs leading-[1.1] font-medium break-all whitespace-pre-wrap blur-[0.5px] text-gray-700/25 dark:text-gray-200/20"
                       style={{
-                        animationDuration: `${3.5 + (col % 3)}s`,
-                        animationDelay: `${-col * 1.3}s`,
+                        animationDuration: `${2.5 + (col % 4)}s`,
+                        animationDelay: `${-col * 0.7}s`,
                       }}
                     >
                       {bits}
@@ -499,6 +605,14 @@ export default function ScriptStep({
           )}
         </Field>
 
+        {noSpeechHint && (
+          <Alert variant={aiDescribed ? "info" : "warning"}>
+            <AlertDescription>
+              {t(aiDescribed ? "noSpeechAiDescribedHint" : "noSpeechHint")}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {frames.length > 0 && (
           <div>
             <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
@@ -506,16 +620,30 @@ export default function ScriptStep({
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {frames.map((frame, i) => (
-                <img
+                <button
                   key={i}
-                  src={frame}
-                  alt=""
-                  className="h-16 w-28 shrink-0 rounded-md border border-gray-200 object-cover dark:border-gray-800"
-                />
+                  type="button"
+                  onClick={() => setPreviewFrame(frame)}
+                  className="shrink-0 cursor-zoom-in rounded-md outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                >
+                  <img
+                    src={frame}
+                    alt=""
+                    className="h-16 w-28 rounded-md border border-gray-200 object-cover dark:border-gray-800"
+                  />
+                </button>
               ))}
             </div>
           </div>
         )}
+
+        <Dialog open={previewFrame !== null} onOpenChange={(open) => !open && setPreviewFrame(null)}>
+          <DialogContent className="sm:max-w-3xl">
+            {previewFrame && (
+              <img src={previewFrame} alt="" className="w-full rounded-lg" />
+            )}
+          </DialogContent>
+        </Dialog>
 
         <div className="flex flex-wrap items-end gap-4">
           <Field className="w-auto">
@@ -625,7 +753,7 @@ export default function ScriptStep({
           <Button
             type="button"
             onClick={() => void handleAnalyze()}
-            disabled={!scriptText || analyzing}
+            disabled={(!scriptText && frames.length === 0) || analyzing}
           >
             {analyzing && <Spinner />}
             {t("analyzeButton")}

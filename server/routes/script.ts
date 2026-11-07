@@ -82,10 +82,20 @@ router.post(
         });
         return;
       }
-      const { scriptText, frames } = await transcribeVideoFile(
+      const body = req.body as {
+        videoId?: string;
+        provider?: "openai" | "claude";
+        model?: string;
+        language?: "vi" | "en";
+      };
+      const { scriptText, frames, noSpeechDetected, aiDescribed } = await transcribeVideoFile(
         req.file.buffer,
         req.file.originalname,
         settings.openaiApiKey,
+        settings.anthropicApiKey,
+        body.provider,
+        body.model,
+        body.language,
       );
       const version = saveScriptVersion(
         req.user!.id,
@@ -95,9 +105,15 @@ router.post(
         frames,
         "draft",
         undefined,
-        (req.body as { videoId?: string }).videoId,
+        body.videoId,
       );
-      res.json({ scriptText, frames, versionId: version.id });
+      res.json({
+        scriptText,
+        frames,
+        versionId: version.id,
+        noSpeechDetected,
+        aiDescribed,
+      });
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
     }

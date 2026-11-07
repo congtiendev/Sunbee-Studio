@@ -74,6 +74,8 @@ export interface FetchTranscriptResult {
   scriptText: string;
   frames?: string[];
   versionId?: string;
+  noSpeechDetected?: boolean;
+  aiDescribed?: boolean;
 }
 
 export type SceneNarrativeRole =

@@ -25,7 +25,7 @@ export async function analyzeScript(
           { type: "text" as const, text: scriptText },
           ...frames.map((url) => ({
             type: "image_url" as const,
-            image_url: { url, detail: "low" as const },
+            image_url: { url, detail: "high" as const },
           })),
         ]
       : scriptText;

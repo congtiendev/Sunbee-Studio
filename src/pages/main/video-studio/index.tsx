@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   DownloadIcon,
@@ -83,6 +84,7 @@ export default function VideoStudioPage() {
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(
     () => searchParams.get("video"),
   );
+  const [pickerCollapsed, setPickerCollapsed] = useState(false);
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [creatingSubmitting, setCreatingSubmitting] = useState(false);
@@ -218,8 +220,8 @@ export default function VideoStudioPage() {
           </div>
         </Card>
       ) : currentProjectId ? (
-        <div className="flex items-start gap-5">
-          <Card className="sticky top-24 max-h-[calc(100vh-7rem)] w-72 shrink-0 gap-3 overflow-y-auto p-4">
+        <>
+          <Card className="mb-5 gap-3 p-4">
             <div className="flex items-center gap-2">
               <Select
                 value={currentProjectId ?? undefined}
@@ -232,7 +234,7 @@ export default function VideoStudioPage() {
                   handleSelectProject(value as string);
                 }}
               >
-                <SelectTrigger className="flex-1">
+                <SelectTrigger className="w-64">
                   <FolderIcon className="size-4 shrink-0" />
                   <SelectValue>{() => currentProjectName}</SelectValue>
                 </SelectTrigger>
@@ -247,82 +249,95 @@ export default function VideoStudioPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+
+              <button
+                type="button"
+                onClick={() => setPickerCollapsed((prev) => !prev)}
+                aria-expanded={!pickerCollapsed}
+                className="ms-auto flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+              >
+                <ChevronDownIcon
+                  className={`size-5 transition-transform ${pickerCollapsed ? "" : "rotate-180"}`}
+                />
+              </button>
             </div>
 
-            <div className="-mx-4 border-t border-gray-100 dark:border-gray-800" />
+            {!pickerCollapsed && (
+              <>
+                <div className="border-t border-gray-100 dark:border-gray-800" />
 
-            <ProjectTree
-              key={currentProjectId}
-              projectId={currentProjectId}
-              selectedVideoId={currentVideoId}
-              onSelectVideo={handleSelectVideo}
-            />
+                <ProjectTree
+                  key={currentProjectId}
+                  projectId={currentProjectId}
+                  selectedVideoId={currentVideoId}
+                  onSelectVideo={handleSelectVideo}
+                />
+              </>
+            )}
           </Card>
 
-          <div className="min-w-0 flex-1">
-            {currentVideoId ? (
-              <>
-                <Card className="relative gap-0 pt-14 sm:pt-16">
-                  <div className="absolute inset-x-5 -top-[18px] z-10 sm:inset-x-6">
-                    <Stepper
-                      steps={steps}
-                      activeIndex={activeIndex}
-                      furthestIndex={furthestIndex}
-                      onStepClick={goToStep}
+          {currentVideoId ? (
+            <>
+              <Card className="relative gap-0 pt-14 sm:pt-16">
+                <div className="absolute inset-x-5 -top-[18px] z-10 sm:inset-x-6">
+                  <Stepper
+                    steps={steps}
+                    activeIndex={activeIndex}
+                    furthestIndex={furthestIndex}
+                    onStepClick={goToStep}
+                  />
+                </div>
+
+                <div className="border-t border-gray-100 pt-6 dark:border-gray-800">
+                  {activeKey === "script" && (
+                    <ScriptStep
+                      videoId={currentVideoId}
+                      onAnalyzed={() => setScriptReady(true)}
                     />
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-6 dark:border-gray-800">
-                    {activeKey === "script" && (
-                      <ScriptStep
-                        videoId={currentVideoId}
-                        onAnalyzed={() => setScriptReady(true)}
-                      />
-                    )}
-                    {activeKey === "assets" && (
-                      <PlaceholderStep title={t("comingSoon")} />
-                    )}
-                    {activeKey === "editPlan" && (
-                      <PlaceholderStep title={t("comingSoon")} />
-                    )}
-                    {activeKey === "render" && (
-                      <PlaceholderStep title={t("comingSoon")} />
-                    )}
-                  </div>
-                </Card>
-
-                <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleBack}
-                    disabled={activeIndex === 0}
-                    className="gap-1.5"
-                  >
-                    <ChevronLeftIcon className="size-4 rtl:rotate-180" />
-                    {t("navigation.back")}
-                  </Button>
-
-                  {!isLastStep && (
-                    <Button
-                      type="button"
-                      onClick={handleNext}
-                      disabled={!canGoNext}
-                      className="gap-1.5"
-                    >
-                      {t("navigation.next")}
-                      <ChevronRightIcon className="size-4 rtl:rotate-180" />
-                    </Button>
+                  )}
+                  {activeKey === "assets" && (
+                    <PlaceholderStep title={t("comingSoon")} />
+                  )}
+                  {activeKey === "editPlan" && (
+                    <PlaceholderStep title={t("comingSoon")} />
+                  )}
+                  {activeKey === "render" && (
+                    <PlaceholderStep title={t("comingSoon")} />
                   )}
                 </div>
-              </>
-            ) : (
-              <Card className="py-16 text-center text-sm text-gray-500 dark:text-gray-400">
-                {t("video.selectHint")}
               </Card>
-            )}
-          </div>
-        </div>
+
+              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={activeIndex === 0}
+                  className="gap-1.5"
+                >
+                  <ChevronLeftIcon className="size-4 rtl:rotate-180" />
+                  {t("navigation.back")}
+                </Button>
+
+                {!isLastStep && (
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!canGoNext}
+                    className="gap-1.5"
+                  >
+                    {t("navigation.next")}
+                    <ChevronRightIcon className="size-4 rtl:rotate-180" />
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <Card className="py-16 text-center text-sm text-gray-500 dark:text-gray-400">
+              {t("video.selectHint")}
+            </Card>
+          )}
+        </>
       ) : null}
 
       <Dialog open={projectDialogOpen} onOpenChange={setProjectDialogOpen}>

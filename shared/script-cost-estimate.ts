@@ -36,13 +36,17 @@ function findModel(provider: AnalyzeProvider, modelId?: string): AnalyzeModel {
 }
 
 // Rough chars-per-token heuristic; the structured scenes/resources/style JSON
-// typically runs a bit larger than the input script, hence the multiplier.
+// typically runs a bit larger than the input script, hence the multiplier —
+// bumped up since scenes now ask for much more detailed visualDescription prose.
 const CHARS_PER_TOKEN = 4;
-const OUTPUT_TOKEN_MULTIPLIER = 1.4;
+const OUTPUT_TOKEN_MULTIPLIER = 2.2;
 
 // Rough flat per-image token cost (every model's vision tokenization isn't
 // purely linear — this is a ballpark for the UI estimate, not a bill).
-const TOKENS_PER_IMAGE = 200;
+// OpenAI frames are sent at "high" detail (tiled, ~255-425 tokens/image
+// depending on size) rather than "low" (flat 85 tokens); Claude has no
+// detail toggle and always processes at full resolution.
+const TOKENS_PER_IMAGE = 350;
 
 export interface ScriptCostEstimate {
   estimatedInputTokens: number;

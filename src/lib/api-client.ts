@@ -150,10 +150,16 @@ export const apiClient = {
     transcribeUpload: (
       file: File,
       videoId?: string,
+      provider?: "openai" | "claude",
+      model?: string,
+      language?: "vi" | "en",
     ): Promise<FetchTranscriptResult> => {
       const formData = new FormData();
       formData.set("video", file);
       if (videoId) formData.set("videoId", videoId);
+      if (provider) formData.set("provider", provider);
+      if (model) formData.set("model", model);
+      if (language) formData.set("language", language);
       return requestUpload("/api/script/transcribe-upload", formData);
     },
     analyze: (req: ScriptAnalyzeRequest): Promise<ScriptAnalyzeResponse> =>
