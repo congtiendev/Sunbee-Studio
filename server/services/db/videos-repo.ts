@@ -46,6 +46,14 @@ export function listVideos(
   return rows.map(rowToVideo);
 }
 
+/** Whether the user may work on this video (owner, or any video for admins). */
+export function canAccessVideo(userId: string, isAdmin: boolean, videoId: string): boolean {
+  const row = getDb().prepare("SELECT user_id FROM videos WHERE id = ?").get(videoId) as
+    | { user_id: string | null }
+    | undefined;
+  return Boolean(row && (isAdmin || row.user_id === userId));
+}
+
 export function createVideo(
   userId: string,
   categoryId: string,

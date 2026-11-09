@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { dataDir } from "../../env.js";
+import { runNumberedMigrations } from "./migrations.js";
 
 let db: Database.Database | null = null;
 
@@ -130,6 +131,7 @@ export function getDb(): Database.Database {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
   db = new Database(dbPath);
-  runMigrations(db);
+  runMigrations(db); // baseline schema ("migration 0")
+  runNumberedMigrations(db);
   return db;
 }

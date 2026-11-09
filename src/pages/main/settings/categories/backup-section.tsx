@@ -89,7 +89,11 @@ export default function BackupSection() {
         )}
 
         <div className="flex flex-wrap gap-3">
-          <Button type="button" onClick={() => void handleExport()} disabled={exporting}>
+          <Button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={exporting}
+          >
             {exporting ? <Spinner /> : <DownloadIcon className="size-4" />}
             {t("exportButton")}
           </Button>
@@ -116,7 +120,9 @@ export default function BackupSection() {
           />
         </div>
 
-        <p className="text-xs text-gray-500 dark:text-gray-400">{t("warning")}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {t("warning")}
+        </p>
       </CardContent>
     </Card>
   );

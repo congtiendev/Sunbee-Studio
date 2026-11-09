@@ -37,6 +37,7 @@ type ViewMode = "card" | "table";
 export default function VideoStudioCategoriesPage() {
   const t = useTranslations("videoStudio.manage");
   const tRoot = useTranslations("videoStudio");
+  const tNav = useTranslations("sidebar.items");
 
   const [viewMode, setViewMode] = useState<ViewMode>("card");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -108,7 +109,7 @@ export default function VideoStudioCategoriesPage() {
   return (
     <div>
       <PageMeta
-        title={tRoot("sidebar.items.videoStudioCategories")}
+        title={tNav("videoStudioCategories")}
         description={t("categoriesPageDescription")}
       />
       <PageBreadcrumb pageTitle={t("categoriesPageTitle")} />

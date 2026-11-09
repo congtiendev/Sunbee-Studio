@@ -20,6 +20,9 @@ export const navItems: NavItem[] = [
       { key: "videoStudioCreate", path: "/video-studio" },
       { key: "videoStudioProjects", path: "/video-studio/projects" },
       { key: "videoStudioCategories", path: "/video-studio/categories" },
+      { key: "videoStudioSkills", path: "/video-studio/skills" },
+      { key: "videoStudioDocuments", path: "/video-studio/documents" },
+      { key: "videoStudioAssets", path: "/video-studio/assets" },
     ],
   },
   {

@@ -19,6 +19,8 @@ interface RawUserSettings extends UiPreferences {
   activeAnthropicApiKeyId?: string;
   /** Legacy single-key field, migrated into `anthropicApiKeys` on first read/write. */
   anthropicApiKey?: string;
+  /** Keys of research sources (pexels, pixabay, ...), by source key. Values encrypted. */
+  researchApiKeys?: Record<string, string>;
 }
 
 const UI_PREFERENCE_KEYS = [
@@ -66,6 +68,12 @@ export function getSettings(userId: string): AppSettings {
     if (raw[key] !== undefined) (result[key] as unknown) = raw[key];
   }
 
+  if (raw.researchApiKeys && Object.keys(raw.researchApiKeys).length > 0) {
+    result.researchApiKeys = Object.fromEntries(
+      Object.entries(raw.researchApiKeys).map(([source, value]) => [source, decryptLocal(value)]),
+    );
+  }
+
   const anthropicKeys = raw.anthropicApiKeys ?? [];
   if (anthropicKeys.length > 0) {
     result.anthropicApiKeys = anthropicKeys.map((k) => ({
@@ -93,6 +101,16 @@ export function setSettings(userId: string, patch: Partial<AppSettings>): AppSet
 
   for (const key of UI_PREFERENCE_KEYS) {
     if (patch[key] !== undefined) (raw[key] as unknown) = patch[key];
+  }
+
+  // Merge per source: an empty string removes that source's key.
+  if (patch.researchApiKeys) {
+    const keys = { ...raw.researchApiKeys };
+    for (const [source, value] of Object.entries(patch.researchApiKeys)) {
+      if (value.trim()) keys[source] = encryptLocal(value.trim());
+      else delete keys[source];
+    }
+    raw.researchApiKeys = keys;
   }
 
   all[userId] = raw;

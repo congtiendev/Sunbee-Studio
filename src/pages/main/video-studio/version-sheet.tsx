@@ -96,31 +96,36 @@ export default function VersionSheet({
         ) : (
           <div className="-mx-1 flex-1 space-y-3 overflow-y-auto px-1">
             {rows.map((row) => (
-              <button
-                key={row.id}
-                type="button"
-                onClick={() => {
-                  onSelect(row);
-                  onOpenChange(false);
-                }}
-                className={cn(
-                  "w-full rounded-xl border p-4 text-start transition-colors",
-                  row.id === currentVersionId
-                    ? "border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10"
-                    : "border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700",
-                )}
-              >
-                <div className="flex items-start justify-between gap-3">
+              // The delete button is a sibling of the select button, not a child:
+              // nesting <button>s is invalid HTML and React warns about it.
+              <div key={row.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelect(row);
+                    onOpenChange(false);
+                  }}
+                  className={cn(
+                    "w-full rounded-xl border p-4 pe-12 text-start transition-colors",
+                    row.id === currentVersionId
+                      ? "border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-500/10"
+                      : "border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700",
+                  )}
+                >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span
                         className={cn(
                           "size-1.5 shrink-0 rounded-full",
-                          row.kind === "analyzed" ? "bg-green-500" : "bg-gray-400",
+                          row.kind === "analyzed"
+                            ? "bg-green-500"
+                            : "bg-gray-400",
                         )}
                       />
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {row.kind === "analyzed" ? t("version.analyzed") : t("version.draft")}
+                        {row.kind === "analyzed"
+                          ? t("version.analyzed")
+                          : t("version.draft")}
                       </span>
                       <span className="text-xs text-gray-400 dark:text-gray-500">
                         {new Date(row.createdAt).toLocaleString()}
@@ -130,10 +135,13 @@ export default function VersionSheet({
                         color={row.sourceType === "youtube" ? "info" : "gray"}
                         size="sm"
                       >
-                        {row.sourceType === "youtube"
-                          ? t("history.sourceYoutube")
-                          : t("history.sourceImport")}
+                        {t(`history.sources.${row.sourceType}`)}
                       </Badge>
+                      {row.approved && (
+                        <Badge variant="light" color="success" size="sm">
+                          {t("approve.approvedBadge")}
+                        </Badge>
+                      )}
                     </div>
                     {row.sourceUrl && (
                       <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
@@ -147,20 +155,18 @@ export default function VersionSheet({
                       {t("history.sceneCount", { count: row.scenes.length })}
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={deletingId === row.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void handleDelete(row.id);
-                    }}
-                  >
-                    <TrashBinIcon className="size-4" />
-                  </Button>
-                </div>
-              </button>
+                </button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="absolute end-4 top-4"
+                  disabled={deletingId === row.id}
+                  onClick={() => void handleDelete(row.id)}
+                >
+                  <TrashBinIcon className="size-4" />
+                </Button>
+              </div>
             ))}
           </div>
         )}

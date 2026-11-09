@@ -314,6 +314,42 @@
   @apply bg-brand-50 group-hover:bg-brand-100 dark:bg-brand-500/15 dark:group-hover:bg-brand-500/20;
 }
 
+/* Thin scrollbars everywhere (page, panels, textareas, tables). Utilities
+   such as `no-scrollbar` still win because they live in a later layer. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-gray-300) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: var(--color-gray-600) transparent;
+  }
+
+  /* Browsers without `scrollbar-width` (older Safari). */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background-color: var(--color-gray-300);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: var(--color-gray-600);
+  }
+}
+
 @utility no-scrollbar {
   /* Chrome, Safari and Opera */
   &::-webkit-scrollbar {

@@ -1,16 +1,20 @@
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OverflowTabsList } from "@/components/ui/overflow-tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useTranslations } from "@/i18n";
 import { useState } from "react";
 import ApiKeysSection from "@/pages/main/settings/categories/api-keys-section";
 import BackupSection from "@/pages/main/settings/categories/backup-section";
 import McpSection from "@/pages/main/settings/categories/mcp-section";
 import PlaceholderSection from "@/pages/main/settings/categories/placeholder-section";
+import PromptsSection from "@/pages/main/settings/categories/prompts-section";
+import ResearchKeysSection from "@/pages/main/settings/categories/research-keys-section";
 import type { SettingsCategoryKey } from "@/pages/main/settings/types";
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
 
   const [category, setCategory] = useState<SettingsCategoryKey>("apiKeys");
 
@@ -24,16 +28,29 @@ export default function SettingsPage() {
         value={category}
         onValueChange={(value) => setCategory(value as SettingsCategoryKey)}
       >
-        <TabsList variant="line">
-          <TabsTrigger value="apiKeys">{t("categories.apiKeys")}</TabsTrigger>
-          <TabsTrigger value="mcp">{t("categories.mcp")}</TabsTrigger>
-          <TabsTrigger value="backup">{t("categories.backup")}</TabsTrigger>
-          <TabsTrigger value="general">{t("categories.general")}</TabsTrigger>
-          <TabsTrigger value="updates">{t("categories.updates")}</TabsTrigger>
-        </TabsList>
+        <OverflowTabsList
+          variant="line"
+          value={category}
+          onValueChange={(value) => setCategory(value as SettingsCategoryKey)}
+          moreLabel={tCommon("moreTabs")}
+          items={(
+            [
+              "apiKeys",
+              "prompts",
+              "mcp",
+              "backup",
+              "general",
+              "updates",
+            ] as const
+          ).map((key) => ({ value: key, label: t(`categories.${key}`) }))}
+        />
 
         <TabsContent value="apiKeys">
           <ApiKeysSection />
+          <ResearchKeysSection />
+        </TabsContent>
+        <TabsContent value="prompts">
+          <PromptsSection />
         </TabsContent>
         <TabsContent value="mcp">
           <McpSection />

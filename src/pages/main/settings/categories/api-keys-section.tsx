@@ -46,7 +46,9 @@ export default function ApiKeysSection() {
 
   // --- Anthropic: multiple named keys, switch which one is active ---
   const [anthropicKeys, setAnthropicKeys] = useState<NamedApiKey[]>([]);
-  const [activeAnthropicKeyId, setActiveAnthropicKeyId] = useState<string | undefined>(undefined);
+  const [activeAnthropicKeyId, setActiveAnthropicKeyId] = useState<
+    string | undefined
+  >(undefined);
   const [addingKey, setAddingKey] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyValue, setNewKeyValue] = useState("");
@@ -54,7 +56,9 @@ export default function ApiKeysSection() {
   const [newKeyTestError, setNewKeyTestError] = useState<string | null>(null);
   const [savingNewKey, setSavingNewKey] = useState(false);
   const [keyActionError, setKeyActionError] = useState<string | null>(null);
-  const [keyActionPendingId, setKeyActionPendingId] = useState<string | null>(null);
+  const [keyActionPendingId, setKeyActionPendingId] = useState<string | null>(
+    null,
+  );
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [renameSaving, setRenameSaving] = useState(false);
@@ -96,7 +100,10 @@ export default function ApiKeysSection() {
     setOpenaiTestStatus("testing");
     setOpenaiTestError(null);
     try {
-      const result = await apiClient.settings.testKey({ provider: "openai", apiKey: openaiApiKey });
+      const result = await apiClient.settings.testKey({
+        provider: "openai",
+        apiKey: openaiApiKey,
+      });
       if (result.ok) {
         setOpenaiTestStatus("ok");
       } else {
@@ -110,7 +117,9 @@ export default function ApiKeysSection() {
   };
 
   const openaiNeedsTest =
-    openaiApiKey !== "" && openaiApiKey !== savedOpenaiApiKey && openaiTestStatus !== "ok";
+    openaiApiKey !== "" &&
+    openaiApiKey !== savedOpenaiApiKey &&
+    openaiTestStatus !== "ok";
 
   const handleSaveOpenai = async () => {
     if (openaiNeedsTest) return;
@@ -215,7 +224,10 @@ export default function ApiKeysSection() {
     setRenameSaving(true);
     setKeyActionError(null);
     try {
-      const settings = await apiClient.settings.renameAnthropicKey(id, renameValue.trim());
+      const settings = await apiClient.settings.renameAnthropicKey(
+        id,
+        renameValue.trim(),
+      );
       setAnthropicKeys(settings.anthropicApiKeys ?? []);
       setActiveAnthropicKeyId(settings.activeAnthropicApiKeyId);
       cancelRename();
@@ -282,13 +294,19 @@ export default function ApiKeysSection() {
             type="button"
             variant="outline"
             onClick={() => void handleOpenaiTest()}
-            disabled={loading || !openaiApiKey || openaiTestStatus === "testing"}
+            disabled={
+              loading || !openaiApiKey || openaiTestStatus === "testing"
+            }
           >
             {openaiTestStatus === "testing" && <Spinner />}
             {t("testButton")}
           </Button>
           {savedOpenaiApiKey && (
-            <Button type="button" variant="outline" onClick={handleCancelOpenaiEdit}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelOpenaiEdit}
+            >
               {t("cancelButton")}
             </Button>
           )}
@@ -348,7 +366,12 @@ export default function ApiKeysSection() {
                     {renameSaving && <Spinner />}
                     {tCommon("confirm")}
                   </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={cancelRename}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={cancelRename}
+                  >
                     {tCommon("cancel")}
                   </Button>
                 </div>
@@ -386,7 +409,12 @@ export default function ApiKeysSection() {
                       {t("useButton")}
                     </Button>
                   )}
-                  <Button type="button" variant="outline" size="sm" onClick={() => startRename(key)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => startRename(key)}
+                  >
                     {t("renameButton")}
                   </Button>
                   <Button
@@ -451,7 +479,9 @@ export default function ApiKeysSection() {
             <Button
               type="button"
               onClick={() => void handleAddKey()}
-              disabled={!newKeyName.trim() || newKeyTestStatus !== "ok" || savingNewKey}
+              disabled={
+                !newKeyName.trim() || newKeyTestStatus !== "ok" || savingNewKey
+              }
             >
               {savingNewKey && <Spinner />}
               {t("addButton")}
@@ -462,7 +492,11 @@ export default function ApiKeysSection() {
           </div>
         </div>
       ) : (
-        <Button type="button" variant="outline" onClick={() => setAddingKey(true)}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setAddingKey(true)}
+        >
           {t("addKeyButton")}
         </Button>
       )}

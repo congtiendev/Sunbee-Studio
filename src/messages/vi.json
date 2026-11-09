@@ -9,7 +9,8 @@
     "filter": "Lọc",
     "seeAll": "Xem tất cả",
     "confirm": "Xác nhận",
-    "cancel": "Huỷ"
+    "cancel": "Huỷ",
+    "moreTabs": "Thêm"
   },
   "sidebar": {
     "groups": {
@@ -136,7 +137,10 @@
       "videoStudioProjects": "Quản lí dự án",
       "videoStudioCategories": "Quản lí danh mục",
       "settings": "Cài đặt",
-      "databaseAdmin": "Quản trị dữ liệu"
+      "databaseAdmin": "Quản trị dữ liệu",
+      "videoStudioSkills": "Skill",
+      "videoStudioDocuments": "Tài liệu",
+      "videoStudioAssets": "Thư viện tài nguyên"
     }
   },
   "header": {
@@ -1071,7 +1075,8 @@
       "apiKeys": "API Key",
       "mcp": "MCP",
       "general": "Chung",
-      "updates": "Cập nhật"
+      "updates": "Cập nhật",
+      "prompts": "Prompt"
     },
     "apiKeys": {
       "title": "API Key",
@@ -1102,6 +1107,47 @@
       "copied": "Đã sao chép!",
       "regenerate": "Tạo lại token",
       "snippetLabel": "Kết nối từ Claude Code"
+    },
+    "prompts": {
+      "title": "Prompt AI",
+      "description": "Mọi lần gọi AI trong Video Studio, chia theo từng bước. Chọn bước để sửa hướng dẫn gửi cho model; bản bạn sửa chỉ áp dụng cho tài khoản của bạn.",
+      "adminHint": "Là admin, bạn có thể lưu thêm bản dùng chung, áp dụng cho mọi người chưa tự sửa prompt đó.",
+      "sourceDefault": "Mặc định",
+      "sourceUser": "Bản của bạn",
+      "sourceGlobal": "Bản dùng chung",
+      "save": "Lưu",
+      "discard": "Huỷ thay đổi",
+      "resetToDefault": "Khôi phục mặc định",
+      "resetToShared": "Dùng bản chung",
+      "saveGlobal": "Lưu cho mọi người",
+      "resetGlobal": "Xoá bản dùng chung",
+      "saved": "Đã lưu",
+      "charCount": "{count} ký tự",
+      "soonBadge": "Sắp có",
+      "comingSoonTitle": "{step}: sắp ra mắt",
+      "comingSoonHint": "Bước này chưa có tác vụ AI. Khi bước được xây dựng, prompt của nó sẽ hiện ở đây.",
+      "customizedMarker": "Đã tuỳ chỉnh",
+      "groupNoAi": "Mục này không gọi AI riêng.",
+      "openGroup": "Mở tab \"{group}\"",
+      "groupHints": {
+        "import": "Bạn tự dán kịch bản — bước này không dùng AI. Kịch bản được phân tích bằng prompt ở tab \"Phân tích kịch bản\"."
+      }
+    },
+    "researchKeys": {
+      "title": "Nguồn research",
+      "description": "Key của các trang media dùng khi research tài nguyên cho từng cảnh. Pexels và Pixabay cấp key miễn phí; Pinterest cần access token từ một app Pinterest developer.",
+      "keyLabel": "API key {source}",
+      "keyPlaceholder": "Dán API key…",
+      "test": "Kiểm tra",
+      "save": "Lưu",
+      "remove": "Xoá key",
+      "testOk": "Key hoạt động.",
+      "testFirst": "Hãy kiểm tra key trước khi lưu.",
+      "getKey": "Lấy key",
+      "mediaTypes": "Loại media: {types}",
+      "hints": {
+        "pinterest": "Dán access token có quyền pins:read và boards:read. Pinterest chỉ cho tìm pin công khai với app đã được duyệt (beta); nếu chưa, kết quả là pin và board của chính bạn. Pin chỉ dùng tham khảo — ảnh thuộc bản quyền người đăng."
+      }
     }
   },
   "videoStudio": {
@@ -1163,9 +1209,13 @@
         "title": "Lịch sử kịch bản",
         "description": "Các version đã lưu cho dự án này, mới nhất trước.",
         "empty": "Dự án này chưa có version nào.",
-        "sourceYoutube": "Link video",
-        "sourceImport": "Nhập tay",
-        "sceneCount": "{count, plural, one {# cảnh} other {# cảnh}}"
+        "sceneCount": "{count, plural, one {# cảnh} other {# cảnh}}",
+        "sources": {
+          "youtube": "Link video",
+          "import": "Nhập tay",
+          "document": "Từ tài liệu",
+          "template": "Theo mẫu"
+        }
       },
       "sourceTitle": "Nguồn kịch bản",
       "fromLink": "Từ link video",
@@ -1262,7 +1312,262 @@
       "skillNameLabel": "Tên skill",
       "skillNamePlaceholder": "VD: Review sản phẩm năng động",
       "saveSkillButton": "Lưu skill",
-      "skillSaved": "Đã lưu skill. Bạn có thể dùng lại phong cách này cho các video sau."
+      "skillSaved": "Đã lưu skill. Bạn có thể dùng lại phong cách này cho các video sau.",
+      "approve": {
+        "approvedBadge": "Đã duyệt",
+        "edit": "Sửa cảnh",
+        "approve": "Duyệt",
+        "saveAndApprove": "Lưu & duyệt",
+        "cancel": "Huỷ",
+        "hint": "Bản phân tích đã duyệt có thể thêm vào skill làm ví dụ, để AI học cách bạn muốn chia cảnh và mô tả.",
+        "assetPlaceholder": "Mô tả tài nguyên",
+        "addAsset": "Thêm tài nguyên"
+      },
+      "assetTypes": {
+        "video": "Video",
+        "image": "Ảnh",
+        "audio": "Âm thanh",
+        "graphic": "Đồ hoạ"
+      },
+      "fromDocumentSource": "Viết từ tài liệu",
+      "fromDocument": {
+        "documentsLabel": "Tài liệu nguồn (tối đa {max})",
+        "briefLabel": "Yêu cầu (tuỳ chọn)",
+        "briefPlaceholder": "Video nên tập trung vào gì? VD: Giới thiệu Arabica Cầu Đất cho dân văn phòng, kết thúc bằng ưu đãi 10%.",
+        "providerLabel": "Viết bằng",
+        "durationLabel": "Thời lượng (giây)",
+        "skillHint": "Skill chọn ở phần \"Phân tích bằng\" bên dưới cũng được áp dụng khi viết.",
+        "writeButton": "Viết kịch bản",
+        "writingHint": "AI đang viết kịch bản từ tài liệu — thường mất 10–40 giây."
+      },
+      "fromTemplateSource": "Theo video mẫu",
+      "fromTemplate": {
+        "templateLabel": "Video mẫu",
+        "templateHint": "Một video đã phân tích; kịch bản mới sẽ theo đúng cấu trúc, nhịp độ và văn phong của nó. Bản đã duyệt được xếp trước.",
+        "noTemplates": "Chưa có video nào được phân tích. Hãy phân tích (và nên duyệt) một video trước.",
+        "importedExample": "Ví dụ đã nhập",
+        "topicLabel": "Chủ đề mới",
+        "topicPlaceholder": "Video mới nói về gì? VD: Review cold brew mới của Sunbee, dành cho sinh viên.",
+        "documentsLabel": "Thông tin cho chủ đề mới (tuỳ chọn, tối đa {max})",
+        "durationSame": "Như mẫu",
+        "resultHint": "Kịch bản mới được chia cảnh sẵn và lưu thành bản đã phân tích. Cài đặt Effort và Skill bên dưới cũng được áp dụng.",
+        "writeButton": "Viết theo mẫu",
+        "writingHint": "AI đang viết kịch bản và chia cảnh — thường mất 20–60 giây."
+      },
+      "link": {
+        "useAi": "Dùng AI",
+        "providerLabel": "AI xử lý phụ đề",
+        "aiHint": "AI xem toàn bộ video giống như video tải lên: Whisper nghe hết audio (Claude không nghe được audio), sau đó AI bạn chọn — mặc định Claude — xem khung hình của cả video để kiểm tra và sửa tên riêng, con số, dấu câu. Video không lời thì AI mô tả lại từ khung hình.",
+        "fetchingAiHint": "Đang tải toàn bộ video, phiên âm audio và trích khung hình — video dài có thể mất vài phút.",
+        "whisperHint": "Nghe audio cần OpenAI key (Whisper). Chưa có key thì AI bạn chọn xem khung hình và biên tập phụ đề sẵn có của video.",
+        "noKeyHint": "Chưa có AI key: bạn sẽ nhận phụ đề gốc của video. Thêm OpenAI hoặc Anthropic key ở Cài đặt.",
+        "origin": {
+          "captions": "Phụ đề gốc của video (đã tắt AI).",
+          "captionsAiFailed": "AI chưa xử lý được video (thiếu key hoặc lỗi) — đang hiện phụ đề gốc của video.",
+          "captionsCleaned": "Chưa có OpenAI key để nghe audio: đã dùng phụ đề của video và cho AI làm sạch. Xem lại trước khi phân tích.",
+          "transcribed": "AI đã nghe toàn bộ video: kịch bản là bản phiên âm audio (Whisper), có đối chiếu với khung hình.",
+          "framesDescribed": "Video không có lời thoại thật: AI đã viết kịch bản từ khung hình của toàn bộ video. Xem lại trước khi phân tích.",
+          "transcribedReviewed": "AI đã xem toàn bộ video: Whisper phiên âm audio, rồi AI bạn chọn đối chiếu với khung hình và biên tập lại. Xem lại trước khi phân tích."
+        }
+      },
+      "framesClickHint": "Bấm vào khung hình để tô sáng đoạn kịch bản tương ứng (ước lượng theo vị trí trong video).",
+      "frameLabel": "Khung hình {index}/{count}",
+      "frameZoom": "Xem ảnh lớn",
+      "framePrev": "Trước",
+      "frameNext": "Sau"
+    },
+    "skills": {
+      "pageTitle": "Skill",
+      "pageDescription": "Mỗi skill gồm phong cách, hướng dẫn và các bản phân tích mẫu đã duyệt. Chọn skill khi phân tích kịch bản, AI sẽ làm theo.",
+      "createButton": "Tạo skill",
+      "importButton": "Nhập skill",
+      "importHint": "Nhập file .sunbee-skill.json, SKILL.md hoặc file .zip của Agent Skill.",
+      "importDone": "Đã nhập \"{name}\" với {examples} ví dụ và {documents} tài liệu.",
+      "importSkipped": "Bỏ qua (không phải văn bản): {files}.",
+      "empty": "Chưa có skill nào. Hãy tạo mới, lưu từ một bản phân tích, hoặc nhập file.",
+      "editButton": "Sửa",
+      "exportButton": "Xuất",
+      "deleteButton": "Xoá",
+      "deleteTitle": "Xoá skill?",
+      "deleteDescription": "\"{name}\" và liên kết ví dụ sẽ bị xoá. Các bản đã duyệt vẫn còn trong video.",
+      "hasInstructions": "Có hướng dẫn",
+      "origin": {
+        "app": "Sunbee",
+        "anthropic": "Agent Skill"
+      },
+      "editor": {
+        "createTitle": "Tạo skill",
+        "editTitle": "Sửa skill",
+        "description": "Phong cách, hướng dẫn và ví dụ sẽ được thêm vào prompt khi chọn skill này.",
+        "agentSkillHint": "Nhập từ Agent Skill của Anthropic. Nội dung SKILL.md được dùng làm hướng dẫn, chạy được với cả OpenAI và Claude.",
+        "cancel": "Huỷ",
+        "save": "Lưu skill"
+      },
+      "form": {
+        "name": "Tên",
+        "namePlaceholder": "VD: Vlog du lịch – cắt nhanh",
+        "nameRequired": "Vui lòng nhập tên.",
+        "numberInvalid": "Nhập số ≥ 0.",
+        "description": "Mô tả",
+        "descriptionPlaceholder": "Khi nào dùng skill này",
+        "styleSection": "Phong cách",
+        "genre": "Thể loại",
+        "genrePlaceholder": "VD: vlog, review, hướng dẫn",
+        "styleTags": "Từ khoá phong cách",
+        "styleTagsPlaceholder": "Cách nhau bằng dấu phẩy, VD: tự nhiên, sôi động",
+        "tone": "Tone / giọng điệu",
+        "tonePlaceholder": "VD: vui vẻ, dẫn chuyện thân thiện",
+        "avgShotLength": "Độ dài cảnh TB (giây)",
+        "cutsPerMinute": "Số lần cắt / phút",
+        "styleHint": "Để trống phần phong cách nếu skill chỉ có hướng dẫn.",
+        "instructions": "Hướng dẫn",
+        "instructionsHint": "Quy tắc AI luôn tuân theo khi dùng skill này (có thể viết Markdown).",
+        "instructionsPlaceholder": "VD: Mỗi cảnh tối đa 8 giây. Mở đầu bằng một câu hỏi."
+      },
+      "examples": {
+        "title": "Ví dụ",
+        "hint": "Chọn các bản phân tích để AI bắt chước. Bản đã duyệt (bạn đã sửa và xác nhận) cho kết quả tốt nhất; thường 2–3 bản là đủ.",
+        "empty": "Chưa có kịch bản nào được phân tích. Hãy phân tích và duyệt một kịch bản trong Video Studio trước.",
+        "approved": "Đã duyệt",
+        "noVideo": "Ví dụ đã nhập",
+        "sceneCount": "{count, plural, other {# cảnh}}"
+      },
+      "documents": {
+        "title": "Tài liệu tham khảo",
+        "hint": "Kiến thức AI đọc mỗi khi dùng skill này (bộ nhận diện thương hiệu, thông tin sản phẩm, thuật ngữ...)."
+      }
+    },
+    "documents": {
+      "pageTitle": "Tài liệu",
+      "pageDescription": "Tải lên tài liệu tham khảo. Gắn tài liệu vào project hoặc skill để AI đọc làm kiến thức nền, hoặc viết kịch bản mới trực tiếp từ tài liệu.",
+      "uploadButton": "Tải lên",
+      "pasteButton": "Dán văn bản",
+      "empty": "Chưa có tài liệu nào.",
+      "formatsHint": "Hỗ trợ: PDF, DOCX, TXT, MD, CSV, JSON (tối đa 20 MB). PDF dạng ảnh scan cần OCR trước.",
+      "charCount": "{count} ký tự",
+      "viewButton": "Xem",
+      "deleteButton": "Xoá",
+      "deleteTitle": "Xoá tài liệu?",
+      "deleteDescription": "\"{name}\" và file gốc sẽ bị xoá, đồng thời gỡ khỏi mọi project và skill.",
+      "cancel": "Huỷ",
+      "columns": {
+        "title": "Tiêu đề",
+        "type": "Loại",
+        "size": "Độ dài",
+        "attachedTo": "Đang gắn với",
+        "createdAt": "Ngày thêm"
+      },
+      "linkType": {
+        "project": "Project",
+        "skill": "Skill"
+      },
+      "paste": {
+        "title": "Dán văn bản",
+        "description": "Lưu ghi chú, brief hoặc nội dung sao chép thành tài liệu.",
+        "titleLabel": "Tiêu đề",
+        "textLabel": "Nội dung",
+        "save": "Lưu tài liệu"
+      },
+      "sheet": {
+        "title": "Tài liệu",
+        "description": "Nội dung trích xuất và nơi AI sử dụng tài liệu này.",
+        "titleLabel": "Tiêu đề",
+        "rename": "Đổi tên",
+        "downloadOriginal": "File gốc",
+        "attachTitle": "Dùng làm kiến thức cho",
+        "attachHint": "Gắn vào project: dùng khi phân tích mọi video trong project. Gắn vào skill: dùng mỗi khi chọn skill đó.",
+        "projects": "Project",
+        "skills": "Skill",
+        "none": "Chưa có.",
+        "saveLinks": "Lưu",
+        "textTitle": "Nội dung trích xuất"
+      },
+      "picker": {
+        "empty": "Chưa có tài liệu nào.",
+        "manageLink": "Tải tài liệu lên"
+      }
+    },
+    "assets": {
+      "title": "Tài nguyên cho từng cảnh",
+      "description": "Research và chọn tư liệu mỗi cảnh cần — từ thư viện của bạn, kho stock miễn phí, hoặc research web bằng AI. Lựa chọn được lưu theo video.",
+      "progress": "Đã chọn {done}/{total}",
+      "noAnalysis": "Hãy phân tích kịch bản trước (bước 1): danh sách tài nguyên của từng cảnh lấy từ bản phân tích.",
+      "scene": "Cảnh {index}",
+      "noAssets": "Cảnh này không có tài nguyên nào.",
+      "notPicked": "Chưa chọn",
+      "outdated": "Mô tả tài nguyên đã thay đổi sau khi chọn.",
+      "change": "Đổi",
+      "remove": "Bỏ chọn",
+      "assetSources": {
+        "stock": "Stock",
+        "generate": "Tạo mới",
+        "provided": "Có sẵn"
+      },
+      "mediaTypes": {
+        "image": "Ảnh",
+        "video": "Video",
+        "audio": "Âm thanh",
+        "link": "Liên kết",
+        "any": "Mọi loại"
+      },
+      "sources": {
+        "library": "Thư viện",
+        "pexels": "Pexels",
+        "pixabay": "Pixabay",
+        "web": "Web (AI)",
+        "pinterest": "Pinterest"
+      },
+      "research": {
+        "open": "Research",
+        "title": "Research tài nguyên",
+        "forScene": "Cảnh {index}",
+        "queryPlaceholder": "Từ khoá",
+        "searchButton": "Tìm",
+        "researchButton": "Research",
+        "suggestedAi": "Từ khoá AI gợi ý:",
+        "suggestedPlain": "Từ khoá:",
+        "select": "Chọn",
+        "selected": "Đã chọn",
+        "openSource": "Trang nguồn",
+        "noResults": "Không tìm thấy. Hãy thử từ khoá khác.",
+        "noLibraryResults": "Thư viện chưa có tài nguyên phù hợp. Tải lên ở trang Thư viện tài nguyên.",
+        "needsKey": "Cần thêm API key của {source} để tìm.",
+        "needsAiKey": "Research web cần OpenAI hoặc Anthropic API key.",
+        "openSettings": "Mở Settings",
+        "licenseNote": "Kiểm tra giấy phép của {source} và giữ dòng ghi nguồn khi đăng.",
+        "hints": {
+          "library": "Tài nguyên bạn đã tải lên, tìm theo tên, tag và mô tả.",
+          "stock": "Tư liệu stock miễn phí. Từ khoá tiếng Anh cho kết quả tốt nhất.",
+          "ai": "AI tìm trên web các nguồn dùng được, tư liệu tham khảo và lưu ý bản quyền, kèm link."
+        },
+        "showingRecent": "Không có tài nguyên khớp mô tả — đang hiện các tài nguyên mới nhất."
+      }
+    },
+    "library": {
+      "pageTitle": "Thư viện tài nguyên",
+      "pageDescription": "Ảnh, video và âm thanh của riêng bạn. Đặt tên và tag rõ ràng: bước Tài nguyên tìm trong thư viện theo tên, tag và mô tả.",
+      "searchPlaceholder": "Tìm theo tên, tag hoặc mô tả",
+      "searchButton": "Tìm",
+      "uploadButton": "Tải lên",
+      "uploadTagsPlaceholder": "Tag cho file tải lên, cách nhau bằng dấu phẩy",
+      "empty": "Chưa có tài nguyên nào.",
+      "types": {
+        "all": "Tất cả",
+        "image": "Ảnh",
+        "video": "Video",
+        "audio": "Âm thanh"
+      },
+      "editButton": "Sửa",
+      "deleteButton": "Xoá",
+      "deleteTitle": "Xoá tài nguyên?",
+      "deleteDescription": "\"{name}\" và file sẽ bị xoá. Các cảnh đã chọn nó sẽ bị mất liên kết.",
+      "editTitle": "Sửa tài nguyên",
+      "editDescription": "Tên, tag và mô tả là những gì bước Tài nguyên dùng để tìm.",
+      "nameLabel": "Tên",
+      "tagsLabel": "Tag",
+      "descriptionLabel": "Mô tả",
+      "cancel": "Huỷ",
+      "save": "Lưu"
     }
   },
   "databaseAdmin": {

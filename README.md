@@ -106,6 +106,23 @@ API key **không** nằm trong `.env` — nhập trực tiếp trong app, đư�
 
 > **OpenAI key luôn bắt buộc**, kể cả khi bạn chỉ muốn dùng Claude để phân tích — bước "Chuyển video thành văn bản" (tải video lên) dùng Whisper của OpenAI để phiên âm, không có lựa chọn thay thế. Anthropic key là **tuỳ chọn nhưng nên có**: khi video không có lời thoại thật (chỉ nhạc nền, video câm/meme), app tự nhận diện và dùng AI (ưu tiên Claude, có chọn model/ngôn ngữ riêng ở bước upload) để mô tả lại nội dung từ khung hình thành kịch bản thay thế — thiếu Anthropic key thì bước này tự động dùng GPT-4.1 thay thế, vẫn chạy được nhưng không có lựa chọn Claude.
 
+## Dạy AI theo cách của bạn
+
+- **Duyệt kết quả:** sau khi phân tích, bấm **Sửa cảnh** để chỉnh nội dung/hình ảnh/thời lượng/tài nguyên rồi **Lưu & duyệt** (hoặc **Duyệt** ngay). Bản đã duyệt là ví dụ mẫu để skill học theo.
+- **Skill** (*Video Studio → Skill*): phong cách + hướng dẫn riêng + ví dụ đã duyệt + tài liệu tham khảo. Chọn skill khi phân tích/viết kịch bản. Nhập được file `.sunbee-skill.json`, hoặc Agent Skill của Anthropic (`SKILL.md` / `.zip`) — nội dung SKILL.md thành hướng dẫn, chạy với cả OpenAI lẫn Claude.
+- **Tài liệu** (*Video Studio → Tài liệu*): tải PDF/DOCX/TXT/MD/CSV/JSON (≤ 20 MB) hoặc dán văn bản. Gắn vào project/skill để AI đọc làm kiến thức nền, hoặc chọn nguồn **Viết từ tài liệu** ở bước Kịch bản.
+- **Theo video mẫu:** nguồn kịch bản **Theo video mẫu** viết kịch bản mới cho chủ đề mới theo đúng cấu trúc, nhịp và văn phong của một video đã phân tích (kết quả chia cảnh sẵn).
+- **Tài nguyên** (bước 2): research từng tài nguyên của từng cảnh từ **Thư viện tài nguyên** nội bộ, **Pexels/Pixabay** (cần API key miễn phí, nhập ở *Cài đặt → API Keys → Nguồn research*), **Pinterest** (access token của app Pinterest developer, quyền `pins:read`, `boards:read`; tìm pin công khai chỉ khi app được Pinterest duyệt bản beta, nếu không thì tìm trong pin/board của chính bạn; ảnh chỉ để tham khảo) và **Web (AI)** (dùng web search của OpenAI/Claude). Lựa chọn được lưu theo video.
+- **Prompt** (*Cài đặt → Prompts*): xem và sửa prompt của từng tác vụ AI, chia tab theo bước và theo đúng các mục của bước (ví dụ các nguồn kịch bản); admin có thể đặt bản dùng chung cho mọi người. Thứ tự áp dụng: bản của bạn → bản chung → mặc định.
+
+## Mở rộng (cho dev)
+
+- **Mỗi bước Video Studio là một module**: backend `server/modules/<bước>/` (routes, tasks, sources, repo) đăng ký trong `server/modules/index.ts`; frontend `src/pages/main/video-studio/steps/<bước>/` đăng ký trong `steps/registry.ts`.
+- **Thêm tác vụ AI**: tạo file bằng `defineTask({ key, module, label, prompts, run })` trong `tasks/` của module và thêm vào mảng `tasks` của module — tác vụ tự xuất hiện ở *Cài đặt → Prompts*. Gọi AI qua `providerFor(ctx, provider)` (OpenAI/Claude dùng chung interface), ngữ cảnh skill/ví dụ/tài liệu qua `buildContext()`.
+- **Thêm nguồn kịch bản**: một hàm trong `server/modules/script/sources/` + một panel trong `steps/script/sources/` và một dòng trong `sources/registry.ts`.
+- **Thêm nguồn research tài nguyên**: một file implement `ResearchSource` (hoặc `StockSource` cho kho stock) rồi thêm vào `server/services/research/registry.ts` hoặc gọi `registerResearchSource()` từ module.
+- **Thay đổi DB**: thêm một migration mới (đánh số tăng dần) vào cuối `server/services/db/migrations.ts`; không sửa migration đã phát hành.
+
 ## Các lệnh
 
 | Lệnh | Mục đích |

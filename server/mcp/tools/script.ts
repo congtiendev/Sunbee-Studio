@@ -1,15 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod-mcp";
 import { estimateAnalyzeScriptCost } from "../../../shared/script-cost-estimate.js";
-import {
-  listScriptAnalyses,
-  saveScriptVersion,
-} from "../../services/db/script-analyses-repo.js";
-import { getTemplateById } from "../../services/db/style-templates-repo.js";
-import { analyzeScriptWithClaude } from "../../services/script/analyze-script-claude.js";
-import { analyzeScript } from "../../services/script/analyze-script.js";
-import { fetchTranscriptFromVideoUrl } from "../../services/script/fetch-transcript.js";
-import { getSettings } from "../../settings-store.js";
+import { fetchTranscriptFromVideoUrl } from "../../modules/script/media/fetch-transcript.js";
+import { listScriptAnalyses } from "../../modules/script/repo.js";
+import { analyzeScriptForUser } from "../../modules/script/service.js";
 import { requireMcpUser } from "../context.js";
 
 export function registerScriptTools(server: McpServer) {
@@ -104,39 +98,24 @@ export function registerScriptTools(server: McpServer) {
       ctx,
     ) => {
       const user = requireMcpUser(ctx);
-      const settings = getSettings(user.id);
-      const apiKey =
-        provider === "claude" ? settings.anthropicApiKey : settings.openaiApiKey;
-      if (!apiKey) {
+      let response;
+      try {
+        response = await analyzeScriptForUser(user, {
+          scriptText: script_text,
+          sourceType: source_type,
+          sourceUrl: source_url,
+          styleTemplateId: style_template_id,
+          provider,
+          model,
+          effort,
+        });
+      } catch (err) {
         return {
           isError: true,
-          content: [
-            {
-              type: "text",
-              text:
-                provider === "claude"
-                  ? "Chưa thiết lập Anthropic API key. Vào Settings để nhập key trước."
-                  : "Chưa thiết lập OpenAI API key. Vào Settings để nhập key trước.",
-            },
-          ],
+          content: [{ type: "text", text: err instanceof Error ? err.message : String(err) }],
         };
       }
-      const styleTemplate = style_template_id
-        ? (getTemplateById(user.id, user.role === "admin", style_template_id) ??
-          undefined)
-        : undefined;
-      const result =
-        provider === "claude"
-          ? await analyzeScriptWithClaude(
-              script_text,
-              apiKey,
-              styleTemplate,
-              [],
-              model,
-              effort,
-            )
-          : await analyzeScript(script_text, apiKey, styleTemplate, [], model, effort);
-      saveScriptVersion(user.id, source_type, source_url, script_text, [], "analyzed", result);
+      const { versionId: _versionId, ...result } = response;
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         structuredContent: result,

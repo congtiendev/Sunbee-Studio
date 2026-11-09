@@ -1,6 +1,7 @@
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OverflowTabsList } from "@/components/ui/overflow-tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useTranslations } from "@/i18n";
 import { useState } from "react";
 import LogsSection from "@/pages/main/database-admin/categories/logs-section";
@@ -11,6 +12,7 @@ import type { DatabaseAdminCategoryKey } from "@/pages/main/database-admin/types
 
 export default function DatabaseAdminPage() {
   const t = useTranslations("databaseAdmin");
+  const tCommon = useTranslations("common");
 
   const [category, setCategory] =
     useState<DatabaseAdminCategoryKey>("scriptAnalyses");
@@ -27,16 +29,20 @@ export default function DatabaseAdminPage() {
           setCategory(value as DatabaseAdminCategoryKey)
         }
       >
-        <TabsList variant="line">
-          <TabsTrigger value="scriptAnalyses">
-            {t("categories.scriptAnalyses")}
-          </TabsTrigger>
-          <TabsTrigger value="styleTemplates">
-            {t("categories.styleTemplates")}
-          </TabsTrigger>
-          <TabsTrigger value="users">{t("categories.users")}</TabsTrigger>
-          <TabsTrigger value="logs">{t("categories.logs")}</TabsTrigger>
-        </TabsList>
+        <OverflowTabsList
+          variant="line"
+          value={category}
+          onValueChange={(value) =>
+            setCategory(value as DatabaseAdminCategoryKey)
+          }
+          moreLabel={tCommon("moreTabs")}
+          items={(
+            ["scriptAnalyses", "styleTemplates", "users", "logs"] as const
+          ).map((key) => ({
+            value: key,
+            label: t(`categories.${key}`),
+          }))}
+        />
 
         <TabsContent value="scriptAnalyses">
           <ScriptAnalysesSection />

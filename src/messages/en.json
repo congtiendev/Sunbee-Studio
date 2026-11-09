@@ -9,7 +9,8 @@
     "filter": "Filter",
     "seeAll": "See all",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "moreTabs": "More"
   },
   "sidebar": {
     "groups": {
@@ -135,7 +136,10 @@
       "videoStudioProjects": "Manage projects",
       "videoStudioCategories": "Manage categories",
       "settings": "Settings",
-      "databaseAdmin": "Database Admin"
+      "databaseAdmin": "Database Admin",
+      "videoStudioSkills": "Skills",
+      "videoStudioDocuments": "Documents",
+      "videoStudioAssets": "Asset library"
     }
   },
   "header": {
@@ -1045,7 +1049,8 @@
       "mcp": "MCP",
       "general": "General",
       "updates": "Updates",
-      "backup": "Backup"
+      "backup": "Backup",
+      "prompts": "Prompts"
     },
     "apiKeys": {
       "title": "API Keys",
@@ -1092,6 +1097,47 @@
       "importSummary": "Imported {projects} projects, {categories} categories, {videos} videos, {scriptAnalyses} script analyses, {styleTemplates} style templates, {anthropicKeys} Claude keys.",
       "warning": "The exported file contains your API keys in plain text. Keep it somewhere private and don't share it.",
       "importOpenaiKey": "OpenAI key imported too."
+    },
+    "prompts": {
+      "title": "AI prompts",
+      "description": "Every AI call in Video Studio, by step. Pick a step to edit the instructions sent to the model; your edits apply to your account only.",
+      "adminHint": "As an admin you can also save a shared version, used by everyone who hasn't customized that prompt.",
+      "sourceDefault": "Default",
+      "sourceUser": "Your version",
+      "sourceGlobal": "Shared version",
+      "save": "Save",
+      "discard": "Discard changes",
+      "resetToDefault": "Restore default",
+      "resetToShared": "Use shared version",
+      "saveGlobal": "Save for everyone",
+      "resetGlobal": "Remove shared version",
+      "saved": "Saved",
+      "charCount": "{count} characters",
+      "soonBadge": "Soon",
+      "comingSoonTitle": "{step}: coming soon",
+      "comingSoonHint": "This step has no AI tasks yet. Its prompts will show up here once it is built.",
+      "customizedMarker": "Customized",
+      "groupNoAi": "This option runs no AI of its own.",
+      "openGroup": "Open \"{group}\"",
+      "groupHints": {
+        "import": "You paste the script yourself — no AI here. It is analyzed with the prompts under \"Analyze script\"."
+      }
+    },
+    "researchKeys": {
+      "title": "Research sources",
+      "description": "Keys for the media sites searched when researching assets for each scene. Pexels and Pixabay give free keys; Pinterest needs an access token from a Pinterest developer app.",
+      "keyLabel": "{source} API key",
+      "keyPlaceholder": "Paste API key…",
+      "test": "Test",
+      "save": "Save",
+      "remove": "Remove key",
+      "testOk": "Key works.",
+      "testFirst": "Test the key before saving.",
+      "getKey": "Get a key",
+      "mediaTypes": "Media: {types}",
+      "hints": {
+        "pinterest": "Paste an access token with pins:read and boards:read. Pinterest only allows public keyword search for apps it approved (beta); otherwise the search covers your own Pins and boards. Pins are references only — the images belong to their creators."
+      }
     }
   },
   "videoStudio": {
@@ -1153,9 +1199,13 @@
         "title": "Script history",
         "description": "Versions saved for this project, most recent first.",
         "empty": "No versions saved for this project yet.",
-        "sourceYoutube": "Video link",
-        "sourceImport": "Imported",
-        "sceneCount": "{count, plural, one {# scene} other {# scenes}}"
+        "sceneCount": "{count, plural, one {# scene} other {# scenes}}",
+        "sources": {
+          "youtube": "Video link",
+          "import": "Imported",
+          "document": "From document",
+          "template": "From template"
+        }
       },
       "sourceTitle": "Script source",
       "fromLink": "From a video link",
@@ -1200,7 +1250,7 @@
       "effortLow": "Low",
       "effortMedium": "Medium",
       "effortHigh": "High",
-      "styleTemplateLabel": "Style template (optional)",
+      "styleTemplateLabel": "Skill (optional)",
       "styleTemplatePlaceholder": "Keep a saved style",
       "styleTemplateNone": "None",
       "checklistTitle": "Readiness checklist",
@@ -1252,7 +1302,262 @@
       "skillNameLabel": "Skill name",
       "skillNamePlaceholder": "e.g. Energetic product review",
       "saveSkillButton": "Save skill",
-      "skillSaved": "Skill saved. You'll be able to reuse this style for future videos."
+      "skillSaved": "Skill saved. You'll be able to reuse this style for future videos.",
+      "approve": {
+        "approvedBadge": "Approved",
+        "edit": "Edit scenes",
+        "approve": "Approve",
+        "saveAndApprove": "Save & approve",
+        "cancel": "Cancel",
+        "hint": "Approved analyses can be added to a skill as examples, so the AI learns how you want scenes split and described.",
+        "assetPlaceholder": "Describe the asset",
+        "addAsset": "Add asset"
+      },
+      "assetTypes": {
+        "video": "Video",
+        "image": "Image",
+        "audio": "Audio",
+        "graphic": "Graphic"
+      },
+      "fromDocumentSource": "Write from documents",
+      "fromDocument": {
+        "documentsLabel": "Source documents (up to {max})",
+        "briefLabel": "Brief (optional)",
+        "briefPlaceholder": "What should the video focus on? e.g. Introduce the Cau Dat Arabica to office workers, end with a 10% discount.",
+        "providerLabel": "Write with",
+        "durationLabel": "Target length (s)",
+        "skillHint": "The skill selected under \"Analyze with\" below is also applied to the writing.",
+        "writeButton": "Write script",
+        "writingHint": "The AI is writing the script from your documents — this usually takes 10–40 seconds."
+      },
+      "fromTemplateSource": "From a template video",
+      "fromTemplate": {
+        "templateLabel": "Template video",
+        "templateHint": "An analyzed video whose structure, pacing and voice the new script will follow. Approved versions are listed first.",
+        "noTemplates": "No analyzed videos yet. Analyze (and ideally approve) a video first.",
+        "importedExample": "Imported example",
+        "topicLabel": "New topic",
+        "topicPlaceholder": "What is the new video about? e.g. Review of the new Sunbee cold brew, for students.",
+        "documentsLabel": "Facts for the new topic (optional, up to {max})",
+        "durationSame": "Same",
+        "resultHint": "The new script comes back already split into scenes, saved as an analyzed version. The Effort and Skill settings below also apply.",
+        "writeButton": "Write from template",
+        "writingHint": "The AI is writing the script and scenes — this usually takes 20–60 seconds."
+      },
+      "link": {
+        "useAi": "Use AI",
+        "providerLabel": "AI for captions",
+        "aiHint": "The AI watches the whole video like an upload: Whisper transcribes the full audio (Claude can't hear audio), then the AI you pick — Claude by default — checks it against frames from the entire video and edits names, numbers and punctuation. Silent videos are described from the frames.",
+        "fetchingAiHint": "Downloading the whole video, transcribing its audio and sampling frames — longer videos take a few minutes.",
+        "whisperHint": "Hearing the audio needs an OpenAI key (Whisper). Without one, the AI you pick watches the frames and edits the video's own captions instead.",
+        "noKeyHint": "No AI key yet: you will get the video's raw captions. Add an OpenAI or Anthropic key in Settings.",
+        "origin": {
+          "captions": "Raw captions from the video (AI off).",
+          "captionsAiFailed": "The AI could not process this video (missing key or an error) — showing the video's raw captions.",
+          "captionsCleaned": "No OpenAI key to transcribe the audio: the video's captions were cleaned up by AI instead. Review before analyzing.",
+          "transcribed": "The AI listened to the whole video: the script is the transcription of its audio (Whisper), checked against the frames.",
+          "framesDescribed": "The video has no real speech: the AI wrote the script from frames across the whole video. Review before analyzing.",
+          "transcribedReviewed": "The AI watched the whole video: Whisper transcribed the audio, then the picked AI checked it against the frames and edited it. Review before analyzing."
+        }
+      },
+      "framesClickHint": "Click a frame to highlight the matching passage in the script (estimated by position in the video).",
+      "frameLabel": "Frame {index}/{count}",
+      "frameZoom": "View larger",
+      "framePrev": "Previous",
+      "frameNext": "Next"
+    },
+    "skills": {
+      "pageTitle": "Skills",
+      "pageDescription": "A skill bundles a style, written instructions and approved example analyses. Pick it when analyzing a script and the AI follows it.",
+      "createButton": "New skill",
+      "importButton": "Import skill",
+      "importHint": "Import a .sunbee-skill.json, an Agent Skill SKILL.md, or an Agent Skill .zip.",
+      "importDone": "Imported \"{name}\" with {examples} examples and {documents} documents.",
+      "importSkipped": "Skipped (not text): {files}.",
+      "empty": "No skills yet. Create one, save one from an analysis, or import one.",
+      "editButton": "Edit",
+      "exportButton": "Export",
+      "deleteButton": "Delete",
+      "deleteTitle": "Delete skill?",
+      "deleteDescription": "\"{name}\" and its example links will be deleted. Approved versions stay in their videos.",
+      "hasInstructions": "Instructions",
+      "origin": {
+        "app": "Sunbee",
+        "anthropic": "Agent Skill"
+      },
+      "editor": {
+        "createTitle": "New skill",
+        "editTitle": "Edit skill",
+        "description": "The style, instructions and examples are added to the AI prompt when this skill is selected.",
+        "agentSkillHint": "Imported from an Anthropic Agent Skill. Its SKILL.md body is used as the instructions and works with both OpenAI and Claude.",
+        "cancel": "Cancel",
+        "save": "Save skill"
+      },
+      "form": {
+        "name": "Name",
+        "namePlaceholder": "e.g. Travel vlog – fast cuts",
+        "nameRequired": "Please enter a name.",
+        "numberInvalid": "Enter a number ≥ 0.",
+        "description": "Description",
+        "descriptionPlaceholder": "When to use this skill",
+        "styleSection": "Style",
+        "genre": "Genre",
+        "genrePlaceholder": "e.g. vlog, review, tutorial",
+        "styleTags": "Style tags",
+        "styleTagsPlaceholder": "Comma-separated, e.g. casual, upbeat",
+        "tone": "Tone",
+        "tonePlaceholder": "e.g. playful, friendly narrator",
+        "avgShotLength": "Avg. shot length (s)",
+        "cutsPerMinute": "Cuts per minute",
+        "styleHint": "Leave the style empty if the skill only carries instructions.",
+        "instructions": "Instructions",
+        "instructionsHint": "Rules the AI always follows with this skill (Markdown is fine).",
+        "instructionsPlaceholder": "e.g. Keep every scene under 8 seconds. Open with a question hook."
+      },
+      "examples": {
+        "title": "Examples",
+        "hint": "Pick analyses the AI should imitate. Approved ones (edited and confirmed by you) work best; 2–3 is usually enough.",
+        "empty": "No analyzed scripts yet. Analyze and approve a script in Video Studio first.",
+        "approved": "Approved",
+        "noVideo": "Imported example",
+        "sceneCount": "{count, plural, one {# scene} other {# scenes}}"
+      },
+      "documents": {
+        "title": "Reference documents",
+        "hint": "Knowledge the AI reads whenever this skill is used (brand guide, product facts, glossary...)."
+      }
+    },
+    "documents": {
+      "pageTitle": "Documents",
+      "pageDescription": "Upload reference material. Attach a document to a project or skill and the AI reads it as background knowledge, or write a new script straight from it.",
+      "uploadButton": "Upload",
+      "pasteButton": "Paste text",
+      "empty": "No documents yet.",
+      "formatsHint": "Supported: PDF, DOCX, TXT, MD, CSV, JSON (up to 20 MB). Scanned PDFs need OCR first.",
+      "charCount": "{count} chars",
+      "viewButton": "View",
+      "deleteButton": "Delete",
+      "deleteTitle": "Delete document?",
+      "deleteDescription": "\"{name}\" and its original file will be deleted and detached from every project and skill.",
+      "cancel": "Cancel",
+      "columns": {
+        "title": "Title",
+        "type": "Type",
+        "size": "Length",
+        "attachedTo": "Attached to",
+        "createdAt": "Added"
+      },
+      "linkType": {
+        "project": "Project",
+        "skill": "Skill"
+      },
+      "paste": {
+        "title": "Paste text",
+        "description": "Save notes, a brief or copied content as a document.",
+        "titleLabel": "Title",
+        "textLabel": "Content",
+        "save": "Save document"
+      },
+      "sheet": {
+        "title": "Document",
+        "description": "Extracted text, and where the AI uses it.",
+        "titleLabel": "Title",
+        "rename": "Rename",
+        "downloadOriginal": "Original file",
+        "attachTitle": "Use as knowledge for",
+        "attachHint": "Attached to a project: used when analyzing any video in it. Attached to a skill: used whenever the skill is selected.",
+        "projects": "Projects",
+        "skills": "Skills",
+        "none": "None yet.",
+        "saveLinks": "Save",
+        "textTitle": "Extracted text"
+      },
+      "picker": {
+        "empty": "No documents yet.",
+        "manageLink": "Upload documents"
+      }
+    },
+    "assets": {
+      "title": "Assets for each scene",
+      "description": "Research and pick the media every scene needs — from your library, free stock sites, or AI web research. Picks are saved per video.",
+      "progress": "{done}/{total} picked",
+      "noAnalysis": "Analyze the script first (step 1): the assets each scene needs come from the analysis.",
+      "scene": "Scene {index}",
+      "noAssets": "This scene doesn't list any assets.",
+      "notPicked": "Not picked yet",
+      "outdated": "The asset description changed since this was picked.",
+      "change": "Change",
+      "remove": "Remove",
+      "assetSources": {
+        "stock": "Stock",
+        "generate": "Generate",
+        "provided": "Provided"
+      },
+      "mediaTypes": {
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio",
+        "link": "Link",
+        "any": "Any type"
+      },
+      "sources": {
+        "library": "Library",
+        "pexels": "Pexels",
+        "pixabay": "Pixabay",
+        "web": "Web (AI)",
+        "pinterest": "Pinterest"
+      },
+      "research": {
+        "open": "Research",
+        "title": "Research asset",
+        "forScene": "Scene {index}",
+        "queryPlaceholder": "Keywords",
+        "searchButton": "Search",
+        "researchButton": "Research",
+        "suggestedAi": "AI keywords:",
+        "suggestedPlain": "Keywords:",
+        "select": "Select",
+        "selected": "Selected",
+        "openSource": "Source page",
+        "noResults": "Nothing found. Try other keywords.",
+        "noLibraryResults": "Nothing in your library matches. Upload assets on the Asset library page.",
+        "needsKey": "Add a {source} API key to search it.",
+        "needsAiKey": "Web research needs an OpenAI or Anthropic API key.",
+        "openSettings": "Open Settings",
+        "licenseNote": "Check {source}'s licence and keep the credit line when publishing.",
+        "hints": {
+          "library": "Your own uploaded assets, matched by name, tags and description.",
+          "stock": "Free stock media. English keywords work best.",
+          "ai": "The AI searches the web for usable sources, references and licence notes, with links."
+        },
+        "showingRecent": "Nothing matched the description — showing your newest assets."
+      }
+    },
+    "library": {
+      "pageTitle": "Asset library",
+      "pageDescription": "Your own images, video clips and audio. Tag them well: the Assets step searches this library by name, tags and description.",
+      "searchPlaceholder": "Search by name, tag or description",
+      "searchButton": "Search",
+      "uploadButton": "Upload",
+      "uploadTagsPlaceholder": "Tags for uploads, comma-separated",
+      "empty": "No assets yet.",
+      "types": {
+        "all": "All",
+        "image": "Images",
+        "video": "Videos",
+        "audio": "Audio"
+      },
+      "editButton": "Edit",
+      "deleteButton": "Delete",
+      "deleteTitle": "Delete asset?",
+      "deleteDescription": "\"{name}\" and its file will be deleted. Scenes that picked it keep a broken link.",
+      "editTitle": "Edit asset",
+      "editDescription": "Name, tags and description are what the Assets step searches.",
+      "nameLabel": "Name",
+      "tagsLabel": "Tags",
+      "descriptionLabel": "Description",
+      "cancel": "Cancel",
+      "save": "Save"
     }
   },
   "databaseAdmin": {

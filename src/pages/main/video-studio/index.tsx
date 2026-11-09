@@ -18,24 +18,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  DownloadIcon,
-  FolderIcon,
-  LayerIcon,
-  LayoutIcon,
-  TextIcon,
-} from "@/icons";
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, FolderIcon } from "@/icons";
 import { useTranslations } from "@/i18n";
 import { apiClient } from "@/lib/api-client";
 import type { Project } from "@shared/types";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import ProjectTree from "@/pages/main/video-studio/project-tree";
-import PlaceholderStep from "@/pages/main/video-studio/steps/placeholder-step";
-import ScriptStep from "@/pages/main/video-studio/steps/script-step";
+import { VIDEO_STUDIO_STEPS } from "@/pages/main/video-studio/steps/registry";
 import Stepper from "@/pages/main/video-studio/stepper";
 import type { VideoStudioStepKey } from "@/pages/main/video-studio/types";
 
@@ -44,36 +34,21 @@ const CREATE_NEW = "__create_new__";
 export default function VideoStudioPage() {
   const t = useTranslations("videoStudio");
 
-  const steps = [
-    {
-      key: "script" as VideoStudioStepKey,
-      label: t("steps.script"),
-      hint: t("steps.scriptHint"),
-      icon: TextIcon,
-    },
-    {
-      key: "assets" as VideoStudioStepKey,
-      label: t("steps.assets"),
-      hint: t("steps.assetsHint"),
-      icon: LayerIcon,
-    },
-    {
-      key: "editPlan" as VideoStudioStepKey,
-      label: t("steps.editPlan"),
-      hint: t("steps.editPlanHint"),
-      icon: LayoutIcon,
-    },
-    {
-      key: "render" as VideoStudioStepKey,
-      label: t("steps.render"),
-      hint: t("steps.renderHint"),
-      icon: DownloadIcon,
-    },
-  ];
+  const steps = VIDEO_STUDIO_STEPS.map((step) => ({
+    key: step.key,
+    label: t(`steps.${step.key}`),
+    hint: t(`steps.${step.key}Hint`),
+    icon: step.icon,
+  }));
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [furthestIndex, setFurthestIndex] = useState(0);
-  const [scriptReady, setScriptReady] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<ReadonlySet<VideoStudioStepKey>>(
+    () => new Set(),
+  );
+
+  const markStepComplete = (key: VideoStudioStepKey) =>
+    setCompletedSteps((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -150,20 +125,23 @@ export default function VideoStudioPage() {
     setCurrentVideoId(null);
     setActiveIndex(0);
     setFurthestIndex(0);
-    setScriptReady(false);
+    setCompletedSteps(new Set());
     syncUrl(projectId, null);
   };
 
   const handleSelectVideo = (videoId: string) => {
+    // Re-selecting the open video must not reset progress: its steps don't reload.
+    if (videoId === currentVideoId) return;
     setCurrentVideoId(videoId);
     setActiveIndex(0);
     setFurthestIndex(0);
-    setScriptReady(false);
+    setCompletedSteps(new Set());
     syncUrl(currentProjectId, videoId);
   };
 
+  const activeStep = VIDEO_STUDIO_STEPS[activeIndex]!;
   const isLastStep = activeIndex === steps.length - 1;
-  const canGoNext = activeIndex === 0 ? scriptReady : true;
+  const canGoNext = !activeStep.requiresCompletion || completedSteps.has(activeStep.key);
 
   const goToStep = (index: number) => {
     if (index > furthestIndex) return;
@@ -182,7 +160,7 @@ export default function VideoStudioPage() {
     setActiveIndex(activeIndex - 1);
   };
 
-  const activeKey = steps[activeIndex].key;
+  const ActiveStepComponent = activeStep.Component;
   const currentProjectName = projects.find((p) => p.id === currentProjectId)?.name ?? "";
 
   return (
@@ -289,21 +267,11 @@ export default function VideoStudioPage() {
                 </div>
 
                 <div className="border-t border-gray-100 pt-6 dark:border-gray-800">
-                  {activeKey === "script" && (
-                    <ScriptStep
-                      videoId={currentVideoId}
-                      onAnalyzed={() => setScriptReady(true)}
-                    />
-                  )}
-                  {activeKey === "assets" && (
-                    <PlaceholderStep title={t("comingSoon")} />
-                  )}
-                  {activeKey === "editPlan" && (
-                    <PlaceholderStep title={t("comingSoon")} />
-                  )}
-                  {activeKey === "render" && (
-                    <PlaceholderStep title={t("comingSoon")} />
-                  )}
+                  <ActiveStepComponent
+                    key={activeStep.key}
+                    videoId={currentVideoId}
+                    onComplete={() => markStepComplete(activeStep.key)}
+                  />
                 </div>
               </Card>
 

@@ -1,16 +1,25 @@
 import { randomUUID } from "node:crypto";
-import type { StyleTemplate } from "../../../shared/types.js";
+import type { SkillInput, SkillOrigin, StyleTemplate } from "../../../shared/types.js";
 import { getDb } from "./client.js";
 
+/**
+ * Skills. Stored in the `style_templates` table for backward compatibility
+ * (MCP tools, old backups); the UI calls them "skills".
+ */
 interface StyleTemplateRow {
   id: string;
   name: string;
   created_at: string;
+  updated_at: string | null;
   genre: string;
   style_tags_json: string;
   pacing_json: string;
   tone_description: string;
   resource_inventory_json: string;
+  description: string;
+  instructions: string;
+  origin: SkillOrigin;
+  skill_md: string | null;
   user_id: string | null;
   owner_email: string | null;
 }
@@ -20,34 +29,35 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
     id: row.id,
     name: row.name,
     createdAt: row.created_at,
+    updatedAt: row.updated_at ?? row.created_at,
     genre: row.genre,
     styleTags: JSON.parse(row.style_tags_json),
     pacing: JSON.parse(row.pacing_json),
     toneDescription: row.tone_description,
     resourceInventory: JSON.parse(row.resource_inventory_json),
+    description: row.description,
+    instructions: row.instructions,
+    origin: row.origin,
+    skillMd: row.skill_md ?? undefined,
     userId: row.user_id ?? undefined,
     ownerEmail: row.owner_email ?? undefined,
   };
 }
 
-export function listTemplates(
-  userId: string,
-  isAdmin: boolean,
-): StyleTemplate[] {
-  const base = `
-    SELECT st.id, st.name, st.created_at, st.genre, st.style_tags_json, st.pacing_json,
-           st.tone_description, st.resource_inventory_json, st.user_id, u.email AS owner_email
-    FROM style_templates st
-    LEFT JOIN users u ON u.id = st.user_id
-  `;
-  const rows = isAdmin
-    ? (getDb()
-        .prepare(`${base} ORDER BY st.created_at DESC`)
-        .all() as StyleTemplateRow[])
-    : (getDb()
-        .prepare(`${base} WHERE st.user_id = ? ORDER BY st.created_at DESC`)
-        .all(userId) as StyleTemplateRow[]);
+const SELECT_BASE = `
+  SELECT st.id, st.name, st.created_at, st.updated_at, st.genre, st.style_tags_json,
+         st.pacing_json, st.tone_description, st.resource_inventory_json, st.description,
+         st.instructions, st.origin, st.skill_md, st.user_id, u.email AS owner_email
+  FROM style_templates st
+  LEFT JOIN users u ON u.id = st.user_id
+`;
 
+export function listTemplates(userId: string, isAdmin: boolean): StyleTemplate[] {
+  const rows = isAdmin
+    ? (getDb().prepare(`${SELECT_BASE} ORDER BY st.created_at DESC`).all() as StyleTemplateRow[])
+    : (getDb()
+        .prepare(`${SELECT_BASE} WHERE st.user_id = ? ORDER BY st.created_at DESC`)
+        .all(userId) as StyleTemplateRow[]);
   return rows.map(rowToTemplate);
 }
 
@@ -56,62 +66,107 @@ export function getTemplateById(
   isAdmin: boolean,
   id: string,
 ): StyleTemplate | null {
-  const base = `
-    SELECT st.id, st.name, st.created_at, st.genre, st.style_tags_json, st.pacing_json,
-           st.tone_description, st.resource_inventory_json, st.user_id, u.email AS owner_email
-    FROM style_templates st
-    LEFT JOIN users u ON u.id = st.user_id
-    WHERE st.id = ?
-  `;
   const row = isAdmin
-    ? (getDb().prepare(base).get(id) as StyleTemplateRow | undefined)
+    ? (getDb().prepare(`${SELECT_BASE} WHERE st.id = ?`).get(id) as StyleTemplateRow | undefined)
     : (getDb()
-        .prepare(`${base} AND st.user_id = ?`)
+        .prepare(`${SELECT_BASE} WHERE st.id = ? AND st.user_id = ?`)
         .get(id, userId) as StyleTemplateRow | undefined);
-
   return row ? rowToTemplate(row) : null;
 }
 
-export function saveTemplate(
-  userId: string,
-  template: Omit<StyleTemplate, "id" | "createdAt" | "userId" | "ownerEmail">,
-): StyleTemplate {
-  const record = {
-    ...template,
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
-  };
-
+export function saveTemplate(userId: string, template: SkillInput): StyleTemplate {
+  const now = new Date().toISOString();
+  const id = randomUUID();
   getDb()
     .prepare(
-      `INSERT INTO style_templates (id, name, created_at, genre, style_tags_json, pacing_json, tone_description, resource_inventory_json, user_id)
-       VALUES (@id, @name, @createdAt, @genre, @styleTagsJson, @pacingJson, @toneDescription, @resourceInventoryJson, @userId)`,
+      `INSERT INTO style_templates (id, name, created_at, updated_at, genre, style_tags_json, pacing_json,
+         tone_description, resource_inventory_json, description, instructions, origin, skill_md, user_id)
+       VALUES (@id, @name, @now, @now, @genre, @styleTagsJson, @pacingJson, @toneDescription,
+         @resourceInventoryJson, @description, @instructions, @origin, @skillMd, @userId)`,
     )
     .run({
-      id: record.id,
-      name: record.name,
-      createdAt: record.createdAt,
-      genre: record.genre,
-      styleTagsJson: JSON.stringify(record.styleTags),
-      pacingJson: JSON.stringify(record.pacing),
-      toneDescription: record.toneDescription,
-      resourceInventoryJson: JSON.stringify(record.resourceInventory),
+      id,
+      now,
+      name: template.name,
+      genre: template.genre,
+      styleTagsJson: JSON.stringify(template.styleTags),
+      pacingJson: JSON.stringify(template.pacing),
+      toneDescription: template.toneDescription,
+      resourceInventoryJson: JSON.stringify(template.resourceInventory ?? {}),
+      description: template.description ?? "",
+      instructions: template.instructions ?? "",
+      origin: template.origin ?? "app",
+      skillMd: template.skillMd ?? null,
       userId,
     });
-
-  return { ...record, userId };
+  return getTemplateById(userId, false, id)!;
 }
 
-export function deleteTemplate(
+export function updateTemplate(
   userId: string,
   isAdmin: boolean,
   id: string,
-): void {
-  if (isAdmin) {
-    getDb().prepare(`DELETE FROM style_templates WHERE id = ?`).run(id);
-  } else {
+  patch: Partial<SkillInput>,
+): StyleTemplate | null {
+  const current = getTemplateById(userId, isAdmin, id);
+  if (!current) return null;
+  const next = { ...current, ...patch };
+  getDb()
+    .prepare(
+      `UPDATE style_templates SET name = @name, updated_at = @now, genre = @genre,
+         style_tags_json = @styleTagsJson, pacing_json = @pacingJson, tone_description = @toneDescription,
+         resource_inventory_json = @resourceInventoryJson, description = @description,
+         instructions = @instructions, origin = @origin, skill_md = @skillMd
+       WHERE id = @id`,
+    )
+    .run({
+      id,
+      now: new Date().toISOString(),
+      name: next.name,
+      genre: next.genre,
+      styleTagsJson: JSON.stringify(next.styleTags),
+      pacingJson: JSON.stringify(next.pacing),
+      toneDescription: next.toneDescription,
+      resourceInventoryJson: JSON.stringify(next.resourceInventory ?? {}),
+      description: next.description ?? "",
+      instructions: next.instructions ?? "",
+      origin: next.origin ?? "app",
+      skillMd: next.skillMd ?? null,
+    });
+  return getTemplateById(userId, isAdmin, id);
+}
+
+export function deleteTemplate(userId: string, isAdmin: boolean, id: string): void {
+  if (!getTemplateById(userId, isAdmin, id)) return;
+  const db = getDb();
+  db.transaction(() => {
+    db.prepare("DELETE FROM skill_examples WHERE skill_id = ?").run(id);
+    db.prepare("DELETE FROM document_links WHERE target_type = 'skill' AND target_id = ?").run(id);
+    db.prepare("DELETE FROM style_templates WHERE id = ?").run(id);
+  })();
+}
+
+export function listSkillExampleIds(skillId: string): string[] {
+  return (
     getDb()
-      .prepare(`DELETE FROM style_templates WHERE id = ? AND user_id = ?`)
-      .run(id, userId);
-  }
+      .prepare(
+        "SELECT script_analysis_id FROM skill_examples WHERE skill_id = ? ORDER BY created_at",
+      )
+      .all(skillId) as { script_analysis_id: string }[]
+  ).map((row) => row.script_analysis_id);
+}
+
+export function setSkillExamples(skillId: string, scriptAnalysisIds: string[]): void {
+  const db = getDb();
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO skill_examples (skill_id, script_analysis_id, created_at) VALUES (?, ?, ?)`,
+  );
+  db.transaction(() => {
+    db.prepare("DELETE FROM skill_examples WHERE skill_id = ?").run(skillId);
+    // Distinct timestamps keep the chosen order stable.
+    const base = Date.now();
+    scriptAnalysisIds.forEach((analysisId, i) =>
+      insert.run(skillId, analysisId, new Date(base + i).toISOString()),
+    );
+  })();
 }

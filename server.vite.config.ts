@@ -24,6 +24,10 @@ export default defineConfig({
         "@modelcontextprotocol/server",
         "@modelcontextprotocol/express",
         "@modelcontextprotocol/node",
+        // Document parsing: unpdf ships pdf.js with its own worker, keep all three unbundled.
+        "unpdf",
+        "mammoth",
+        "jszip",
       ],
     },
   },

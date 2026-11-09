@@ -1,6 +1,2 @@
 export type SettingsCategoryKey =
-  | "apiKeys"
-  | "mcp"
-  | "backup"
-  | "general"
-  | "updates";
+  "apiKeys" | "prompts" | "mcp" | "backup" | "general" | "updates";

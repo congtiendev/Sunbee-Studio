@@ -1,6 +1,16 @@
 # AGENTS.md — Sunbee Studio
 
-React 19 admin dashboard template: Vite 8 · TypeScript ~6 · Tailwind CSS v4 · React Router 8 · Base UI · react-i18next. Client-only SPA with no backend, auth, or global store.
+Sunbee Studio — AI video production app built on a React 19 admin template: Vite 8 · TypeScript ~6 · Tailwind CSS v4 · React Router 8 · Base UI · react-i18next, with an Express 5 + better-sqlite3 backend (`server/`, types shared via `shared/types.ts`) and an Electron shell. Cookie-session auth; no global client store.
+
+## Server and AI (`server/`)
+
+- Each Video Studio step is a module in `server/modules/<step>/` (`routes.ts`, `tasks/`, `sources/`, `repo.ts`), listed in `server/modules/index.ts` and mounted at `/api/<mountPath>`. The frontend twin is `src/pages/main/video-studio/steps/<step>/`, listed in `steps/registry.ts`.
+- Every AI call is a task: `defineTask({ key, module, label, prompts, run })` in the module's `tasks/`, run with `runTask`. Prompts come from `promptOf(ctx, task, slot)` (user override → global override → default), so never hard-code a prompt elsewhere. Call vendors only through `providerFor(ctx, provider)` (`server/services/ai/providers/`), and add skill/example/document context with `buildContext()` (`server/services/ai/context.ts`).
+- Research sources implement `ResearchSource` (`server/services/research/`); modules add their own via `registerResearchSource`.
+- Schema changes: append a numbered migration to `server/services/db/migrations.ts`. Never edit a shipped one.
+- Uploaded binaries go through `server/services/storage/files.ts` (served by `GET /api/files/:id`).
+- Client calls go through `src/lib/api-client.ts`.
+- Test against a scratch data dir (`SUNBEE_DATA_DIR`), never the real `data/`.
 
 ## Commands
 
@@ -34,7 +44,7 @@ src/
 ├── contexts/            # ThemeProvider / useTheme only
 ├── hooks/<hook-name>.ts # Custom hooks
 ├── i18n/                # i18next setup, hooks, locales (routing.ts), language metadata
-├── messages/{en,ar,es,de}.json
+├── messages/{en,vi}.json
 ├── icons/               # Shared SVG components + barrel; flag-*.svg via `?react`
 └── utils/               # cn(), get-initials
 ```
@@ -56,7 +66,7 @@ Path alias: `@/*` → `src/*`.
 2. Colocate page-only components, `data.ts`, `types.ts`, `schema.ts` in that folder. Do not create `src/components/<feature>/`.
 3. Add `PageMeta` (`@/components/shared/page-meta`); inner pages usually add `PageBreadcrumb` too.
 4. Register the route in `App.tsx` under the right layout.
-5. For navigation, add an entry to `components/layout/app-layout/sidebar/data.tsx` **and** its label key `sidebar.items.<key>` to all four message files. Active matching is exact-path, except a prefix match for `/ai-settings`.
+5. For navigation, add an entry to `components/layout/app-layout/sidebar/data.tsx` **and** its label key `sidebar.items.<key>` to both message files (`en`, `vi`). Active matching is exact-path, except a prefix match for `/ai-settings`.
 
 ## Components and State
 
@@ -74,7 +84,7 @@ Path alias: `@/*` → `src/*`.
 ## i18n
 
 - Never reinitialize i18next (`src/i18n/config.ts`; provider mounted once in `main.tsx`).
-- Single locale: `en` only (`src/messages/en.json`). ICU syntax for interpolation/plurals.
+- Locales: `en` and `vi` (`src/messages/{en,vi}.json`); add every new key to **both**. ICU syntax for interpolation/plurals.
 - Use wrappers from `@/i18n`:
 
   ```tsx

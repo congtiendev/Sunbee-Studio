@@ -2,7 +2,7 @@ import { getDb } from "./db/client.js";
 import { listProjects, createProject } from "./db/projects-repo.js";
 import { createCategory } from "./db/categories-repo.js";
 import { createVideo } from "./db/videos-repo.js";
-import { listScriptAnalyses, saveScriptVersion } from "./db/script-analyses-repo.js";
+import { listScriptAnalyses, saveScriptVersion } from "../modules/script/repo.js";
 import { listTemplates, saveTemplate } from "./db/style-templates-repo.js";
 import { addAnthropicKey, getSettings, setSettings } from "../settings-store.js";
 import type {

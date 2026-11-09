@@ -7,10 +7,13 @@ import { errorLogger, requestLogger } from "./middleware/request-logger.js";
 import { adminRouter } from "./routes/auth.js";
 import authRouter from "./routes/auth.js";
 import categoriesRouter from "./routes/categories.js";
+import { stepModules } from "./modules/index.js";
 import dataRouter from "./routes/data.js";
+import documentsRouter from "./routes/documents.js";
+import filesRouter from "./routes/files.js";
 import mcpRouter from "./routes/mcp.js";
 import projectsRouter from "./routes/projects.js";
-import scriptRouter from "./routes/script.js";
+import promptsRouter from "./routes/prompts.js";
 import settingsRouter from "./routes/settings.js";
 import templatesRouter from "./routes/templates.js";
 import videosRouter from "./routes/videos.js";
@@ -33,8 +36,14 @@ export function createApp() {
   app.use("/api/projects", projectsRouter);
   app.use("/api/categories", categoriesRouter);
   app.use("/api/videos", videosRouter);
-  app.use("/api/script", scriptRouter);
   app.use("/api/data", dataRouter);
+  app.use("/api/files", filesRouter);
+  app.use("/api/documents", documentsRouter);
+  app.use("/api/prompts", promptsRouter);
+  // Each Video Studio step module mounts its own API (e.g. /api/script).
+  for (const module of stepModules) {
+    if (module.router && module.mountPath) app.use(`/api/${module.mountPath}`, module.router);
+  }
   app.use("/mcp", mcpRouter);
 
   const dist = staticDir();

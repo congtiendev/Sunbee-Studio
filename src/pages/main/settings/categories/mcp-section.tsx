@@ -180,10 +180,10 @@ export default function McpSection() {
 
             <Field>
               <FieldLabel>{t("snippetLabel")}</FieldLabel>
-              <pre className="overflow-x-auto rounded-lg bg-gray-50 p-3 font-mono text-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">
+              <pre className="font-mono overflow-x-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">
                 {mcpJsonSnippet}
               </pre>
-              <pre className="overflow-x-auto rounded-lg bg-gray-50 p-3 font-mono text-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">
+              <pre className="font-mono overflow-x-auto rounded-lg bg-gray-50 p-3 text-xs text-gray-700 dark:bg-white/5 dark:text-gray-300">
                 {cliSnippet}
               </pre>
             </Field>

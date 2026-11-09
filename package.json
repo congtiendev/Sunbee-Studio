@@ -13,7 +13,7 @@
   "main": "dist-electron/main/index.cjs",
   "scripts": {
     "dev": "concurrently -n vite,server -c auto \"vite\" \"npm:dev:server\"",
-    "dev:server": "tsx watch server/index.ts",
+    "dev:server": "node scripts/dev-server.mjs",
     "dev:electron": "concurrently -n server,electron -c auto \"npm:dev:server\" \"electron-vite dev\"",
     "build": "tsc -b && electron-vite build && vite build --config server.vite.config.ts",
     "package:linux": "npm run build && electron-builder --linux -c.directories.output=release/linux",
@@ -51,7 +51,9 @@
     "i18next-resources-to-backend": "^1.2.3",
     "input-otp": "^1.5.0",
     "jsvectormap": "^1.7.0",
+    "jszip": "^3.10.2",
     "leaflet": "^1.9.4",
+    "mammoth": "^1.13.0",
     "maplibre-gl": "^6.13.0",
     "multer": "^2.5.0",
     "openai": "^7.51.0",
@@ -71,6 +73,7 @@
     "swiper": "^14.3.0",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "^4.3.3",
+    "unpdf": "^2.1.0",
     "zod": "^3.25.76",
     "zod-mcp": "npm:zod@^4.6.7"
   },

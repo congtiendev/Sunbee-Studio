@@ -14,7 +14,10 @@ import SettingsPage from "@/pages/main/settings";
 import BasicTablesPage from "@/pages/main/tables/basic-tables";
 import VideoStudioPage from "@/pages/main/video-studio";
 import VideoStudioCategoriesPage from "@/pages/main/video-studio/categories";
+import VideoStudioAssetLibraryPage from "@/pages/main/video-studio/asset-library";
+import VideoStudioDocumentsPage from "@/pages/main/video-studio/documents";
 import VideoStudioProjectsPage from "@/pages/main/video-studio/projects";
+import VideoStudioSkillsPage from "@/pages/main/video-studio/skills";
 import { AuthLayout, SignInPage, SignUpPage } from "@/pages/others/auth";
 import BarChartPage from "@/pages/others/charts/bar-chart";
 import LineChartPage from "@/pages/others/charts/line-chart";
@@ -46,6 +49,9 @@ export default function App() {
         <Route path="/video-studio" element={<VideoStudioPage />} />
         <Route path="/video-studio/projects" element={<VideoStudioProjectsPage />} />
         <Route path="/video-studio/categories" element={<VideoStudioCategoriesPage />} />
+        <Route path="/video-studio/skills" element={<VideoStudioSkillsPage />} />
+        <Route path="/video-studio/documents" element={<VideoStudioDocumentsPage />} />
+        <Route path="/video-studio/assets" element={<VideoStudioAssetLibraryPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/blank" element={<BlankPage />} />
         <Route
