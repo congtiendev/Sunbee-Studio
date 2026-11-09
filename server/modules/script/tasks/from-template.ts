@@ -1,3 +1,4 @@
+import { SCRIPT_WITH_SCENES_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import type {
   DocumentRecord,
@@ -144,6 +145,7 @@ export const scriptFromTemplateTask = defineTask<
       ctx,
       input.provider,
     ).generateStructured<ScriptFromTemplateResult>({
+      maxTokens: SCRIPT_WITH_SCENES_OUTPUT_TOKENS,
       model: input.model ?? defaultModelFor(input.provider),
       system: promptOf(ctx, this, "system") + buildContext(input.context ?? {}),
       text,

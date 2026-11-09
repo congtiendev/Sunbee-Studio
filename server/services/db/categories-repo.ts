@@ -46,6 +46,29 @@ export function listCategories(
   return rows.map(rowToCategory);
 }
 
+/**
+ * A live category the user may work in: their own (or any, for admins), and
+ * neither it nor its project soft-deleted. Null otherwise.
+ */
+export function getCategory(
+  userId: string,
+  isAdmin: boolean,
+  id: string,
+): Category | null {
+  const base = `
+    SELECT c.id, c.project_id, c.name, c.created_at, c.updated_at, c.user_id, u.email AS owner_email
+    FROM categories c
+    JOIN projects p ON p.id = c.project_id AND p.deleted_at IS NULL
+    LEFT JOIN users u ON u.id = c.user_id
+    WHERE c.id = ? AND c.deleted_at IS NULL
+  `;
+  const row = isAdmin
+    ? (getDb().prepare(base).get(id) as CategoryRow | undefined)
+    : (getDb().prepare(`${base} AND c.user_id = ?`).get(id, userId) as
+        CategoryRow | undefined);
+  return row ? rowToCategory(row) : null;
+}
+
 export function createCategory(
   userId: string,
   projectId: string,

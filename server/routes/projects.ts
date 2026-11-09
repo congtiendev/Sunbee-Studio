@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/require-auth.js";
 import {
   createProject,
+  getProject,
   listProjects,
   renameProject,
   softDeleteProject,
@@ -11,6 +12,15 @@ const router = Router();
 
 router.get("/", requireAuth, (req, res) => {
   res.json(listProjects(req.user!.id, req.user!.role === "admin"));
+});
+
+router.get("/:id", requireAuth, (req, res) => {
+  const project = getProject(req.user!.id, req.user!.role === "admin", req.params.id as string);
+  if (!project) {
+    res.status(404).json({ error: "Không tìm thấy dự án." });
+    return;
+  }
+  res.json(project);
 });
 
 router.post("/", requireAuth, (req, res) => {

@@ -1,3 +1,4 @@
+import { SCRIPT_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import type { DocumentRecord } from "../../../../shared/types.js";
 import {
@@ -89,7 +90,7 @@ export const scriptFromDocumentTask = defineTask<
       system: promptOf(ctx, this, "system") + buildContext(input.context ?? {}),
       text: `${requirements.join("\n")}\n\n${sourceBlock(input.documents)}`,
       effort: input.effort ?? "medium",
-      maxTokens: 8000,
+      maxTokens: SCRIPT_OUTPUT_TOKENS,
     });
     const script = text.trim();
     if (!script) throw new Error("AI không trả về kịch bản.");

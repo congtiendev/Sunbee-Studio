@@ -11,7 +11,11 @@ import {
   runTask,
   taskContextFor,
 } from "../../services/ai/task.js";
-import { chunkFrames, chunkScriptText, mergeAnalyzeResults } from "./chunking.js";
+import {
+  analyzeChunkCount,
+  chunkCountForFrames,
+} from "../../../shared/script-cost-estimate.js";
+import { chunkScriptText, mergeAnalyzeResults, splitFramesInto } from "./chunking.js";
 import { loadScriptContext } from "./context-loader.js";
 import { getScriptAnalysisById, saveScriptVersion } from "./repo.js";
 import { analyzeScriptTask } from "./tasks/analyze.js";
@@ -32,12 +36,19 @@ export async function analyzeScriptForUser(
 
   const frames = req.frames ?? [];
 
-  // A video long enough to need more frames than fit in one request (the
-  // provider's hard per-request image cap) gets split into several
-  // requests — each with the frames and matching script passage for its
-  // slice of the video — then merged into one result before saving.
-  const frameChunks = chunkFrames(frames);
-  const scriptChunks = chunkScriptText(req.scriptText, frameChunks.length);
+  // A long script (up to ~30k characters) or a video with more frames than fit
+  // in one request (the provider's per-request image cap) is split into several
+  // requests — each with one script passage and the frames of that same part of
+  // the video, small enough for its scenes JSON to fit one response — then the
+  // results are merged before saving.
+  const scriptChunks = chunkScriptText(
+    req.scriptText,
+    analyzeChunkCount(req.scriptText.length, frames.length),
+  );
+  const frameChunks = splitFramesInto(
+    frames,
+    Math.max(scriptChunks.length, chunkCountForFrames(frames.length)),
+  );
   const context = loadScriptContext(caller, {
     skillId: req.styleTemplateId,
     videoId: req.videoId,

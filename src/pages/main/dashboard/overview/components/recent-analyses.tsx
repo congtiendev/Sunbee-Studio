@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { useTranslations } from "@/i18n";
 import type { ScriptAnalysisRecord } from "@shared/types";
+import { paths } from "@/lib/paths";
 import { Link } from "react-router";
 
 export default function RecentAnalyses({
@@ -30,7 +31,7 @@ export default function RecentAnalyses({
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link to="/video-studio" />}
+          render={<Link to={paths.projects} />}
         >
           {tCommon("seeAll")}
         </Button>

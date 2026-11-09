@@ -48,6 +48,13 @@ export function getSkillExamples(caller: Caller, skillId: string): ScriptAnalysi
   return getScriptAnalysesByIds(caller.id, isAdmin(caller), listSkillExampleIds(skillId));
 }
 
+export function videoNameOf(videoId: string): string | undefined {
+  const row = getDb().prepare("SELECT name FROM videos WHERE id = ?").get(videoId) as
+    | { name: string }
+    | undefined;
+  return row?.name;
+}
+
 export function getSkillDetail(caller: Caller, id: string): SkillDetail | null {
   const skill = getTemplateById(caller.id, isAdmin(caller), id);
   if (!skill) return null;

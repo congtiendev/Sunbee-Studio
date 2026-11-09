@@ -8,6 +8,9 @@ const app = createApp();
 const server = app.listen(PORT, () => {
   logger.info("server started", { port: PORT });
 });
+// Some AI jobs run for minutes (e.g. training a skill on several long scripts);
+// Node's default 5-minute request timeout would cut them off.
+server.requestTimeout = 30 * 60_000;
 
 process.on("SIGTERM", () => {
   logger.info("server stopping", { signal: "SIGTERM" });

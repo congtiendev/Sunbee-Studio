@@ -6,6 +6,7 @@ import {
   renameCategory,
   softDeleteCategory,
 } from "../services/db/categories-repo.js";
+import { getProject } from "../services/db/projects-repo.js";
 
 const router = Router();
 
@@ -23,6 +24,11 @@ router.post("/", requireAuth, (req, res) => {
   const name = body.name?.trim();
   if (!body.projectId || !name) {
     res.status(400).json({ error: "Thiếu projectId hoặc tên danh mục." });
+    return;
+  }
+  // Only inside a live project the user may work on — not someone else's by id.
+  if (!getProject(req.user!.id, req.user!.role === "admin", body.projectId)) {
+    res.status(404).json({ error: "Không tìm thấy dự án." });
     return;
   }
   res.json(createCategory(req.user!.id, body.projectId, name));

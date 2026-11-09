@@ -1,3 +1,4 @@
+import { SCRIPT_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import type { ProviderKey } from "../../../services/ai/providers/index.js";
 import {
@@ -53,6 +54,7 @@ export const describeFramesTask = defineTask<DescribeFramesInput, string>({
   async run(input, ctx) {
     const isClaude = input.provider === "claude";
     return providerFor(ctx, input.provider).generateText({
+      maxTokens: SCRIPT_OUTPUT_TOKENS,
       model: input.model ?? defaultModelFor(input.provider),
       system: `${promptOf(ctx, this, "system")}\n\n${LANGUAGE_INSTRUCTION[input.language]}`,
       text: isClaude

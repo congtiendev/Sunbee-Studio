@@ -1,14 +1,18 @@
-import { FRAMES_PER_ANALYZE_REQUEST } from "../../../shared/script-cost-estimate.js";
 import type { ScriptAnalyzeResult, ScriptScene } from "../../../shared/types.js";
 
-/** Frames split into contiguous groups of at most `FRAMES_PER_ANALYZE_REQUEST`. */
-export function chunkFrames(frames: string[]): string[][] {
-  if (frames.length <= FRAMES_PER_ANALYZE_REQUEST) return [frames];
-  const chunks: string[][] = [];
-  for (let i = 0; i < frames.length; i += FRAMES_PER_ANALYZE_REQUEST) {
-    chunks.push(frames.slice(i, i + FRAMES_PER_ANALYZE_REQUEST));
-  }
-  return chunks;
+/**
+ * Frames split into `count` contiguous groups of near-equal size, so each group
+ * matches the script passage of the same part of the video. With `count` from
+ * `analyzeChunkCount`, no group exceeds `FRAMES_PER_ANALYZE_REQUEST`.
+ */
+export function splitFramesInto(frames: string[], count: number): string[][] {
+  const groups = Math.max(1, count);
+  return Array.from({ length: groups }, (_, i) =>
+    frames.slice(
+      Math.round((i * frames.length) / groups),
+      Math.round(((i + 1) * frames.length) / groups),
+    ),
+  );
 }
 
 const SENTENCE_BOUNDARY = /[.!?…。]+["'”’)\]]*\s+|\n+/g;

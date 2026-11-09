@@ -9,7 +9,10 @@ import { ChevronDownIcon } from "@/icons";
 import { cn } from "@/utils";
 import { Link } from "react-router";
 import SidebarSubmenuItem from "@/components/layout/app-layout/sidebar/sidebar-submenu-item";
-import type { NavItem } from "@/components/layout/app-layout/sidebar/types";
+import {
+  isNavPathActive,
+  type NavItem,
+} from "@/components/layout/app-layout/sidebar/types";
 
 interface SidebarMenuItemProps {
   nav: NavItem;
@@ -30,14 +33,9 @@ export default function SidebarMenuItem({
 
   const hasSubItems = Boolean(nav.subItems?.length);
   const hasActiveChild = Boolean(
-    nav.subItems?.some(
-      (subItem) =>
-        subItem.path === pathname ||
-        (subItem.path === "/ai-settings" &&
-          pathname.startsWith("/ai-settings")),
-    ),
+    nav.subItems?.some((subItem) => isNavPathActive(subItem, pathname)),
   );
-  const isDirectActive = Boolean(nav.path && nav.path === pathname);
+  const isDirectActive = isNavPathActive(nav, pathname);
   const isItemActive = hasSubItems ? isOpen || hasActiveChild : isDirectActive;
   const isPanelOpen = showContent && isOpen;
 
@@ -91,11 +89,7 @@ export default function SidebarMenuItem({
                 <SidebarSubmenuItem
                   key={subItem.key}
                   subItem={subItem}
-                  isActive={
-                    subItem.path === pathname ||
-                    (subItem.path === "/ai-settings" &&
-                      pathname.startsWith("/ai-settings"))
-                  }
+                  isActive={isNavPathActive(subItem, pathname)}
                 />
               ))}
             </ul>

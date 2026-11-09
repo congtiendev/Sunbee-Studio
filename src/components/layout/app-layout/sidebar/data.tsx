@@ -1,65 +1,111 @@
 import {
   BoxIcon,
-  CameraIcon,
+  BrainIcon,
   DatabaseIcon,
+  DocIcon,
+  FolderIcon,
   GearIcon,
   LayoutGridIcon,
+  SparkIcon,
+  UploadIcon,
 } from "@/icons";
-import type { NavItem } from "@/components/layout/app-layout/sidebar/types";
+import type { NavSection } from "@/components/layout/app-layout/sidebar/types";
+import { paths } from "@/lib/paths";
 
-export const navItems: NavItem[] = [
+/**
+ * The sidebar, section by section. Labels: `sidebar.groups.<section key>` and
+ * `sidebar.items.<item key>` in both message files. Sections with no visible
+ * items (e.g. admin-only) are hidden automatically.
+ */
+export const navSections: NavSection[] = [
   {
-    icon: <LayoutGridIcon className="size-6" />,
-    key: "dashboard",
-    path: "/",
-  },
-  {
-    icon: <CameraIcon className="size-6" />,
-    key: "videoStudio",
-    subItems: [
-      { key: "videoStudioCreate", path: "/video-studio" },
-      { key: "videoStudioProjects", path: "/video-studio/projects" },
-      { key: "videoStudioCategories", path: "/video-studio/categories" },
-      { key: "videoStudioSkills", path: "/video-studio/skills" },
-      { key: "videoStudioDocuments", path: "/video-studio/documents" },
-      { key: "videoStudioAssets", path: "/video-studio/assets" },
+    key: "production",
+    items: [
+      {
+        icon: <LayoutGridIcon className="size-6" />,
+        key: "dashboard",
+        path: paths.overview,
+      },
+      {
+        icon: <FolderIcon className="size-6" />,
+        key: "projects",
+        path: paths.projects,
+        // A project's detail page and the video studio live under Projects.
+        activePaths: [paths.projectDetail, paths.studio],
+      },
     ],
   },
   {
-    icon: <GearIcon className="size-6" />,
-    key: "settings",
-    path: "/settings",
-  },
-  {
-    icon: <DatabaseIcon className="size-6" />,
-    key: "databaseAdmin",
-    path: "/database-admin",
-    adminOnly: true,
-  },
-  {
-    key: "templateDemos",
-    icon: <BoxIcon className="size-6" />,
-    subItems: [
-      { key: "userProfile", path: "/profile" },
-      { key: "calendar", path: "/calendar" },
-      { key: "formElements", path: "/form-elements", pro: false },
-      { key: "basicTables", path: "/basic-tables", pro: false },
-      { key: "blankPage", path: "/blank" },
-      { key: "error404", path: "/error-404" },
-      { key: "lineChart", path: "/line-chart", pro: false },
-      { key: "barChart", path: "/bar-chart", pro: false },
-      { key: "alerts", path: "/alerts" },
-      { key: "avatar", path: "/avatars" },
-      { key: "badge", path: "/badge" },
-      { key: "buttons", path: "/buttons" },
-      { key: "images", path: "/images" },
-      { key: "videos", path: "/videos" },
-      { key: "signIn", path: "/signin", pro: false },
-      { key: "signUp", path: "/signup", pro: false },
+    key: "library",
+    items: [
+      {
+        icon: <UploadIcon className="size-6" />,
+        key: "mediaLibrary",
+        path: paths.libraryMedia,
+      },
+      {
+        icon: <DocIcon className="size-6" />,
+        key: "documents",
+        path: paths.libraryDocuments,
+      },
+      {
+        icon: <SparkIcon className="size-6" />,
+        key: "skills",
+        path: paths.librarySkills,
+      },
+      {
+        icon: <BrainIcon className="size-6" />,
+        key: "training",
+        path: paths.libraryTraining,
+      },
     ],
   },
+  {
+    key: "system",
+    items: [
+      {
+        icon: <GearIcon className="size-6" />,
+        key: "settings",
+        path: paths.settings,
+      },
+      {
+        icon: <DatabaseIcon className="size-6" />,
+        key: "databaseAdmin",
+        path: paths.databaseAdmin,
+        adminOnly: true,
+      },
+    ],
+  },
+  // Template demo pages stay routable but only show up while developing.
+  ...(import.meta.env.DEV
+    ? [
+        {
+          key: "dev",
+          items: [
+            {
+              key: "templateDemos",
+              icon: <BoxIcon className="size-6" />,
+              subItems: [
+                { key: "userProfile", path: "/profile" },
+                { key: "calendar", path: "/calendar" },
+                { key: "formElements", path: "/form-elements" },
+                { key: "basicTables", path: "/basic-tables" },
+                { key: "blankPage", path: "/blank" },
+                { key: "error404", path: "/error-404" },
+                { key: "lineChart", path: "/line-chart" },
+                { key: "barChart", path: "/bar-chart" },
+                { key: "alerts", path: "/alerts" },
+                { key: "avatar", path: "/avatars" },
+                { key: "badge", path: "/badge" },
+                { key: "buttons", path: "/buttons" },
+                { key: "images", path: "/images" },
+                { key: "videos", path: "/videos" },
+                { key: "signIn", path: "/signin" },
+                { key: "signUp", path: "/signup" },
+              ],
+            },
+          ],
+        },
+      ]
+    : []),
 ];
-
-export const othersItems: NavItem[] = [];
-
-export const supportItems: NavItem[] = [];

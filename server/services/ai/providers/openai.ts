@@ -29,6 +29,18 @@ function buildUserContent(req: AiRequest) {
   return req.imagesFirst ? [...imageParts, textPart] : [textPart, ...imageParts];
 }
 
+/** Never hand back a cut-off result (e.g. a long script truncated by the output limit). */
+function assertComplete(finishReason: string | null | undefined): void {
+  if (finishReason === "length") {
+    throw new Error(
+      "OpenAI dừng giữa chừng vì kết quả dài hơn giới hạn đầu ra của model, nên kết quả bị bỏ để không lưu nội dung bị cắt cụt. Hãy thử model khác hoặc nội dung ngắn hơn.",
+    );
+  }
+  if (finishReason === "content_filter") {
+    throw new Error("OpenAI từ chối xử lý nội dung này.");
+  }
+}
+
 export function createOpenAiProvider(apiKey: string): LlmProvider {
   const client = new OpenAI({ apiKey });
 
@@ -47,6 +59,7 @@ export function createOpenAiProvider(apiKey: string): LlmProvider {
           { role: "user", content: buildUserContent(req) },
         ],
       });
+      assertComplete(response.choices[0]?.finish_reason);
       return response.choices[0]?.message?.content?.trim() ?? "";
     },
 
@@ -65,6 +78,7 @@ export function createOpenAiProvider(apiKey: string): LlmProvider {
           json_schema: { name: req.schemaName, schema: req.schema, strict: true },
         },
       });
+      assertComplete(response.choices[0]?.finish_reason);
       const raw = response.choices[0]?.message?.content;
       return raw ? (JSON.parse(raw) as T) : null;
     },

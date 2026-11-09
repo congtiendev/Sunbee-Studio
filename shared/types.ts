@@ -69,6 +69,9 @@ export interface Project {
   updatedAt: string;
   userId?: string;
   ownerEmail?: string;
+  /** Live (not soft-deleted) categories and videos — filled by list/get endpoints. */
+  categoryCount?: number;
+  videoCount?: number;
 }
 
 export interface Category {
@@ -89,6 +92,13 @@ export interface Video {
   updatedAt: string;
   userId?: string;
   ownerEmail?: string;
+}
+
+/** A video with the project/category it lives in — what the studio and "recent" lists need. */
+export interface VideoSummary extends Video {
+  categoryName: string;
+  projectId: string;
+  projectName: string;
 }
 
 export interface FetchTranscriptRequest {
@@ -319,6 +329,108 @@ export interface ScriptFromIdeaRequest {
   /** Skill whose style and instructions the script should follow. */
   styleTemplateId?: string;
   videoId?: string;
+}
+
+// ---------- AI training (skills learned from videos, documents, …) ----------
+
+/**
+ * Kinds of material a skill can be trained on — the same three ways the Script
+ * step gets a script: from a video link, an uploaded video, or documents. Each
+ * kind is one training source on the server (`server/modules/training/sources/`);
+ * adding a kind adds a value here.
+ */
+export type TrainingSourceKind = "link" | "upload" | "document";
+
+/** A piece of material picked for training, by kind and id (a video id, a document id…). */
+export interface TrainingSourceRef {
+  kind: TrainingSourceKind;
+  id: string;
+}
+
+/** Something the user can pick to train on, as listed by its source. */
+export interface TrainingCandidate extends TrainingSourceRef {
+  title: string;
+  /** Where it lives, used to group the list (e.g. "Project › Category"). */
+  group: string;
+  excerpt: string;
+  charCount: number;
+  /** Extra state worth showing, e.g. "approved" / "analyzed" for a script. */
+  badges: string[];
+  /** The project video this belongs to, if any (lets the studio pre-pick it). */
+  videoId?: string;
+}
+
+/** Every source kind with its candidates and how many one run may use. */
+export interface TrainingSourceList {
+  kind: TrainingSourceKind;
+  max: number;
+  candidates: TrainingCandidate[];
+}
+
+/**
+ * One run of the AI-training page: learn into a new skill, or refine an existing
+ * one. Training is cumulative: refining re-reads everything the skill learned
+ * before plus `sources`, and merges it with the current guide.
+ */
+export interface SkillTrainingRequest {
+  /** Refine this skill; omitted → create a new one. */
+  skillId?: string;
+  /** New skill's name (the AI suggests one when empty). Ignored when refining. */
+  name?: string;
+  /** Material added in this run (on top of what the skill already learned from). */
+  sources: TrainingSourceRef[];
+  /** Previously learned sources to drop from the skill from now on. */
+  removeSources?: TrainingSourceRef[];
+  /** Also attach attachable sources (documents) to the skill, for script writing to consult. */
+  attachToSkill?: boolean;
+  provider?: "openai" | "claude";
+  model?: string;
+  effort?: "low" | "medium" | "high";
+  /** Saved with the version, e.g. "added the March videos". */
+  note?: string;
+}
+
+/** The skill fields a version captures (enough to restore it). */
+export interface SkillSnapshot {
+  name: string;
+  description: string;
+  genre: string;
+  styleTags: string[];
+  toneDescription: string;
+  instructions: string;
+  pacing: { avgShotLengthSec: number; cutsPerMinute: number };
+  resourceInventory: Record<string, unknown>;
+}
+
+/** "train": a training run; "restore": an older version brought back; "snapshot": the skill before its first training. */
+export type SkillVersionKind = "train" | "restore" | "snapshot";
+
+export interface SkillVersion {
+  id: string;
+  skillId: string;
+  /** 1, 2, 3… per skill. */
+  version: number;
+  kind: SkillVersionKind;
+  note: string;
+  createdAt: string;
+  snapshot: SkillSnapshot;
+  /**
+   * Everything the skill had learned from after this run (cumulative); `added`
+   * marks what this run added. `label` is null when the item was deleted since.
+   */
+  sources: SkillVersionSource[];
+  provider?: string;
+  model?: string;
+}
+
+export interface SkillVersionSource extends TrainingSourceRef {
+  label: string | null;
+  added?: boolean;
+}
+
+export interface SkillTrainingResult {
+  skill: SkillDetail;
+  version: SkillVersion;
 }
 
 export interface DocumentRecord extends DocumentSummary {

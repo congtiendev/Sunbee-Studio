@@ -7,7 +7,7 @@ import type { AiTaskDefinition } from "../services/ai/task.js";
  * adding a step means adding a folder and one line in `modules/index.ts`.
  */
 export interface StepModule {
-  /** Matches the frontend step key (`src/pages/main/video-studio/steps/registry.ts`). */
+  /** Matches the frontend step key (`src/pages/main/studio/steps/registry.ts`). */
   key: string;
   /** Mounted at `/api/<mountPath>` when present. */
   mountPath?: string;
@@ -15,3 +15,10 @@ export interface StepModule {
   /** AI tasks the step runs; listed (and made editable) in Settings → Prompts. */
   tasks: AiTaskDefinition[];
 }
+
+/**
+ * A feature outside the step pipeline (e.g. AI training), with the same shape:
+ * `server/modules/<key>/`, an optional API at `/api/<mountPath>`, and AI tasks that
+ * get their own tab in Settings → Prompts (`FEATURE_PROMPT_TABS` on the frontend).
+ */
+export type FeatureModule = StepModule;

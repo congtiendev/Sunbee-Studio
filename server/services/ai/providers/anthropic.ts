@@ -13,12 +13,19 @@ import type {
 const FRAME_DATA_URL_PREFIX = /^data:image\/\w+;base64,/;
 const DEFAULT_STRUCTURED_MAX_TOKENS = 16000;
 const DEFAULT_TEXT_MAX_TOKENS = 4000;
+/**
+ * Above this many output tokens a request streams: the SDK refuses long
+ * non-streaming requests (they risk HTTP timeouts). Long scripts need it.
+ */
+const NON_STREAMING_MAX_TOKENS = 16000;
 // A long web search can pause mid-turn; resume it at most this many times.
 const MAX_WEB_SEARCH_CONTINUATIONS = 3;
 
 type JsonSchemaParam = Parameters<typeof jsonSchemaOutputFormat>[0];
 
-function mediaTypeOf(dataUrl: string): "image/jpeg" | "image/png" | "image/webp" | "image/gif" {
+function mediaTypeOf(
+  dataUrl: string,
+): "image/jpeg" | "image/png" | "image/webp" | "image/gif" {
   const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,/.exec(dataUrl);
   return (match?.[1] as "image/png" | undefined) ?? "image/jpeg";
 }
@@ -35,7 +42,24 @@ function buildContent(req: AiRequest): Anthropic.ContentBlockParam[] {
       },
     }),
   );
-  return req.imagesFirst ? [...imageBlocks, textBlock] : [textBlock, ...imageBlocks];
+  return req.imagesFirst
+    ? [...imageBlocks, textBlock]
+    : [textBlock, ...imageBlocks];
+}
+
+/**
+ * Never hand back a cut-off result: a script truncated by the output limit would
+ * be saved as if complete. Refusals are reported the same way.
+ */
+function assertComplete(message: Pick<Anthropic.Message, "stop_reason">): void {
+  if (message.stop_reason === "refusal") {
+    throw new Error("Claude từ chối xử lý nội dung này.");
+  }
+  if (message.stop_reason === "max_tokens") {
+    throw new Error(
+      "Claude dừng giữa chừng vì kết quả dài hơn giới hạn đầu ra, nên kết quả bị bỏ để không lưu nội dung bị cắt cụt. Hãy thử lại với mức nỗ lực thấp hơn hoặc nội dung ngắn hơn.",
+    );
+  }
 }
 
 function firstText(content: Anthropic.ContentBlock[]): string {
@@ -51,36 +75,57 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
     capabilities: { vision: true, webSearch: true, imageSearch: true },
 
     async generateText(req) {
-      const response = await client.messages.create({
+      const params: Anthropic.MessageCreateParamsNonStreaming = {
         model: req.model,
         max_tokens: req.maxTokens ?? DEFAULT_TEXT_MAX_TOKENS,
         system: req.system,
         messages: [{ role: "user", content: buildContent(req) }],
         ...(req.effort ? { output_config: { effort: req.effort } } : {}),
-      });
-      return firstText(response.content);
+      };
+      const message =
+        params.max_tokens > NON_STREAMING_MAX_TOKENS
+          ? await client.messages.stream(params).finalMessage()
+          : await client.messages.create(params);
+      assertComplete(message);
+      return firstText(message.content);
     },
 
     async generateStructured<T>(req: AiStructuredRequest): Promise<T | null> {
-      const response = await client.messages.parse({
+      const maxTokens = req.maxTokens ?? DEFAULT_STRUCTURED_MAX_TOKENS;
+      const base = {
         model: req.model,
-        max_tokens: req.maxTokens ?? DEFAULT_STRUCTURED_MAX_TOKENS,
+        max_tokens: maxTokens,
         system: req.system,
-        messages: [{ role: "user", content: buildContent(req) }],
+        messages: [{ role: "user" as const, content: buildContent(req) }],
+      };
+
+      if (maxTokens > NON_STREAMING_MAX_TOKENS) {
+        // Long structured output (e.g. a whole ~30k-character script with its
+        // scenes) must stream; the JSON comes back as the text block.
+        const message = await client.messages
+          .stream({
+            ...base,
+            output_config: {
+              format: { type: "json_schema", schema: req.schema },
+              effort: req.effort ?? "medium",
+            },
+          })
+          .finalMessage();
+        assertComplete(message);
+        const json = firstText(message.content);
+        return json ? (JSON.parse(json) as T) : null;
+      }
+
+      const response = await client.messages.parse({
+        ...base,
         output_config: {
-          format: jsonSchemaOutputFormat(req.schema as unknown as JsonSchemaParam),
+          format: jsonSchemaOutputFormat(
+            req.schema as unknown as JsonSchemaParam,
+          ),
           effort: req.effort ?? "medium",
         },
       });
-
-      if (response.stop_reason === "refusal") {
-        throw new Error("Claude từ chối xử lý nội dung này.");
-      }
-      if (response.stop_reason === "max_tokens") {
-        throw new Error(
-          "Claude trả về kết quả bị cắt ngắn do quá dài, hãy thử với nội dung ngắn hơn.",
-        );
-      }
+      assertComplete(response);
       return (response.parsed_output as T | null | undefined) ?? null;
     },
 
@@ -97,7 +142,9 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
           max_tokens: req.maxTokens ?? DEFAULT_TEXT_MAX_TOKENS,
           system: req.system,
           messages,
-          tools: [{ type: "web_search_20260318", name: "web_search", max_uses: 5 }],
+          tools: [
+            { type: "web_search_20260318", name: "web_search", max_uses: 5 },
+          ],
         });
 
         for (const block of response.content) {
@@ -105,10 +152,16 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
             texts.push(block.text);
             for (const citation of block.citations ?? []) {
               if (citation.type === "web_search_result_location") {
-                sources.push({ title: citation.title ?? citation.url, url: citation.url });
+                sources.push({
+                  title: citation.title ?? citation.url,
+                  url: citation.url,
+                });
               }
             }
-          } else if (block.type === "web_search_tool_result" && Array.isArray(block.content)) {
+          } else if (
+            block.type === "web_search_tool_result" &&
+            Array.isArray(block.content)
+          ) {
             for (const result of block.content) {
               sources.push({ title: result.title, url: result.url });
             }
@@ -150,7 +203,8 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
       }
 
       const full = texts.join("");
-      const match = /```json\s*([\s\S]*?)```/.exec(full) ?? /(\[[\s\S]*\])/.exec(full);
+      const match =
+        /```json\s*([\s\S]*?)```/.exec(full) ?? /(\[[\s\S]*\])/.exec(full);
       if (!match) return [];
       try {
         const parsed = JSON.parse(match[1]!) as unknown;

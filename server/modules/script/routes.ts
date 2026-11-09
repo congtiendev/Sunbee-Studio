@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { requireVideoAccess } from "../../middleware/require-access.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { taskContextFor } from "../../services/ai/task.js";
 import type {
@@ -35,7 +36,7 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-router.post("/fetch-transcript", requireAuth, async (req, res) => {
+router.post("/fetch-transcript", requireAuth, requireVideoAccess, async (req, res) => {
   try {
     const body = req.body as FetchTranscriptRequest;
     const { scriptText, frames, origin, noSpeechDetected } =
@@ -89,6 +90,8 @@ router.post(
       next();
     });
   },
+  // After multer: only now is the multipart `videoId` in req.body.
+  requireVideoAccess,
   async (req, res) => {
     try {
       if (!req.file) {
@@ -136,7 +139,7 @@ router.post(
 );
 
 /** Source "document": AI writes the script from reference documents; saved as a draft. */
-router.post("/from-document", requireAuth, async (req, res) => {
+router.post("/from-document", requireAuth, requireVideoAccess, async (req, res) => {
   try {
     const body = req.body as ScriptFromDocumentRequest;
     const { scriptText, documentTitles } = await writeScriptFromDocuments(
@@ -160,7 +163,7 @@ router.post("/from-document", requireAuth, async (req, res) => {
 });
 
 /** Source "idea": AI writes the script straight from a short idea; saved as a draft. */
-router.post("/from-idea", requireAuth, async (req, res) => {
+router.post("/from-idea", requireAuth, requireVideoAccess, async (req, res) => {
   try {
     const body = req.body as ScriptFromIdeaRequest;
     const { scriptText } = await writeScriptFromIdea(req.user!, body);
@@ -181,7 +184,7 @@ router.post("/from-idea", requireAuth, async (req, res) => {
 });
 
 /** Source "template": new script + scenes modelled on an analyzed version; saved as analyzed. */
-router.post("/from-template", requireAuth, async (req, res) => {
+router.post("/from-template", requireAuth, requireVideoAccess, async (req, res) => {
   try {
     res.json(
       await writeScriptFromTemplate(
@@ -194,7 +197,7 @@ router.post("/from-template", requireAuth, async (req, res) => {
   }
 });
 
-router.post("/analyze", requireAuth, async (req, res) => {
+router.post("/analyze", requireAuth, requireVideoAccess, async (req, res) => {
   try {
     res.json(
       await analyzeScriptForUser(req.user!, req.body as ScriptAnalyzeRequest),
@@ -221,7 +224,7 @@ router.get("/analyzed", requireAuth, (req, res) => {
   );
 });
 
-router.get("/history", requireAuth, (req, res) => {
+router.get("/history", requireAuth, requireVideoAccess, (req, res) => {
   const videoId = req.query.videoId;
   if (typeof videoId === "string" && videoId) {
     res.json(listVersionsForVideo(req.user!.id, videoId));

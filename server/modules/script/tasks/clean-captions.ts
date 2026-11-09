@@ -1,3 +1,4 @@
+import { SCRIPT_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import type { ProviderKey } from "../../../services/ai/providers/index.js";
 import {
@@ -67,7 +68,7 @@ export const cleanCaptionsTask = defineTask<CleanCaptionsInput, string>({
       text: `${source}:\n\n${input.captions}`,
       images: sampleFrames(input.frames, MAX_FRAMES),
       effort: "low",
-      maxTokens: 16000,
+      maxTokens: SCRIPT_OUTPUT_TOKENS,
     });
     return text.trim();
   },

@@ -141,6 +141,7 @@ export function deleteTemplate(userId: string, isAdmin: boolean, id: string): vo
   const db = getDb();
   db.transaction(() => {
     db.prepare("DELETE FROM skill_examples WHERE skill_id = ?").run(id);
+    db.prepare("DELETE FROM skill_versions WHERE skill_id = ?").run(id);
     db.prepare("DELETE FROM document_links WHERE target_type = 'skill' AND target_id = ?").run(id);
     db.prepare("DELETE FROM style_templates WHERE id = ?").run(id);
   })();

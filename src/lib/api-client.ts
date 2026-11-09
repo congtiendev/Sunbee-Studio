@@ -25,6 +25,10 @@ import type {
   PromptTaskInfo,
   ResearchSourceInfo,
   SkillDetail,
+  SkillTrainingRequest,
+  SkillTrainingResult,
+  SkillVersion,
+  TrainingSourceList,
   SkillImportResult,
   SkillInput,
   SkillUpdateRequest,
@@ -42,6 +46,7 @@ import type {
   StyleTemplate,
   User,
   Video,
+  VideoSummary,
 } from "@shared/types";
 
 async function request<T>(
@@ -353,8 +358,21 @@ export const apiClient = {
         }),
     },
   },
+  /** AI training: skills learned from videos and documents, one version per run. */
+  training: {
+    sources: (): Promise<TrainingSourceList[]> => request("/api/training/sources"),
+    run: (req: SkillTrainingRequest): Promise<SkillTrainingResult> =>
+      request("/api/training/run", { method: "POST", body: JSON.stringify(req) }),
+    versions: (skillId: string): Promise<SkillVersion[]> =>
+      request(`/api/training/skills/${skillId}/versions`),
+    restore: (skillId: string, versionId: string): Promise<SkillTrainingResult> =>
+      request(`/api/training/skills/${skillId}/versions/${versionId}/restore`, {
+        method: "POST",
+      }),
+  },
   projects: {
     list: (): Promise<Project[]> => request("/api/projects"),
+    get: (id: string): Promise<Project> => request(`/api/projects/${id}`),
     create: (name: string): Promise<Project> =>
       request("/api/projects", {
         method: "POST",
@@ -385,12 +403,24 @@ export const apiClient = {
       request(`/api/categories/${id}`, { method: "DELETE" }),
   },
   videos: {
-    list: (categoryId: string): Promise<Video[]> =>
+    list: (categoryId: string): Promise<VideoSummary[]> =>
       request(`/api/videos?categoryId=${categoryId}`),
+    listByProject: (projectId: string): Promise<VideoSummary[]> =>
+      request(`/api/videos?projectId=${projectId}`),
+    recent: (limit?: number): Promise<VideoSummary[]> =>
+      request(`/api/videos/recent${limit ? `?limit=${limit}` : ""}`),
+    get: (id: string): Promise<VideoSummary> => request(`/api/videos/${id}`),
     create: (categoryId: string, name: string): Promise<Video> =>
       request("/api/videos", {
         method: "POST",
         body: JSON.stringify({ categoryId, name }),
       }),
+    rename: (id: string, name: string): Promise<void> =>
+      request(`/api/videos/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name }),
+      }),
+    delete: (id: string): Promise<void> =>
+      request(`/api/videos/${id}`, { method: "DELETE" }),
   },
 };

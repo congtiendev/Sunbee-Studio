@@ -2,45 +2,37 @@ import { Sidebar, SidebarContent, useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts";
 import { useState } from "react";
 import { useLocation } from "react-router";
-import { navItems, othersItems, supportItems } from "@/components/layout/app-layout/sidebar/data";
+import { navSections } from "@/components/layout/app-layout/sidebar/data";
 import AppSidebarHeader from "@/components/layout/app-layout/sidebar/sidebar-header";
 import SidebarNavGroup from "@/components/layout/app-layout/sidebar/sidebar-nav-group";
-import type { MenuType, NavItem } from "@/components/layout/app-layout/sidebar/types";
+import {
+  isNavPathActive,
+  type NavSection,
+  type OpenSubmenu,
+} from "@/components/layout/app-layout/sidebar/types";
 
-function buildMenuSections(
-  isAdmin: boolean,
-): { type: MenuType; labelKey: string; items: NavItem[] }[] {
-  const filterAdminOnly = (items: NavItem[]) =>
-    isAdmin ? items : items.filter((item) => !item.adminOnly);
-
-  return [
-    { type: "main", labelKey: "groups.menu", items: filterAdminOnly(navItems) },
-    { type: "support", labelKey: "groups.support", items: supportItems },
-    { type: "others", labelKey: "groups.others", items: othersItems },
-  ];
+/** The sections this user can see: admin-only items dropped, then empty sections. */
+function visibleSections(isAdmin: boolean): NavSection[] {
+  return navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => isAdmin || !item.adminOnly),
+    }))
+    .filter((section) => section.items.length > 0);
 }
 
-const findMatchingSubmenu = (
-  menuSections: { type: MenuType; labelKey: string; items: NavItem[] }[],
-  path: string,
-) => {
-  for (const section of menuSections) {
-    for (let index = 0; index < section.items.length; index++) {
-      const nav = section.items[index];
-      if (
-        nav.subItems?.some(
-          (subItem) =>
-            subItem.path === path ||
-            (subItem.path === "/ai-settings" &&
-              path.startsWith("/ai-settings")),
-        )
-      ) {
-        return { type: section.type, index };
-      }
-    }
+function findOpenSubmenu(
+  sections: NavSection[],
+  pathname: string,
+): OpenSubmenu | null {
+  for (const section of sections) {
+    const index = section.items.findIndex((nav) =>
+      nav.subItems?.some((subItem) => isNavPathActive(subItem, pathname)),
+    );
+    if (index !== -1) return { section: section.key, index };
   }
   return null;
-};
+}
 
 export default function AppSidebar() {
   const { open, isMobile } = useSidebar();
@@ -48,36 +40,25 @@ export default function AppSidebar() {
   const { user } = useAuth();
 
   const showContent = open || isMobile;
+  const sections = visibleSections(user?.role === "admin");
 
-  const menuSections = buildMenuSections(user?.role === "admin");
-
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: MenuType;
-    index: number;
-  } | null>(() => findMatchingSubmenu(menuSections, pathname));
+  const [openSubmenu, setOpenSubmenu] = useState<OpenSubmenu | null>(() =>
+    findOpenSubmenu(sections, pathname),
+  );
 
   const [prevPathname, setPrevPathname] = useState(pathname);
   if (prevPathname !== pathname) {
     setPrevPathname(pathname);
-    setOpenSubmenu(findMatchingSubmenu(menuSections, pathname));
+    setOpenSubmenu(findOpenSubmenu(sections, pathname));
   }
 
-  const handleSubmenuToggle = (index: number, menuType: MenuType) => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
-        return null;
-      }
-      return { type: menuType, index };
-    });
+  const handleSubmenuToggle = (section: string, index: number) => {
+    setOpenSubmenu((prev) =>
+      prev && prev.section === section && prev.index === index
+        ? null
+        : { section, index },
+    );
   };
-
-  const activeSections = menuSections.filter(
-    (section) => section.items.length > 0,
-  );
 
   return (
     <Sidebar side="left" collapsible="icon">
@@ -86,12 +67,10 @@ export default function AppSidebar() {
       <SidebarContent className="overflow-y-auto px-5 duration-300 ease-linear">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
-            {activeSections.map((section) => (
+            {sections.map((section) => (
               <SidebarNavGroup
-                key={section.type}
-                labelKey={section.labelKey}
-                menuType={section.type}
-                items={section.items}
+                key={section.key}
+                section={section}
                 openSubmenu={openSubmenu}
                 showContent={showContent}
                 pathname={pathname}

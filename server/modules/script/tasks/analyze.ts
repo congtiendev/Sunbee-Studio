@@ -1,3 +1,4 @@
+import { ANALYSIS_PASSAGE_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import type { ScriptAnalyzeResult } from "../../../../shared/types.js";
 import {
@@ -80,6 +81,7 @@ export const analyzeScriptTask = defineTask<
       (hasFrames ? `\n\n${promptOf(ctx, this, "framesHint")}` : "");
 
     const result = await provider.generateStructured<ScriptAnalyzeResult>({
+      maxTokens: ANALYSIS_PASSAGE_OUTPUT_TOKENS,
       model: input.model ?? defaultModelFor(input.provider),
       system,
       text: input.scriptText,

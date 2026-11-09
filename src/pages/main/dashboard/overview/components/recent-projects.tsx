@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/i18n";
 import { FolderIcon } from "@/icons";
 import type { Project } from "@shared/types";
+import { paths, projectUrl } from "@/lib/paths";
 import { Link } from "react-router";
 
 export default function RecentProjects({ data }: { data: Project[] }) {
@@ -19,7 +20,7 @@ export default function RecentProjects({ data }: { data: Project[] }) {
         <Button
           variant="outline"
           nativeButton={false}
-          render={<Link to="/video-studio" />}
+          render={<Link to={paths.projects} />}
         >
           {tCommon("seeAll")}
         </Button>
@@ -37,9 +38,12 @@ export default function RecentProjects({ data }: { data: Project[] }) {
                 <FolderIcon className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-gray-800 dark:text-white/90">
+                <Link
+                  to={projectUrl(project.id)}
+                  className="block truncate text-sm font-medium text-gray-800 hover:text-brand-500 dark:text-white/90 dark:hover:text-brand-400"
+                >
                   {project.name}
-                </p>
+                </Link>
                 <span className="text-xs text-gray-500 dark:text-gray-400">
                   {t("updatedAt", {
                     date: new Date(project.updatedAt).toLocaleDateString(),

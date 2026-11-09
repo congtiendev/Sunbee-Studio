@@ -18,15 +18,42 @@ import { apiClient } from "@/lib/api-client";
 import {
   VIDEO_STUDIO_STEPS,
   type PromptGroup,
-} from "@/pages/main/video-studio/steps/registry";
-import type { VideoStudioStepKey } from "@/pages/main/video-studio/types";
+} from "@/pages/main/studio/steps/registry";
+import { BrainIcon, type IconProps } from "@/icons";
 import type {
   LocalizedText,
   PromptScope,
   PromptSlotInfo,
   PromptTaskInfo,
 } from "@shared/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+
+/**
+ * One tab of Settings → Prompts: a Video Studio step, or a feature outside the
+ * pipeline. A task's `module` is the key of the tab that owns it.
+ */
+interface PromptTab {
+  key: string;
+  icon: ComponentType<IconProps>;
+  /** Full i18n key of the tab title. */
+  labelKey: string;
+  promptGroups?: PromptGroup[];
+}
+
+/** Features with AI tasks of their own (server: `featureModules` in `server/modules/index.ts`). */
+const FEATURE_PROMPT_TABS: PromptTab[] = [
+  { key: "training", icon: BrainIcon, labelKey: "sidebar.items.training" },
+];
+
+const PROMPT_TABS: PromptTab[] = [
+  ...VIDEO_STUDIO_STEPS.map((step) => ({
+    key: step.key,
+    icon: step.icon,
+    labelKey: `videoStudio.steps.${step.key}`,
+    promptGroups: step.promptGroups,
+  })),
+  ...FEATURE_PROMPT_TABS,
+];
 
 function localized(text: LocalizedText | undefined, locale: string): string {
   if (!text) return "";
@@ -430,14 +457,12 @@ function GroupTabs({
 export default function PromptsSection() {
   const t = useTranslations("settings.prompts");
   const tCommon = useTranslations("common");
-  const tSteps = useTranslations("videoStudio.steps");
+  const tRoot = useTranslations();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
   const [tasks, setTasks] = useState<PromptTaskInfo[] | null>(null);
-  const [activeStep, setActiveStep] = useState<VideoStudioStepKey>(
-    VIDEO_STUDIO_STEPS[0]!.key,
-  );
+  const [activeTab, setActiveTab] = useState<string>(PROMPT_TABS[0]!.key);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
@@ -464,10 +489,9 @@ export default function PromptsSection() {
     };
   }, []);
 
-  // One tab per Video Studio step (from the step registry, so new steps appear on their own);
-  // a task's `module` is the key of the step that runs it.
-  const tasksOf = (step: VideoStudioStepKey) =>
-    (tasks ?? []).filter((task) => task.module === step);
+  // One tab per step (from the step registry, so new steps appear on their own) and per feature.
+  const tasksOf = (tab: string) =>
+    (tasks ?? []).filter((task) => task.module === tab);
 
   return (
     <Card>
@@ -490,27 +514,23 @@ export default function PromptsSection() {
 
         {tasks && (
           <Tabs
-            value={activeStep}
-            onValueChange={(value) =>
-              setActiveStep(value as VideoStudioStepKey)
-            }
+            value={activeTab}
+            onValueChange={(value) => setActiveTab(value as string)}
           >
             <OverflowTabsList
-              value={activeStep}
-              onValueChange={(value) =>
-                setActiveStep(value as VideoStudioStepKey)
-              }
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as string)}
               moreLabel={tCommon("moreTabs")}
-              items={VIDEO_STUDIO_STEPS.map((step) => {
-                const count = tasksOf(step.key).length;
-                const StepIcon = step.icon;
+              items={PROMPT_TABS.map((tab) => {
+                const count = tasksOf(tab.key).length;
+                const TabIcon = tab.icon;
                 return {
-                  value: step.key,
+                  value: tab.key,
                   triggerClassName: "gap-1.5",
                   label: (
                     <>
-                      <StepIcon className="size-4" />
-                      {tSteps(step.key)}
+                      <TabIcon className="size-4" />
+                      {tRoot(tab.labelKey)}
                       <Badge
                         variant="light"
                         color={count > 0 ? "primary" : "gray"}
@@ -524,22 +544,22 @@ export default function PromptsSection() {
               })}
             />
 
-            {VIDEO_STUDIO_STEPS.map((step) => {
-              const stepTasks = tasksOf(step.key);
+            {PROMPT_TABS.map((tab) => {
+              const stepTasks = tasksOf(tab.key);
               return (
-                <TabsContent key={step.key} value={step.key} className="pt-4">
+                <TabsContent key={tab.key} value={tab.key} className="pt-4">
                   {stepTasks.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-gray-300 px-6 py-10 text-center dark:border-gray-700">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {t("comingSoonTitle", { step: tSteps(step.key) })}
+                        {t("comingSoonTitle", { step: tRoot(tab.labelKey) })}
                       </p>
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         {t("comingSoonHint")}
                       </p>
                     </div>
-                  ) : step.promptGroups ? (
+                  ) : tab.promptGroups ? (
                     <GroupTabs
-                      groups={step.promptGroups}
+                      groups={tab.promptGroups}
                       tasks={stepTasks}
                       isAdmin={isAdmin}
                       onChanged={load}

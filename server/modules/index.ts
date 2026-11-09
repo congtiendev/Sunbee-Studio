@@ -3,14 +3,18 @@ import { assetsModule } from "./assets/index.js";
 import { editPlanModule } from "./edit-plan/index.js";
 import { renderModule } from "./render/index.js";
 import { scriptModule } from "./script/index.js";
-import type { StepModule } from "./types.js";
+import { trainingModule } from "./training/index.js";
+import type { FeatureModule, StepModule } from "./types.js";
 
 /** Every Video Studio step, in pipeline order. */
 export const stepModules: StepModule[] = [scriptModule, assetsModule, editPlanModule, renderModule];
 
-/** All AI tasks across steps, in pipeline order. */
+/** Features outside the pipeline, each with its own API and AI tasks. */
+export const featureModules: FeatureModule[] = [trainingModule];
+
+/** All AI tasks: steps in pipeline order, then features. */
 export function allAiTasks(): AiTaskDefinition[] {
-  return stepModules.flatMap((module) => module.tasks);
+  return [...stepModules, ...featureModules].flatMap((module) => module.tasks);
 }
 
 export function findAiTask(key: string): AiTaskDefinition | undefined {

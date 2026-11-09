@@ -10,13 +10,17 @@
     "seeAll": "See all",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "moreTabs": "More"
+    "moreTabs": "More",
+    "rename": "Rename",
+    "create": "Create",
+    "open": "Open"
   },
   "sidebar": {
     "groups": {
-      "menu": "Menu",
-      "support": "Support",
-      "others": "Others"
+      "production": "Production",
+      "library": "Library",
+      "system": "System",
+      "dev": "Template demos"
     },
     "badges": {
       "new": "new",
@@ -131,15 +135,13 @@
       "variants03": "Variants 03",
       "variants04": "Variants 04",
       "variants05": "Variants 05",
-      "videoStudio": "Video Studio",
-      "videoStudioCreate": "Create video",
-      "videoStudioProjects": "Manage projects",
-      "videoStudioCategories": "Manage categories",
       "settings": "Settings",
       "databaseAdmin": "Database Admin",
-      "videoStudioSkills": "Skills",
-      "videoStudioDocuments": "Documents",
-      "videoStudioAssets": "Asset library"
+      "projects": "Projects",
+      "mediaLibrary": "Media library",
+      "documents": "Documents",
+      "skills": "Skills",
+      "training": "AI training"
     }
   },
   "header": {
@@ -205,6 +207,12 @@
     "recentProjects": {
       "title": "Recent Projects",
       "empty": "No projects yet.",
+      "updatedAt": "Updated {date}"
+    },
+    "recentVideos": {
+      "title": "Continue working",
+      "empty": "No videos yet — create one to get started.",
+      "location": "{project} · {category}",
       "updatedAt": "Updated {date}"
     }
   },
@@ -1160,36 +1168,6 @@
       "back": "Back",
       "next": "Next"
     },
-    "project": {
-      "emptyTitle": "No projects yet",
-      "emptyDescription": "Create your first project to start producing a video — your script history will be saved under it.",
-      "namePlaceholder": "Project name",
-      "createButton": "Create project",
-      "createNewOption": "+ New project"
-    },
-    "category": {
-      "namePlaceholder": "Category name",
-      "addButton": "Add category"
-    },
-    "video": {
-      "namePlaceholder": "Video name",
-      "addButton": "Add video",
-      "selectHint": "Choose or create a video to get started"
-    },
-    "manage": {
-      "projectsPageTitle": "Manage projects",
-      "projectsPageDescription": "Rename or remove projects. Removing is a soft delete — it just hides the item.",
-      "categoriesPageTitle": "Manage categories",
-      "categoriesPageDescription": "Rename or remove categories across every project. Removing is a soft delete — it just hides the item.",
-      "projectsTitle": "Projects",
-      "categoriesTitle": "Categories",
-      "categoryCount": "Categories",
-      "pickProjectPlaceholder": "Pick a project",
-      "categoriesEmpty": "This project has no categories yet.",
-      "categoriesEmptyAll": "No categories yet.",
-      "saveButton": "Save",
-      "cancelButton": "Cancel"
-    },
     "script": {
       "version": {
         "draft": "draft",
@@ -1305,11 +1283,6 @@
       "music": "Music",
       "images": "Images / b-roll",
       "notes": "Notes",
-      "saveSkillTitle": "Save as reusable skill",
-      "skillNameLabel": "Skill name",
-      "skillNamePlaceholder": "e.g. Energetic product review",
-      "saveSkillButton": "Save skill",
-      "skillSaved": "Skill saved. You'll be able to reuse this style for future videos.",
       "approve": {
         "approvedBadge": "Approved",
         "edit": "Edit scenes",
@@ -1380,7 +1353,12 @@
       "framePrev": "Previous",
       "frameNext": "Next",
       "previewTitle": "Frame preview",
-      "previewPassageEmpty": "No matching passage yet."
+      "previewPassageEmpty": "No matching passage yet.",
+      "voiceSkill": {
+        "button": "Train a skill from this video",
+        "buttonHint": "Open AI training with this video picked, to learn its voice and style",
+        "needsScript": "Load or paste a script first to analyze it."
+      }
     },
     "skills": {
       "pageTitle": "Skills",
@@ -1441,7 +1419,10 @@
       "documents": {
         "title": "Reference documents",
         "hint": "Knowledge the AI reads whenever this skill is used (brand guide, product facts, glossary...)."
-      }
+      },
+      "trainButton": "Train",
+      "trainButtonHint": "Refine this skill with more videos and documents",
+      "trainNewButton": "AI training"
     },
     "documents": {
       "pageTitle": "Documents",
@@ -1542,7 +1523,7 @@
         "autoSelect": "Auto-pick top result",
         "openSource": "Source page",
         "noResults": "Nothing found. Try other keywords.",
-        "noLibraryResults": "Nothing in your library matches. Upload assets on the Asset library page.",
+        "noLibraryResults": "Nothing in your library matches. Upload assets on the Media library page.",
         "needsKey": "Add a {source} API key to search it.",
         "needsAiKey": "Web research needs an OpenAI or Anthropic API key.",
         "openSettings": "Open Settings",
@@ -1558,7 +1539,7 @@
       }
     },
     "library": {
-      "pageTitle": "Asset library",
+      "pageTitle": "Media library",
       "pageDescription": "Your own images, video clips and audio. Tag them well: the Assets step searches this library by name, tags and description.",
       "searchPlaceholder": "Search by name, tag or description",
       "searchButton": "Search",
@@ -1598,6 +1579,13 @@
       "descriptionLabel": "Description",
       "cancel": "Cancel",
       "save": "Save"
+    },
+    "workspace": {
+      "noVideoTitle": "Pick a video to work on",
+      "noVideoDescription": "Open a video from one of your projects, or create a new one.",
+      "notFound": "This video doesn't exist or was deleted.",
+      "goToProjects": "Go to projects",
+      "switchVideo": "Other videos in this category"
     }
   },
   "databaseAdmin": {
@@ -1662,5 +1650,181 @@
     "radiusLabel": "Roundness",
     "backgroundInfo": "{label} · hue {hue}°, saturation {sat}%.",
     "backgroundNeutral": "(near-monochrome image)"
+  },
+  "projects": {
+    "title": "Projects",
+    "metaDescription": "Your projects, their categories and videos in one place.",
+    "createButton": "New project",
+    "createTitle": "Create project",
+    "namePlaceholder": "Project name",
+    "renameTitle": "Rename project",
+    "deleteTitle": "Delete project?",
+    "deleteDescription": "\"{name}\" and everything in it will be hidden. This is a soft delete — no data is lost.",
+    "searchPlaceholder": "Search projects",
+    "emptyTitle": "No projects yet",
+    "emptyDescription": "A project groups your videos by topic, client or channel. Create one to get started.",
+    "noMatch": "No project matches \"{query}\".",
+    "stats": "{categories, plural, one {# category} other {# categories}} · {videos, plural, one {# video} other {# videos}}",
+    "updatedAt": "Updated {date}",
+    "detail": {
+      "notFound": "This project doesn't exist or was deleted.",
+      "backToProjects": "Back to projects",
+      "addCategory": "New category",
+      "categoryCreateTitle": "Create category",
+      "categoryNamePlaceholder": "Category name",
+      "categoryRenameTitle": "Rename category",
+      "categoryDeleteTitle": "Delete category?",
+      "categoryDeleteDescription": "\"{name}\" and its videos will be hidden. This is a soft delete — no data is lost.",
+      "emptyTitle": "No categories yet",
+      "emptyDescription": "Categories split a project into groups — series, formats, channels… Add one, then add videos to it.",
+      "emptyCategory": "No videos in this category yet.",
+      "addVideo": "Add video",
+      "videoCount": "{count, plural, one {# video} other {# videos}}"
+    },
+    "video": {
+      "createTitle": "Create video",
+      "namePlaceholder": "Video name",
+      "renameTitle": "Rename video",
+      "deleteTitle": "Delete video?",
+      "deleteDescription": "\"{name}\" will be hidden along with its scripts. This is a soft delete — no data is lost."
+    },
+    "newVideo": {
+      "button": "New video",
+      "title": "New video",
+      "description": "Choose where the video belongs, then give it a name.",
+      "project": "Project",
+      "category": "Category",
+      "name": "Video name",
+      "createNew": "+ Create new",
+      "pickExisting": "Choose existing",
+      "newProjectPlaceholder": "New project name",
+      "newCategoryPlaceholder": "New category name",
+      "submit": "Create and open"
+    }
+  },
+  "training": {
+    "title": "AI training",
+    "metaDescription": "Train skills from many videos and documents, with a version per training run.",
+    "intro": "Teach the AI a voice and style by letting it read many videos and documents together — from links, uploaded videos or documents, just like the Script step. It keeps what they share (the author's real voice) plus the rules and knowledge in your documents, and writes a complete skill. Every training run is saved as a version you can review or restore.",
+    "target": {
+      "title": "1. Skill",
+      "new": "Create a new skill",
+      "existing": "Train an existing skill",
+      "namePlaceholder": "Skill name (leave empty to let the AI name it)",
+      "pickSkill": "Choose a skill",
+      "noSkills": "No skills yet — create a new one first.",
+      "refineHint": "Cumulative training: the AI re-reads everything this skill learned before, plus what you add below, and merges it into the current guide — new material refines the skill, it doesn't replace it. Saved as a new version."
+    },
+    "sources": {
+      "title": "2. What to learn from",
+      "hint": "The same three ways the Script step gets a script. For an accurate voice, use 3–5 videos by the same author or channel; add documents for explicit rules, sample texts or knowledge.",
+      "selected": "{count}/{max} selected",
+      "manage": "Manage",
+      "existing": "Already fetched — pick to reuse:",
+      "searchPlaceholder": "Search",
+      "noMatch": "Nothing matches.",
+      "chars": "{count} chars",
+      "link": {
+        "title": "From a video link",
+        "hint": "Paste links (YouTube, TikTok…); each video's script is fetched with the AI chosen below.",
+        "empty": "Nothing fetched from a link yet."
+      },
+      "upload": {
+        "title": "Upload a video",
+        "hint": "Upload video files; each one is transcribed (OpenAI key needed for the audio).",
+        "empty": "No uploaded video yet."
+      },
+      "document": {
+        "title": "From documents",
+        "hint": "Voice or brand guides, sample texts, product or subject knowledge. New ones are saved to the document library too.",
+        "empty": "No documents yet."
+      },
+      "refineHint": "The skill keeps everything it learned. Add new material below; drop a learned source only if it no longer fits.",
+      "addNew": "Add new material",
+      "learned": {
+        "title": "{count, plural, =0 {Nothing learned yet} one {Learned from # source — merged again every time} other {Learned from # sources — merged again every time}}",
+        "hint": "Click a source to drop it from the skill from now on (click again to undo).",
+        "none": "This skill hasn't learned from any source yet; its current guide will be refined with what you add.",
+        "remove": "Drop from the skill",
+        "restore": "Keep it",
+        "deleted": "(deleted)"
+      }
+    },
+    "badges": {
+      "approved": "Approved",
+      "analyzed": "Analyzed",
+      "linked": "Attached to a skill",
+      "new": "New",
+      "learned": "Learned"
+    },
+    "run": {
+      "title": "3. Train",
+      "providerLabel": "Train with",
+      "noteLabel": "Version note (optional)",
+      "notePlaceholder": "e.g. Added the March videos",
+      "attach": "Also attach the documents to the skill, so script writing keeps consulting them",
+      "submit": "Train",
+      "training": "Training… long sources are read in full first, this can take a few minutes",
+      "needsSource": "Add or pick at least one video or document.",
+      "needsSkill": "Choose the skill to train.",
+      "summary": "Learns from {videos, plural, one {# script} other {# scripts}} and {documents, plural, one {# document} other {# documents}}.",
+      "fewVideos": "Add a few more videos for a more accurate voice.",
+      "submitRefine": "Train (merge)",
+      "summaryRefine": "Merges {learned, plural, one {# learned source} other {# learned sources}} with {added, plural, =0 {nothing new} one {# new one} other {# new ones}}.",
+      "resynthesize": "Nothing new: the AI re-synthesizes the guide from what it learned (e.g. after changing model or prompt)."
+    },
+    "result": {
+      "createdTitle": "Skill \"{name}\" created (v{version})",
+      "trainedTitle": "\"{name}\" trained (v{version})",
+      "useHint": "Pick this skill in the Script step to write in this voice. Training it again refines it further.",
+      "openSkills": "Open Skills library"
+    },
+    "versions": {
+      "title": "Versions",
+      "empty": "No versions yet — train this skill to start its history.",
+      "newSkillHint": "Every training run is saved as a version: what it learned from, the model and the full guide. You can review or restore any of them.",
+      "current": "Current",
+      "view": "View guide",
+      "hide": "Hide",
+      "restore": "Restore",
+      "restoreTitle": "Restore v{version}?",
+      "restoreDescription": "The skill goes back to v{version}. This is saved as a new version, so it can be undone too.",
+      "kinds": {
+        "train": "Training",
+        "restore": "Restored",
+        "snapshot": "Before training"
+      },
+      "sourcesCount": "{count, plural, =0 {No sources} one {# source} other {# sources}}",
+      "deleted": "(deleted)",
+      "addedInRun": "Added in this run",
+      "addedCount": "{count, plural, =0 {nothing new} one {+# new} other {+# new}}"
+    },
+    "adders": {
+      "status": {
+        "waiting": "Waiting…",
+        "working": "Working… (can take a minute)",
+        "done": "Added and picked"
+      },
+      "link": {
+        "placeholder": "Paste one or more video links, one per line",
+        "fetch": "{count, plural, =0 {Fetch scripts} one {Fetch # script} other {Fetch # scripts}}",
+        "fetching": "Fetching…",
+        "hint": "Uses AI credit, like the Script step.",
+        "tooShort": "The script is too short to learn from."
+      },
+      "upload": {
+        "pick": "Choose video files",
+        "transcribing": "Transcribing…",
+        "hint": "Up to 500 MB each. Uses AI credit.",
+        "tooLarge": "Larger than 500 MB.",
+        "tooShort": "The transcript is too short to learn from."
+      },
+      "document": {
+        "upload": "Upload documents",
+        "paste": "Paste text",
+        "hint": "PDF, DOCX, TXT, MD, CSV, JSON.",
+        "noText": "No text could be read from this file."
+      }
+    }
   }
 }

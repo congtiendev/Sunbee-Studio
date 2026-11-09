@@ -9,6 +9,7 @@ import type {
   Project,
   ScriptAnalysisRecord,
   StyleTemplate,
+  VideoSummary,
 } from "@shared/types";
 import { useEffect, useState } from "react";
 import ActivityChart from "@/pages/main/dashboard/overview/components/activity-chart";
@@ -16,12 +17,15 @@ import MetricCard from "@/pages/main/dashboard/overview/components/metric-card";
 import ProviderStatus from "@/pages/main/dashboard/overview/components/provider-status";
 import RecentAnalyses from "@/pages/main/dashboard/overview/components/recent-analyses";
 import RecentProjects from "@/pages/main/dashboard/overview/components/recent-projects";
+import RecentVideos from "@/pages/main/dashboard/overview/components/recent-videos";
+import NewVideoDialog from "@/pages/main/projects/new-video-dialog";
 
 interface OverviewData {
   projects: Project[];
   templates: StyleTemplate[];
   analyses: ScriptAnalysisRecord[];
   settings: AppSettings;
+  recentVideos: VideoSummary[];
 }
 
 export default function OverviewPage() {
@@ -29,18 +33,22 @@ export default function OverviewPage() {
 
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [newVideoOpen, setNewVideoOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const [projects, templates, analyses, settings] = await Promise.all([
-          apiClient.projects.list(),
-          apiClient.templates.list(),
-          apiClient.script.history(),
-          apiClient.settings.get(),
-        ]);
-        if (!cancelled) setData({ projects, templates, analyses, settings });
+        const [projects, templates, analyses, settings, recentVideos] =
+          await Promise.all([
+            apiClient.projects.list(),
+            apiClient.templates.list(),
+            apiClient.script.history(),
+            apiClient.settings.get(),
+            apiClient.videos.recent(8),
+          ]);
+        if (!cancelled)
+          setData({ projects, templates, analyses, settings, recentVideos });
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : String(err));
@@ -53,8 +61,7 @@ export default function OverviewPage() {
   }, []);
 
   const totalScenes =
-    data?.analyses.reduce((sum, record) => sum + record.scenes.length, 0) ??
-    0;
+    data?.analyses.reduce((sum, record) => sum + record.scenes.length, 0) ?? 0;
 
   return (
     <>
@@ -85,6 +92,13 @@ export default function OverviewPage() {
 
         {data && (
           <>
+            <div className="col-span-12">
+              <RecentVideos
+                data={data.recentVideos}
+                onNewVideo={() => setNewVideoOpen(true)}
+              />
+            </div>
+
             <div className="col-span-12 grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 xl:grid-cols-4">
               <MetricCard
                 icon={<FolderIcon />}
@@ -126,6 +140,8 @@ export default function OverviewPage() {
           </>
         )}
       </div>
+
+      <NewVideoDialog open={newVideoOpen} onOpenChange={setNewVideoOpen} />
     </>
   );
 }

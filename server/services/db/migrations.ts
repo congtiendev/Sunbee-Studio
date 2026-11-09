@@ -138,6 +138,80 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    id: 5,
+    name: "video_soft_delete",
+    up: (db) => {
+      db.exec(`
+        -- Videos are soft-deleted like projects and categories (hidden, data kept).
+        ALTER TABLE videos ADD COLUMN deleted_at TEXT;
+        CREATE INDEX IF NOT EXISTS idx_videos_category ON videos(category_id);
+        CREATE INDEX IF NOT EXISTS idx_categories_project ON categories(project_id);
+      `);
+    },
+  },
+  {
+    id: 6,
+    name: "skill_sources",
+    up: (db) => {
+      db.exec(`
+        -- The scripts a skill's voice/style was learned from, so training can be
+        -- repeated with more videos (unlike skill_examples, drafts count too).
+        CREATE TABLE skill_sources (
+          skill_id TEXT NOT NULL,
+          script_analysis_id TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          PRIMARY KEY (skill_id, script_analysis_id)
+        );
+      `);
+    },
+  },
+  {
+    id: 7,
+    name: "skill_versions",
+    up: (db) => {
+      db.exec(`
+        -- Superseded by skill_versions, which records each training run's sources.
+        DROP TABLE IF EXISTS skill_sources;
+
+        -- One row per training run (or restore) of a skill: the full skill as it was
+        -- after the run, what it learned from, and with which model.
+        -- sources_json: [{ "kind": "script" | "document" | …, "id": "…" }] — generic so
+        -- new training source kinds need no schema change.
+        CREATE TABLE skill_versions (
+          id TEXT PRIMARY KEY,
+          skill_id TEXT NOT NULL,
+          version INTEGER NOT NULL,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          kind TEXT NOT NULL CHECK (kind IN ('train', 'restore', 'snapshot')),
+          note TEXT NOT NULL DEFAULT '',
+          snapshot_json TEXT NOT NULL,
+          sources_json TEXT NOT NULL DEFAULT '[]',
+          provider TEXT,
+          model TEXT,
+          created_at TEXT NOT NULL,
+          UNIQUE (skill_id, version)
+        );
+        CREATE INDEX idx_skill_versions_skill ON skill_versions(skill_id);
+      `);
+    },
+  },
+  {
+    id: 8,
+    name: "training_digests",
+    up: (db) => {
+      db.exec(`
+        -- AI notes on one training source, read in full (long ones chunk by chunk).
+        -- Keyed by a hash of the source text + the digest prompt + the model, so
+        -- cumulative training re-uses them instead of re-reading every source.
+        CREATE TABLE training_digests (
+          key TEXT PRIMARY KEY,
+          digest_json TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+      `);
+    },
+  },
 ];
 
 export function runNumberedMigrations(db: Database.Database): void {

@@ -7,7 +7,7 @@ import { errorLogger, requestLogger } from "./middleware/request-logger.js";
 import { adminRouter } from "./routes/auth.js";
 import authRouter from "./routes/auth.js";
 import categoriesRouter from "./routes/categories.js";
-import { stepModules } from "./modules/index.js";
+import { featureModules, stepModules } from "./modules/index.js";
 import dataRouter from "./routes/data.js";
 import documentsRouter from "./routes/documents.js";
 import filesRouter from "./routes/files.js";
@@ -42,8 +42,8 @@ export function createApp() {
   app.use("/api/files", filesRouter);
   app.use("/api/documents", documentsRouter);
   app.use("/api/prompts", promptsRouter);
-  // Each Video Studio step module mounts its own API (e.g. /api/script).
-  for (const module of stepModules) {
+  // Each step and feature module mounts its own API (e.g. /api/script, /api/training).
+  for (const module of [...stepModules, ...featureModules]) {
     if (module.router && module.mountPath) app.use(`/api/${module.mountPath}`, module.router);
   }
   app.use("/mcp", mcpRouter);

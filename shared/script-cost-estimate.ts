@@ -63,6 +63,22 @@ export function chunkCountForFrames(frameCount: number): number {
   return Math.max(1, Math.ceil(frameCount / FRAMES_PER_ANALYZE_REQUEST));
 }
 
+/**
+ * Longest script passage analyzed in one request. The scenes JSON repeats the
+ * passage (each scene's `content`) plus visual notes, so a long script — scripts
+ * run up to ~30k characters — must be split for every response to fit.
+ */
+export const SCRIPT_CHARS_PER_ANALYZE_REQUEST = 8_000;
+
+/** How many requests one analysis takes: enough for both the frames and the text. */
+export function analyzeChunkCount(scriptChars: number, frameCount: number): number {
+  return Math.max(
+    chunkCountForFrames(frameCount),
+    Math.ceil(scriptChars / SCRIPT_CHARS_PER_ANALYZE_REQUEST),
+    1,
+  );
+}
+
 export function estimateAnalyzeScriptCost(
   scriptText: string,
   frameCount = 0,
@@ -70,16 +86,12 @@ export function estimateAnalyzeScriptCost(
   modelId?: string,
 ): ScriptCostEstimate {
   const model = findModel(provider, modelId);
-  // A long video is split into multiple requests (≤100 frames each); the
-  // full script text is re-sent with every one of them.
-  const chunkCount = chunkCountForFrames(frameCount);
+  // The script and frames are split across the requests (each gets its own
+  // passage and the frames of that part of the video), so each is sent once.
   const scriptTokens = Math.ceil(scriptText.length / CHARS_PER_TOKEN);
-  const estimatedInputTokens =
-    scriptTokens * chunkCount + frameCount * TOKENS_PER_IMAGE;
+  const estimatedInputTokens = scriptTokens + frameCount * TOKENS_PER_IMAGE;
   const estimatedOutputTokens = Math.ceil(
-    (scriptTokens + (frameCount / chunkCount) * TOKENS_PER_IMAGE) *
-      OUTPUT_TOKEN_MULTIPLIER *
-      chunkCount,
+    (scriptTokens + frameCount * TOKENS_PER_IMAGE) * OUTPUT_TOKEN_MULTIPLIER,
   );
   const estimatedCostUsd =
     (estimatedInputTokens / 1_000_000) * model.inputPricePer1M +

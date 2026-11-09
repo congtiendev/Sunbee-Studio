@@ -10,14 +10,17 @@ import OverviewPage from "@/pages/main/dashboard/overview";
 import FormElementsPage from "@/pages/main/forms/form-elements";
 import { BlankPage, Error404Page } from "@/pages/main/pages";
 import ProfilePage from "@/pages/main/profile";
+import DocumentsPage from "@/pages/main/library/documents";
+import MediaLibraryPage from "@/pages/main/library/media";
+import SkillsPage from "@/pages/main/library/skills";
+import TrainingPage from "@/pages/main/library/training";
+import ProjectsPage from "@/pages/main/projects";
+import ProjectDetailPage from "@/pages/main/projects/detail";
 import SettingsPage from "@/pages/main/settings";
+import StudioPage from "@/pages/main/studio";
+import LegacyVideoStudioRedirect from "@/pages/main/studio/legacy-redirect";
 import BasicTablesPage from "@/pages/main/tables/basic-tables";
-import VideoStudioPage from "@/pages/main/video-studio";
-import VideoStudioCategoriesPage from "@/pages/main/video-studio/categories";
-import VideoStudioAssetLibraryPage from "@/pages/main/video-studio/asset-library";
-import VideoStudioDocumentsPage from "@/pages/main/video-studio/documents";
-import VideoStudioProjectsPage from "@/pages/main/video-studio/projects";
-import VideoStudioSkillsPage from "@/pages/main/video-studio/skills";
+import { paths } from "@/lib/paths";
 import { AuthLayout, SignInPage, SignUpPage } from "@/pages/others/auth";
 import BarChartPage from "@/pages/others/charts/bar-chart";
 import LineChartPage from "@/pages/others/charts/line-chart";
@@ -28,7 +31,7 @@ import Buttons from "@/pages/others/ui-elements/buttons";
 import Images from "@/pages/others/ui-elements/images";
 import Videos from "@/pages/others/ui-elements/videos";
 import "flatpickr/dist/flatpickr.css";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 
 export default function App() {
   return (
@@ -43,25 +46,55 @@ export default function App() {
       >
         <Route index element={<OverviewPage />} />
 
-        {/* Others Page */}
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/video-studio" element={<VideoStudioPage />} />
-        <Route path="/video-studio/projects" element={<VideoStudioProjectsPage />} />
-        <Route path="/video-studio/categories" element={<VideoStudioCategoriesPage />} />
-        <Route path="/video-studio/skills" element={<VideoStudioSkillsPage />} />
-        <Route path="/video-studio/documents" element={<VideoStudioDocumentsPage />} />
-        <Route path="/video-studio/assets" element={<VideoStudioAssetLibraryPage />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/blank" element={<BlankPage />} />
+        {/* Production */}
+        <Route path={paths.projects} element={<ProjectsPage />} />
+        <Route path={paths.projectDetail} element={<ProjectDetailPage />} />
+        <Route path={paths.studio} element={<StudioPage />} />
+
+        {/* Library */}
+        <Route path={paths.libraryMedia} element={<MediaLibraryPage />} />
+        <Route path={paths.libraryDocuments} element={<DocumentsPage />} />
+        <Route path={paths.librarySkills} element={<SkillsPage />} />
+        <Route path={paths.libraryTraining} element={<TrainingPage />} />
+
+        {/* System */}
+        <Route path={paths.settings} element={<SettingsPage />} />
         <Route
-          path="/database-admin"
+          path={paths.databaseAdmin}
           element={
             <RequireAdmin>
               <DatabaseAdminPage />
             </RequireAdmin>
           }
         />
+        <Route path={paths.profile} element={<ProfilePage />} />
+
+        {/* Pre-restructure URLs */}
+        <Route path="/video-studio" element={<LegacyVideoStudioRedirect />} />
+        <Route
+          path="/video-studio/projects"
+          element={<Navigate to={paths.projects} replace />}
+        />
+        <Route
+          path="/video-studio/categories"
+          element={<Navigate to={paths.projects} replace />}
+        />
+        <Route
+          path="/video-studio/assets"
+          element={<Navigate to={paths.libraryMedia} replace />}
+        />
+        <Route
+          path="/video-studio/documents"
+          element={<Navigate to={paths.libraryDocuments} replace />}
+        />
+        <Route
+          path="/video-studio/skills"
+          element={<Navigate to={paths.librarySkills} replace />}
+        />
+
+        {/* Template demos (listed in the sidebar in dev builds only) */}
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/blank" element={<BlankPage />} />
 
         {/* Forms */}
         <Route path="/form-elements" element={<FormElementsPage />} />

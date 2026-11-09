@@ -12,7 +12,7 @@ import {
   setDocumentTargets,
   setLinkedDocuments,
 } from "../services/db/documents-repo.js";
-import { listProjects } from "../services/db/projects-repo.js";
+import { getProject } from "../services/db/projects-repo.js";
 import { getTemplateById } from "../services/db/style-templates-repo.js";
 import { extractDocumentText } from "../services/documents/extract.js";
 import { deleteFile, saveFile } from "../services/storage/files.js";
@@ -39,7 +39,7 @@ function decodeFilename(name: string): string {
 
 function canAccessTarget(user: User, targetType: DocumentTargetType, targetId: string): boolean {
   if (targetType === "skill") return getTemplateById(user.id, isAdmin(user), targetId) !== null;
-  return listProjects(user.id, isAdmin(user)).some((project) => project.id === targetId);
+  return getProject(user.id, isAdmin(user), targetId) !== null;
 }
 
 router.get("/", requireAuth, (req, res) => {

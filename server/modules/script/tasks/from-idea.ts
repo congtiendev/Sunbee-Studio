@@ -1,3 +1,4 @@
+import { SCRIPT_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import { buildContext, type ContextInput } from "../../../services/ai/context.js";
 import type { AiEffort, ProviderKey } from "../../../services/ai/providers/index.js";
@@ -56,7 +57,7 @@ export const scriptFromIdeaTask = defineTask<ScriptFromIdeaInput, string>({
       system: promptOf(ctx, this, "system") + buildContext(input.context ?? {}),
       text: `${requirements}\n\nÝ tưởng: ${input.idea.trim()}`,
       effort: input.effort ?? "medium",
-      maxTokens: 8000,
+      maxTokens: SCRIPT_OUTPUT_TOKENS,
     });
     const script = text.trim();
     if (!script) throw new Error("AI không trả về kịch bản.");

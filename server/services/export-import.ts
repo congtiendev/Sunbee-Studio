@@ -48,7 +48,7 @@ function listAllVideosForUser(userId: string): Video[] {
   const rows = getDb()
     .prepare(
       `SELECT id, category_id, name, created_at, updated_at
-       FROM videos WHERE user_id = ?`,
+       FROM videos WHERE user_id = ? AND deleted_at IS NULL`,
     )
     .all(userId) as VideoRow[];
   return rows.map((row) => ({

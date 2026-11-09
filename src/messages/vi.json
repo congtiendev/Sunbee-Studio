@@ -10,13 +10,17 @@
     "seeAll": "Xem tất cả",
     "confirm": "Xác nhận",
     "cancel": "Huỷ",
-    "moreTabs": "Thêm"
+    "moreTabs": "Thêm",
+    "rename": "Đổi tên",
+    "create": "Tạo",
+    "open": "Mở"
   },
   "sidebar": {
     "groups": {
-      "menu": "Menu",
-      "support": "Hỗ trợ",
-      "others": "Khác"
+      "production": "Sản xuất",
+      "library": "Thư viện",
+      "system": "Hệ thống",
+      "dev": "Trang mẫu"
     },
     "badges": {
       "new": "mới",
@@ -132,15 +136,13 @@
       "variants03": "Biến thể 03",
       "variants04": "Biến thể 04",
       "variants05": "Biến thể 05",
-      "videoStudio": "Video Studio",
-      "videoStudioCreate": "Tạo video",
-      "videoStudioProjects": "Quản lí dự án",
-      "videoStudioCategories": "Quản lí danh mục",
       "settings": "Cài đặt",
       "databaseAdmin": "Quản trị dữ liệu",
-      "videoStudioSkills": "Skill",
-      "videoStudioDocuments": "Tài liệu",
-      "videoStudioAssets": "Thư viện tài nguyên"
+      "projects": "Dự án",
+      "mediaLibrary": "Kho media",
+      "documents": "Tài liệu",
+      "skills": "Skill (phong cách AI)",
+      "training": "Huấn luyện AI"
     }
   },
   "header": {
@@ -1076,7 +1078,8 @@
       "mcp": "MCP",
       "general": "Chung",
       "updates": "Cập nhật",
-      "prompts": "Prompt"
+      "prompts": "Prompt",
+      "backup": "Sao lưu"
     },
     "apiKeys": {
       "title": "API Key",
@@ -1095,7 +1098,14 @@
       "testRequired": "Hãy kiểm tra key trước khi lưu.",
       "connected": "Đã kết nối",
       "editButton": "Chỉnh sửa",
-      "cancelButton": "Huỷ"
+      "cancelButton": "Huỷ",
+      "activeBadge": "Đang dùng",
+      "useButton": "Dùng",
+      "keyNameLabel": "Tên key",
+      "keyNamePlaceholder": "VD: Chính, Dự phòng",
+      "addKeyButton": "Thêm key khác",
+      "addButton": "Thêm",
+      "renameButton": "Đổi tên"
     },
     "mcp": {
       "title": "MCP Server",
@@ -1149,6 +1159,15 @@
         "pinterest": "Dán access token có quyền pins:read và boards:read. Pinterest chỉ cho tìm pin công khai với app đã được duyệt (beta); nếu chưa, kết quả là pin và board của chính bạn. Pin chỉ dùng tham khảo — ảnh thuộc bản quyền người đăng.",
         "cloudflare-image": "Định dạng: accountId:apiToken — account ID nằm ở sidebar bên phải trang dashboard Cloudflare; tạo token tại link bên dưới với quyền \"Workers AI\"."
       }
+    },
+    "backup": {
+      "title": "Sao lưu & khôi phục",
+      "description": "Xuất dự án, video, bản phân tích kịch bản, skill và API key ra một file — nhập file đó trên máy khác để mang dữ liệu theo.",
+      "exportButton": "Xuất dữ liệu",
+      "importButton": "Nhập dữ liệu",
+      "importSummary": "Đã nhập {projects} dự án, {categories} danh mục, {videos} video, {scriptAnalyses} bản phân tích, {styleTemplates} skill, {anthropicKeys} key Claude.",
+      "warning": "File xuất ra chứa API key ở dạng văn bản thường. Hãy cất giữ riêng tư và không chia sẻ.",
+      "importOpenaiKey": "Đã nhập cả OpenAI key."
     }
   },
   "videoStudio": {
@@ -1169,36 +1188,6 @@
     "navigation": {
       "back": "Quay lại",
       "next": "Tiếp theo"
-    },
-    "project": {
-      "emptyTitle": "Chưa có dự án nào",
-      "emptyDescription": "Tạo dự án đầu tiên để bắt đầu sản xuất video — lịch sử kịch bản sẽ được lưu theo dự án này.",
-      "namePlaceholder": "Tên dự án",
-      "createButton": "Tạo dự án",
-      "createNewOption": "+ Tạo dự án mới"
-    },
-    "category": {
-      "namePlaceholder": "Tên danh mục",
-      "addButton": "Thêm danh mục"
-    },
-    "video": {
-      "namePlaceholder": "Tên video",
-      "addButton": "Thêm video",
-      "selectHint": "Chọn hoặc tạo video để bắt đầu"
-    },
-    "manage": {
-      "projectsPageTitle": "Quản lý dự án",
-      "projectsPageDescription": "Đổi tên hoặc xoá dự án. Xoá ở đây là xoá mềm — chỉ ẩn đi, không mất dữ liệu.",
-      "categoriesPageTitle": "Quản lý danh mục",
-      "categoriesPageDescription": "Đổi tên hoặc xoá danh mục của mọi dự án. Xoá ở đây là xoá mềm — chỉ ẩn đi, không mất dữ liệu.",
-      "projectsTitle": "Dự án",
-      "categoriesTitle": "Danh mục",
-      "categoryCount": "Số danh mục",
-      "pickProjectPlaceholder": "Chọn dự án",
-      "categoriesEmpty": "Dự án này chưa có danh mục nào.",
-      "categoriesEmptyAll": "Chưa có danh mục nào.",
-      "saveButton": "Lưu",
-      "cancelButton": "Huỷ"
     },
     "script": {
       "version": {
@@ -1315,11 +1304,6 @@
       "music": "Nhạc nền",
       "images": "Hình ảnh / B-roll",
       "notes": "Ghi chú",
-      "saveSkillTitle": "Lưu làm skill tái sử dụng",
-      "skillNameLabel": "Tên skill",
-      "skillNamePlaceholder": "VD: Review sản phẩm năng động",
-      "saveSkillButton": "Lưu skill",
-      "skillSaved": "Đã lưu skill. Bạn có thể dùng lại phong cách này cho các video sau.",
       "approve": {
         "approvedBadge": "Đã duyệt",
         "edit": "Sửa cảnh",
@@ -1390,7 +1374,12 @@
       "framePrev": "Trước",
       "frameNext": "Sau",
       "previewTitle": "Xem trước khung hình",
-      "previewPassageEmpty": "Chưa có đoạn kịch bản tương ứng."
+      "previewPassageEmpty": "Chưa có đoạn kịch bản tương ứng.",
+      "voiceSkill": {
+        "button": "Huấn luyện skill từ video này",
+        "buttonHint": "Mở Huấn luyện AI với video này được chọn sẵn, để học giọng văn và phong cách",
+        "needsScript": "Lấy hoặc dán kịch bản trước để phân tích."
+      }
     },
     "skills": {
       "pageTitle": "Skill",
@@ -1451,7 +1440,10 @@
       "documents": {
         "title": "Tài liệu tham khảo",
         "hint": "Kiến thức AI đọc mỗi khi dùng skill này (bộ nhận diện thương hiệu, thông tin sản phẩm, thuật ngữ...)."
-      }
+      },
+      "trainButton": "Huấn luyện",
+      "trainButtonHint": "Tinh chỉnh skill bằng thêm video và tài liệu",
+      "trainNewButton": "Huấn luyện AI"
     },
     "documents": {
       "pageTitle": "Tài liệu",
@@ -1552,7 +1544,7 @@
         "autoSelect": "Tự động chọn kết quả đầu",
         "openSource": "Trang nguồn",
         "noResults": "Không tìm thấy. Hãy thử từ khoá khác.",
-        "noLibraryResults": "Thư viện chưa có tài nguyên phù hợp. Tải lên ở trang Thư viện tài nguyên.",
+        "noLibraryResults": "Thư viện chưa có tài nguyên phù hợp. Tải lên ở trang Kho media.",
         "needsKey": "Cần thêm API key của {source} để tìm.",
         "needsAiKey": "Research web cần OpenAI hoặc Anthropic API key.",
         "openSettings": "Mở Settings",
@@ -1568,7 +1560,7 @@
       }
     },
     "library": {
-      "pageTitle": "Thư viện tài nguyên",
+      "pageTitle": "Kho media",
       "pageDescription": "Ảnh, video và âm thanh của riêng bạn. Đặt tên và tag rõ ràng: bước Tài nguyên tìm trong thư viện theo tên, tag và mô tả.",
       "searchPlaceholder": "Tìm theo tên, tag hoặc mô tả",
       "searchButton": "Tìm",
@@ -1608,6 +1600,13 @@
       "descriptionLabel": "Mô tả",
       "cancel": "Huỷ",
       "save": "Lưu"
+    },
+    "workspace": {
+      "noVideoTitle": "Chọn một video để làm việc",
+      "noVideoDescription": "Mở một video từ dự án của bạn, hoặc tạo video mới.",
+      "notFound": "Video không tồn tại hoặc đã bị xoá.",
+      "goToProjects": "Đến trang Dự án",
+      "switchVideo": "Video khác trong danh mục"
     }
   },
   "databaseAdmin": {
@@ -1647,6 +1646,259 @@
       "level": "Mức độ",
       "message": "Nội dung",
       "details": "Chi tiết"
+    }
+  },
+  "projects": {
+    "title": "Dự án",
+    "metaDescription": "Toàn bộ dự án, danh mục và video của bạn ở một nơi.",
+    "createButton": "Dự án mới",
+    "createTitle": "Tạo dự án",
+    "namePlaceholder": "Tên dự án",
+    "renameTitle": "Đổi tên dự án",
+    "deleteTitle": "Xoá dự án?",
+    "deleteDescription": "\"{name}\" và mọi thứ bên trong sẽ bị ẩn. Đây là xoá mềm — dữ liệu không bị mất.",
+    "searchPlaceholder": "Tìm dự án",
+    "emptyTitle": "Chưa có dự án nào",
+    "emptyDescription": "Dự án gom các video theo chủ đề, khách hàng hoặc kênh. Tạo dự án đầu tiên để bắt đầu.",
+    "noMatch": "Không có dự án nào khớp với \"{query}\".",
+    "stats": "{categories} danh mục · {videos} video",
+    "updatedAt": "Cập nhật {date}",
+    "detail": {
+      "notFound": "Dự án không tồn tại hoặc đã bị xoá.",
+      "backToProjects": "Quay lại danh sách dự án",
+      "addCategory": "Danh mục mới",
+      "categoryCreateTitle": "Tạo danh mục",
+      "categoryNamePlaceholder": "Tên danh mục",
+      "categoryRenameTitle": "Đổi tên danh mục",
+      "categoryDeleteTitle": "Xoá danh mục?",
+      "categoryDeleteDescription": "\"{name}\" và các video trong đó sẽ bị ẩn. Đây là xoá mềm — dữ liệu không bị mất.",
+      "emptyTitle": "Chưa có danh mục nào",
+      "emptyDescription": "Danh mục chia dự án thành từng nhóm — series, định dạng, kênh… Tạo một danh mục rồi thêm video vào đó.",
+      "emptyCategory": "Danh mục này chưa có video nào.",
+      "addVideo": "Thêm video",
+      "videoCount": "{count} video"
+    },
+    "video": {
+      "createTitle": "Tạo video",
+      "namePlaceholder": "Tên video",
+      "renameTitle": "Đổi tên video",
+      "deleteTitle": "Xoá video?",
+      "deleteDescription": "\"{name}\" cùng các kịch bản của nó sẽ bị ẩn. Đây là xoá mềm — dữ liệu không bị mất."
+    },
+    "newVideo": {
+      "button": "Video mới",
+      "title": "Video mới",
+      "description": "Chọn nơi lưu video rồi đặt tên cho nó.",
+      "project": "Dự án",
+      "category": "Danh mục",
+      "name": "Tên video",
+      "createNew": "+ Tạo mới",
+      "pickExisting": "Chọn có sẵn",
+      "newProjectPlaceholder": "Tên dự án mới",
+      "newCategoryPlaceholder": "Tên danh mục mới",
+      "submit": "Tạo và mở"
+    }
+  },
+  "overview": {
+    "title": "Tổng quan",
+    "metrics": {
+      "projects": "Dự án",
+      "scriptAnalyses": "Bản phân tích kịch bản",
+      "scenesPlanned": "Cảnh đã lên kế hoạch",
+      "styleTemplates": "Skill"
+    },
+    "activity": {
+      "title": "Hoạt động phân tích kịch bản",
+      "subtitle": "Số bản phân tích trong 14 ngày qua",
+      "series": "Bản phân tích"
+    },
+    "providerStatus": {
+      "title": "Nhà cung cấp AI",
+      "subtitle": "API key đã cấu hình để phân tích kịch bản",
+      "openai": "OpenAI",
+      "claude": "Claude",
+      "mcp": "MCP",
+      "connected": "Đã kết nối",
+      "notConnected": "Chưa thiết lập",
+      "enabled": "Đang bật",
+      "disabled": "Đang tắt",
+      "keys": "{count} key"
+    },
+    "recentAnalyses": {
+      "title": "Phân tích kịch bản gần đây",
+      "empty": "Chưa có bản phân tích nào.",
+      "source": "Nguồn",
+      "scenes": "Số cảnh",
+      "status": "Trạng thái",
+      "createdAt": "Ngày tạo",
+      "statuses": {
+        "draft": "Nháp",
+        "analyzed": "Đã phân tích"
+      },
+      "sourceTypes": {
+        "youtube": "YouTube",
+        "import": "Nhập"
+      }
+    },
+    "recentProjects": {
+      "title": "Dự án gần đây",
+      "empty": "Chưa có dự án nào.",
+      "updatedAt": "Cập nhật {date}"
+    },
+    "recentVideos": {
+      "title": "Tiếp tục làm việc",
+      "empty": "Chưa có video nào — tạo video đầu tiên để bắt đầu.",
+      "location": "{project} · {category}",
+      "updatedAt": "Cập nhật {date}"
+    }
+  },
+  "liquidGlassPanel": {
+    "open": "Mở cài đặt giao diện",
+    "close": "Đóng",
+    "title": "Giao diện",
+    "styleLabel": "Kiểu",
+    "styleClassic": "Cổ điển",
+    "styleLiquid": "Liquid Glass",
+    "themeLabel": "Chủ đề",
+    "themeAuto": "Theo hệ thống",
+    "themeLight": "Sáng",
+    "themeDark": "Tối",
+    "scaleLabel": "Tỉ lệ",
+    "scaleMedium": "Vừa",
+    "scaleAuto": "Lớn (vừa chiều rộng)",
+    "scaleOff": "100%",
+    "uploadBackground": "Tải ảnh lên",
+    "defaultBackground": "Mặc định",
+    "urlPlaceholder": "Hoặc dán URL ảnh",
+    "apply": "Áp dụng",
+    "opacityLabel": "Độ mờ",
+    "radiusLabel": "Độ bo góc",
+    "backgroundInfo": "{label} · sắc độ {hue}°, độ bão hoà {sat}%.",
+    "backgroundNeutral": "(ảnh gần như đơn sắc)"
+  },
+  "training": {
+    "title": "Huấn luyện AI",
+    "metaDescription": "Huấn luyện skill từ nhiều video và tài liệu, mỗi lần huấn luyện lưu một phiên bản.",
+    "intro": "Dạy AI một giọng văn và phong cách bằng cách cho nó đọc nhiều video và tài liệu cùng lúc — từ link, video tải lên hoặc tài liệu, giống bước Kịch bản. AI giữ lại những gì các nguồn có chung (giọng văn thật của tác giả) cùng quy tắc và kiến thức trong tài liệu, rồi viết thành một skill hoàn chỉnh. Mỗi lần huấn luyện được lưu thành một phiên bản để xem lại hoặc khôi phục.",
+    "target": {
+      "title": "1. Skill",
+      "new": "Tạo skill mới",
+      "existing": "Huấn luyện skill có sẵn",
+      "namePlaceholder": "Tên skill (để trống để AI tự đặt)",
+      "pickSkill": "Chọn skill",
+      "noSkills": "Chưa có skill nào — hãy tạo skill mới trước.",
+      "refineHint": "Huấn luyện tích luỹ: AI đọc lại mọi nguồn skill đã học trước đây cùng những gì bạn thêm bên dưới, rồi tổng hợp vào bộ hướng dẫn hiện tại — nguồn mới giúp tinh chỉnh skill chứ không thay thế nó. Kết quả lưu thành phiên bản mới."
+    },
+    "sources": {
+      "title": "2. Nguồn để học",
+      "hint": "Giống ba cách lấy kịch bản ở bước Kịch bản. Để giọng văn chính xác, hãy dùng 3–5 video của cùng tác giả hoặc kênh; thêm tài liệu nếu có quy tắc viết, văn bản mẫu hoặc kiến thức.",
+      "selected": "Đã chọn {count}/{max}",
+      "manage": "Quản lý",
+      "existing": "Đã lấy trước đây — chọn để dùng lại:",
+      "searchPlaceholder": "Tìm kiếm",
+      "noMatch": "Không có mục nào khớp.",
+      "chars": "{count} ký tự",
+      "link": {
+        "title": "Từ link video",
+        "hint": "Dán link (YouTube, TikTok…); kịch bản của từng video được lấy bằng AI chọn ở bên dưới.",
+        "empty": "Chưa lấy kịch bản từ link nào."
+      },
+      "upload": {
+        "title": "Tải video lên",
+        "hint": "Tải file video lên; từng video được chuyển giọng nói thành văn bản (cần OpenAI key để nghe audio).",
+        "empty": "Chưa có video nào được tải lên."
+      },
+      "document": {
+        "title": "Viết từ tài liệu",
+        "hint": "Hướng dẫn giọng văn/thương hiệu, văn bản mẫu, kiến thức sản phẩm hoặc chuyên môn. Tài liệu mới cũng được lưu vào Thư viện tài liệu.",
+        "empty": "Chưa có tài liệu nào."
+      },
+      "refineHint": "Skill giữ lại mọi thứ đã học. Thêm nguồn mới bên dưới; chỉ bỏ một nguồn đã học khi nó không còn phù hợp.",
+      "addNew": "Thêm nguồn mới",
+      "learned": {
+        "title": "Đã học từ {count} nguồn — luôn được tổng hợp lại mỗi lần huấn luyện",
+        "hint": "Bấm vào một nguồn để bỏ nó khỏi skill từ lần này (bấm lại để hoàn tác).",
+        "none": "Skill này chưa học từ nguồn nào; bộ hướng dẫn hiện tại sẽ được tinh chỉnh với những gì bạn thêm.",
+        "remove": "Bỏ khỏi skill",
+        "restore": "Giữ lại",
+        "deleted": "(đã xoá)"
+      }
+    },
+    "badges": {
+      "approved": "Đã duyệt",
+      "analyzed": "Đã phân tích",
+      "linked": "Đã gắn vào skill",
+      "new": "Mới",
+      "learned": "Đã học"
+    },
+    "run": {
+      "title": "3. Huấn luyện",
+      "providerLabel": "Huấn luyện bằng",
+      "noteLabel": "Ghi chú cho phiên bản (không bắt buộc)",
+      "notePlaceholder": "VD: Thêm các video tháng 3",
+      "attach": "Gắn luôn các tài liệu vào skill để AI tiếp tục tham khảo khi viết kịch bản",
+      "submit": "Huấn luyện",
+      "training": "Đang huấn luyện… nguồn dài được đọc trọn vẹn trước, có thể mất vài phút",
+      "needsSource": "Hãy thêm hoặc chọn ít nhất một video hoặc tài liệu.",
+      "needsSkill": "Hãy chọn skill cần huấn luyện.",
+      "summary": "Học từ {videos} kịch bản và {documents} tài liệu.",
+      "fewVideos": "Thêm vài video nữa để giọng văn chính xác hơn.",
+      "submitRefine": "Huấn luyện (tổng hợp)",
+      "summaryRefine": "Tổng hợp {learned} nguồn đã học với {added} nguồn mới.",
+      "resynthesize": "Không có nguồn mới: AI tổng hợp lại bộ hướng dẫn từ những gì đã học (VD: sau khi đổi model hoặc prompt)."
+    },
+    "result": {
+      "createdTitle": "Đã tạo skill \"{name}\" (v{version})",
+      "trainedTitle": "Đã huấn luyện \"{name}\" (v{version})",
+      "useHint": "Chọn skill này ở bước Kịch bản để viết theo giọng văn này. Huấn luyện thêm để skill ngày càng chính xác.",
+      "openSkills": "Mở Thư viện Skill"
+    },
+    "versions": {
+      "title": "Phiên bản",
+      "empty": "Chưa có phiên bản nào — huấn luyện skill này để bắt đầu lịch sử.",
+      "newSkillHint": "Mỗi lần huấn luyện được lưu thành một phiên bản: các nguồn đã học, model đã dùng và toàn bộ hướng dẫn. Có thể xem lại hoặc khôi phục bất kỳ phiên bản nào.",
+      "current": "Hiện tại",
+      "view": "Xem hướng dẫn",
+      "hide": "Ẩn",
+      "restore": "Khôi phục",
+      "restoreTitle": "Khôi phục v{version}?",
+      "restoreDescription": "Skill sẽ quay về v{version}. Việc này được lưu thành một phiên bản mới nên cũng hoàn tác được.",
+      "kinds": {
+        "train": "Huấn luyện",
+        "restore": "Khôi phục",
+        "snapshot": "Trước huấn luyện"
+      },
+      "sourcesCount": "{count} nguồn",
+      "deleted": "(đã xoá)",
+      "addedInRun": "Thêm mới ở lần này",
+      "addedCount": "+{count} mới"
+    },
+    "adders": {
+      "status": {
+        "waiting": "Đang chờ…",
+        "working": "Đang xử lý… (có thể mất khoảng một phút)",
+        "done": "Đã thêm và chọn"
+      },
+      "link": {
+        "placeholder": "Dán một hoặc nhiều link video, mỗi dòng một link",
+        "fetch": "Lấy {count} kịch bản",
+        "fetching": "Đang lấy…",
+        "hint": "Có dùng credit AI, giống bước Kịch bản.",
+        "tooShort": "Kịch bản quá ngắn để học."
+      },
+      "upload": {
+        "pick": "Chọn file video",
+        "transcribing": "Đang chuyển thành văn bản…",
+        "hint": "Tối đa 500 MB mỗi file. Có dùng credit AI.",
+        "tooLarge": "Lớn hơn 500 MB.",
+        "tooShort": "Bản chép lời quá ngắn để học."
+      },
+      "document": {
+        "upload": "Tải tài liệu lên",
+        "paste": "Dán văn bản",
+        "hint": "PDF, DOCX, TXT, MD, CSV, JSON.",
+        "noText": "Không đọc được chữ nào từ file này."
+      }
     }
   }
 }
