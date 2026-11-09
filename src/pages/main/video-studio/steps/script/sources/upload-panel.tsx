@@ -16,8 +16,10 @@ import ProviderModelFields from "../provider-model-fields";
 import type { ScriptLanguage } from "../use-script-step";
 import type { ScriptSourcePanelProps } from "./registry";
 
-/** Matches the server's cap (OpenAI's transcription API limit). */
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+/** Matches the server's cap — a safety net against an accidental huge
+ * upload, not a feature limit; the video's audio is compressed server-side
+ * before transcription, so video length doesn't matter. */
+const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

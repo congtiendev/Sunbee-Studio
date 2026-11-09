@@ -35,6 +35,7 @@ export function listResearchSources(userId: string): ResearchSourceInfo[] {
     mediaTypes: source.mediaTypes,
     requiresKey: source.requiresKey,
     keyUrl: source.keyUrl,
+    generates: source.generates,
     available:
       (!source.requiresKey || Boolean(keys[source.key])) && (source.isAvailable?.({ ai }) ?? true),
   }));

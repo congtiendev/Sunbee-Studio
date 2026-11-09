@@ -58,7 +58,7 @@ const DEFAULT_SYSTEM_PROMPT =
   "- Bắt chước văn phong, độ dài câu, giọng điệu và mức độ chi tiết của visualDescription trong mẫu.\n" +
   "- Nội dung phải hoàn toàn thuộc về chủ đề mới: KHÔNG sao chép câu chữ, nhân vật, sản phẩm hay chi tiết riêng của mẫu. Nếu có tài liệu tham khảo, lấy thông tin/số liệu từ đó, không bịa.\n" +
   "- scriptText là toàn bộ kịch bản liền mạch (lời thoại/lời dẫn, có thể kèm ghi chú hình ảnh trong ngoặc vuông); content của từng cảnh là phần tương ứng của scriptText.\n" +
-  "- requiredAssets của mỗi cảnh liệt kê tài nguyên cần chuẩn bị cho chủ đề mới; resources và style tóm tắt cho video mới.";
+  "- requiredAssets của mỗi cảnh liệt kê tài nguyên cần chuẩn bị cho chủ đề mới; resources và style tóm tắt cho video mới. Chọn đúng `source` cho từng tài nguyên: NHÂN VẬT cụ thể và VẬT PHẨM/ảnh ghép có chi tiết riêng (bản đồ có ghim, biểu đồ số liệu riêng...) hầu như không có sẵn trên mạng → `generate`; BỐI CẢNH/NỀN chung chung (văn phòng, thiên nhiên, thành phố, b-roll không cần đúng y hệt) → `stock` (tìm trên mạng); `provided` chỉ khi rõ ràng là tài sản riêng của người dùng.";
 
 function totalDuration(record: ScriptAnalysisRecord): number {
   return record.scenes.reduce(

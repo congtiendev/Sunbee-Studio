@@ -1,6 +1,14 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -9,13 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { OverflowTabsList } from "@/components/ui/overflow-tabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -95,17 +96,17 @@ export default function ResearchSheet({
 }: ResearchSheetProps) {
   const t = useTranslations("videoStudio.assets");
   return (
-    <Sheet open={target !== null} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-3xl">
-        <SheetHeader className="pe-10">
-          <SheetTitle>{t("research.title")}</SheetTitle>
+    <Dialog open={target !== null} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-4xl">
+        <DialogHeader className="pe-10">
+          <DialogTitle>{t("research.title")}</DialogTitle>
           {target && (
-            <SheetDescription>
+            <DialogDescription>
               {t("research.forScene", { index: target.scene.index })}:{" "}
               {target.asset.description}
-            </SheetDescription>
+            </DialogDescription>
           )}
-        </SheetHeader>
+        </DialogHeader>
         {target && (
           <ResearchBody
             key={`${target.scene.index}:${target.assetIndex}`}
@@ -115,8 +116,8 @@ export default function ResearchSheet({
             onSelect={onSelect}
           />
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -132,13 +133,17 @@ function ResearchBody({
   const tCommon = useTranslations("common");
   const { asset, scene } = target;
   const [active, setActive] = useState<string>(
-    sources.find((s) => s.available)?.key ?? sources[0]?.key ?? "",
+    sources.find((s) => s.key === "claude-image-search" && s.available)?.key ??
+      sources.find((s) => s.available)?.key ??
+      sources[0]?.key ??
+      "",
   );
   const [suggestions, setSuggestions] = useState<{
     queries: string[];
     aiUsed: boolean;
   } | null>(null);
   const [selecting, setSelecting] = useState<string | null>(null);
+  const [previewCandidate, setPreviewCandidate] = useState<AssetCandidate | null>(null);
   const [tabs, setTabs] = useState<Record<string, TabState>>(() =>
     Object.fromEntries(
       sources.map((source) => [
@@ -264,6 +269,7 @@ function ResearchBody({
     selected.externalId === candidate.externalId;
 
   return (
+    <>
     <Tabs
       value={active}
       onValueChange={(value) => setActive(value as string)}
@@ -296,6 +302,12 @@ function ResearchBody({
           ...(source.kind === "library" ? (["any"] as const) : []),
           ...source.mediaTypes.filter((type) => type !== "link"),
         ];
+        // "ai" covers the web-link researcher, AI image generators, and AI
+        // image search — only the first returns a list of links instead of
+        // picturable media; of the other two, only generators create new media.
+        const isLinkSource = source.mediaTypes.includes("link");
+        const isGenerateSource = source.kind === "ai" && !isLinkSource && Boolean(source.generates);
+        const isSearchImageSource = source.kind === "ai" && !isLinkSource && !source.generates;
         return (
           <TabsContent
             key={source.key}
@@ -306,9 +318,7 @@ function ResearchBody({
               <Alert variant="warning">
                 <AlertDescription>
                   {t(
-                    source.kind === "ai"
-                      ? "research.needsAiKey"
-                      : "research.needsKey",
+                    source.requiresKey ? "research.needsKey" : "research.needsAiKey",
                     { source: source.label },
                   )}{" "}
                   <Link to="/settings" className="font-medium underline">
@@ -319,7 +329,13 @@ function ResearchBody({
             ) : (
               <>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t(`research.hints.${source.kind}`)}
+                  {t(
+                    isGenerateSource
+                      ? "research.hints.generate"
+                      : isSearchImageSource
+                        ? "research.hints.findImage"
+                        : `research.hints.${source.kind}`,
+                  )}
                 </p>
                 <form
                   className="flex flex-wrap gap-2"
@@ -370,9 +386,13 @@ function ResearchBody({
                       <SearchIcon className="size-4" />
                     )}
                     {t(
-                      source.kind === "ai"
-                        ? "research.researchButton"
-                        : "research.searchButton",
+                      isGenerateSource
+                        ? "research.generateButton"
+                        : isSearchImageSource
+                          ? "research.findImageButton"
+                          : source.kind === "ai"
+                            ? "research.researchButton"
+                            : "research.searchButton",
                     )}
                   </Button>
                 </form>
@@ -418,6 +438,26 @@ function ResearchBody({
                   </div>
                 )}
 
+                {tab.candidates && tab.candidates.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      disabled={selecting !== null}
+                      onClick={() => void choose(tab.candidates![0]!)}
+                    >
+                      {selecting === tab.candidates[0]!.externalId ? (
+                        <Spinner />
+                      ) : (
+                        <SparkIcon className="size-3.5" />
+                      )}
+                      {t("research.autoSelect")}
+                    </Button>
+                  </div>
+                )}
+
                 {tab.loading && !tab.candidates ? (
                   <div className="flex justify-center py-8">
                     <Spinner />
@@ -434,9 +474,7 @@ function ResearchBody({
                   <div
                     className={cn(
                       "grid gap-3",
-                      source.kind === "ai"
-                        ? "grid-cols-1"
-                        : "grid-cols-2 md:grid-cols-3",
+                      isLinkSource ? "grid-cols-1" : "grid-cols-2 md:grid-cols-3",
                     )}
                   >
                     {tab.candidates.map((candidate) => {
@@ -446,23 +484,27 @@ function ResearchBody({
                           key={`${candidate.sourceKey}:${candidate.externalId}`}
                           className={cn(
                             "flex overflow-hidden rounded-xl border",
-                            source.kind === "ai"
-                              ? "flex-row items-center"
-                              : "flex-col",
+                            isLinkSource ? "flex-row items-center" : "flex-col",
                             chosen
                               ? "border-brand-500 ring-2 ring-brand-500/20"
                               : "border-gray-200 dark:border-gray-800",
                           )}
                         >
-                          <CandidatePreview
-                            candidate={candidate}
-                            compact={source.kind === "ai"}
-                            className={
-                              source.kind === "ai"
-                                ? "size-14 shrink-0"
-                                : "aspect-video w-full"
-                            }
-                          />
+                          {isLinkSource ? (
+                            <CandidatePreview
+                              candidate={candidate}
+                              compact
+                              className="size-14 shrink-0"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              className="block w-full shrink-0 cursor-zoom-in"
+                              onClick={() => setPreviewCandidate(candidate)}
+                            >
+                              <CandidatePreview candidate={candidate} className="aspect-video w-full" />
+                            </button>
+                          )}
                           <div className="flex min-w-0 flex-1 flex-col gap-1 p-2.5">
                             <span
                               className="truncate text-xs font-medium text-gray-800 dark:text-white/90"
@@ -530,5 +572,41 @@ function ResearchBody({
         );
       })}
     </Tabs>
+
+    <Dialog open={previewCandidate !== null} onOpenChange={(open) => !open && setPreviewCandidate(null)}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="line-clamp-2 pe-6">{previewCandidate?.title}</DialogTitle>
+        </DialogHeader>
+        {previewCandidate && (
+          <img
+            src={previewCandidate.previewUrl ?? previewCandidate.url}
+            alt=""
+            className="max-h-[70vh] w-full rounded-xl border border-gray-200 object-contain dark:border-gray-800"
+          />
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setPreviewCandidate(null)}>
+            {tCommon("close")}
+          </Button>
+          {previewCandidate && (
+            <Button
+              type="button"
+              className="gap-1.5"
+              disabled={selecting !== null}
+              onClick={() => void choose(previewCandidate)}
+            >
+              {selecting === previewCandidate.externalId ? (
+                <Spinner />
+              ) : isSelected(previewCandidate) ? (
+                <CheckIcon className="size-4" />
+              ) : null}
+              {t(isSelected(previewCandidate) ? "research.selected" : "research.select")}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

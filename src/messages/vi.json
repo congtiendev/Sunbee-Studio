@@ -1146,7 +1146,8 @@
       "getKey": "Lấy key",
       "mediaTypes": "Loại media: {types}",
       "hints": {
-        "pinterest": "Dán access token có quyền pins:read và boards:read. Pinterest chỉ cho tìm pin công khai với app đã được duyệt (beta); nếu chưa, kết quả là pin và board của chính bạn. Pin chỉ dùng tham khảo — ảnh thuộc bản quyền người đăng."
+        "pinterest": "Dán access token có quyền pins:read và boards:read. Pinterest chỉ cho tìm pin công khai với app đã được duyệt (beta); nếu chưa, kết quả là pin và board của chính bạn. Pin chỉ dùng tham khảo — ảnh thuộc bản quyền người đăng.",
+        "cloudflare-image": "Định dạng: accountId:apiToken — account ID nằm ở sidebar bên phải trang dashboard Cloudflare; tạo token tại link bên dưới với quyền \"Workers AI\"."
       }
     }
   },
@@ -1214,6 +1215,7 @@
           "youtube": "Link video",
           "import": "Nhập tay",
           "document": "Từ tài liệu",
+          "idea": "Từ ý tưởng",
           "template": "Theo mẫu"
         }
       },
@@ -1226,12 +1228,14 @@
       "linkCaptionHint": "Chỉ hoạt động với video đã có sẵn phụ đề trên trang nguồn.",
       "fetchingHint": "Đang lấy transcript và trích khung hình video — có thể lâu hơn so với chỉ lấy văn bản.",
       "fetchButton": "Lấy kịch bản",
-      "uploadDropHint": "Kéo thả video vào đây, hoặc bấm để chọn (MP4, WebM, MOV, tối đa 25MB)",
+      "uploadDropHint": "Kéo thả video vào đây, hoặc bấm để chọn (MP4, WebM, MOV, tối đa 500MB)",
       "uploadDropActive": "Thả video vào đây",
       "uploadRemove": "Xoá file",
       "uploadButton": "Chuyển video thành văn bản",
       "transcribingHint": "Đang chuyển âm thanh thành văn bản và trích khung hình video — có thể lâu hơn so với chỉ chuyển văn bản.",
       "scriptLabel": "Kịch bản",
+      "editScript": "Chỉnh sửa",
+      "doneEditing": "Xong",
       "scriptResultHint": "Transcript lấy được sẽ hiện ở đây — xem lại và chỉnh sửa trước khi phân tích.",
       "scriptPlaceholder": "Dán hoặc chỉnh sửa kịch bản tại đây...",
       "scriptCharCount": "{count} ký tự",
@@ -1271,6 +1275,9 @@
         "scenesHaveAssets": "Mọi cảnh đều có liệt kê tài nguyên cần thiết"
       },
       "scenesTitle": "Phân cảnh",
+      "scenesCount": "{count, plural, one {# cảnh} other {# cảnh}}",
+      "scenesTotalDuration": "Tổng {duration}",
+      "heroMoment": "Khoảnh khắc nổi bật",
       "sceneContent": "Nội dung",
       "sceneVisual": "Hướng hình ảnh",
       "sceneShot": "Cỡ cảnh",
@@ -1340,6 +1347,14 @@
         "writeButton": "Viết kịch bản",
         "writingHint": "AI đang viết kịch bản từ tài liệu — thường mất 10–40 giây."
       },
+      "fromIdeaSource": "Từ ý tưởng",
+      "fromIdea": {
+        "ideaLabel": "Ý tưởng",
+        "ideaPlaceholder": "VD: Vì sao con người ăn được đủ thứ, còn con vật khác thì không?",
+        "durationLabel": "Thời lượng (phút)",
+        "writeButton": "Viết kịch bản",
+        "writingHint": "AI đang viết toàn bộ kịch bản từ ý tưởng của bạn — thường mất 10–40 giây."
+      },
       "fromTemplateSource": "Theo video mẫu",
       "fromTemplate": {
         "templateLabel": "Video mẫu",
@@ -1372,9 +1387,10 @@
       },
       "framesClickHint": "Bấm vào khung hình để tô sáng đoạn kịch bản tương ứng (ước lượng theo vị trí trong video).",
       "frameLabel": "Khung hình {index}/{count}",
-      "frameZoom": "Xem ảnh lớn",
       "framePrev": "Trước",
-      "frameNext": "Sau"
+      "frameNext": "Sau",
+      "previewTitle": "Xem trước khung hình",
+      "previewPassageEmpty": "Chưa có đoạn kịch bản tương ứng."
     },
     "skills": {
       "pageTitle": "Skill",
@@ -1515,7 +1531,10 @@
         "pexels": "Pexels",
         "pixabay": "Pixabay",
         "web": "Web (AI)",
-        "pinterest": "Pinterest"
+        "pinterest": "Pinterest",
+        "cloudflare-image": "AI tạo ảnh (Cloudflare)",
+        "openai-image": "AI tạo ảnh (ChatGPT)",
+        "claude-image-search": "AI tìm ảnh (Claude)"
       },
       "research": {
         "open": "Research",
@@ -1524,10 +1543,13 @@
         "queryPlaceholder": "Từ khoá",
         "searchButton": "Tìm",
         "researchButton": "Research",
+        "generateButton": "Tạo ảnh",
+        "findImageButton": "Tìm ảnh",
         "suggestedAi": "Từ khoá AI gợi ý:",
         "suggestedPlain": "Từ khoá:",
         "select": "Chọn",
         "selected": "Đã chọn",
+        "autoSelect": "Tự động chọn kết quả đầu",
         "openSource": "Trang nguồn",
         "noResults": "Không tìm thấy. Hãy thử từ khoá khác.",
         "noLibraryResults": "Thư viện chưa có tài nguyên phù hợp. Tải lên ở trang Thư viện tài nguyên.",
@@ -1538,7 +1560,9 @@
         "hints": {
           "library": "Tài nguyên bạn đã tải lên, tìm theo tên, tag và mô tả.",
           "stock": "Tư liệu stock miễn phí. Từ khoá tiếng Anh cho kết quả tốt nhất.",
-          "ai": "AI tìm trên web các nguồn dùng được, tư liệu tham khảo và lưu ý bản quyền, kèm link."
+          "ai": "AI tìm trên web các nguồn dùng được, tư liệu tham khảo và lưu ý bản quyền, kèm link.",
+          "generate": "AI tạo ảnh mới từ mô tả của bạn — vài biến thể mỗi lần. Không cần ghi nguồn, nhưng hãy xem kỹ chất lượng trước khi dùng.",
+          "findImage": "AI tìm ảnh thật đã có sẵn trên web — nếu không tìm được ảnh phù hợp, nó sẽ báo không có chứ không bịa ra."
         },
         "showingRecent": "Không có tài nguyên khớp mô tả — đang hiện các tài nguyên mới nhất."
       }
@@ -1550,6 +1574,22 @@
       "searchButton": "Tìm",
       "uploadButton": "Tải lên",
       "uploadTagsPlaceholder": "Tag cho file tải lên, cách nhau bằng dấu phẩy",
+      "generateButton": "Tạo ảnh",
+      "generateTitle": "Tạo ảnh bằng AI",
+      "generateDescription": "Mô tả ảnh bạn muốn — AI sẽ tạo vài biến thể. Ảnh nào ưng thì lưu thẳng vào thư viện.",
+      "generateSourceLabel": "Nguồn AI",
+      "generatePromptPlaceholder": "Mô tả ảnh cần tạo...",
+      "generateReferenceSet": "Đã chọn ảnh mẫu",
+      "generateReferenceHint": "Không bắt buộc — chỉ lấy phong cách hình ảnh, không lấy nội dung của ảnh mẫu.",
+      "aspectSquare": "Vuông (1:1)",
+      "aspectPortrait": "Dọc (9:16)",
+      "aspectLandscape": "Ngang (16:9)",
+      "generateSubmit": "Tạo",
+      "generating": "Đang tạo ảnh...",
+      "generateNoSource": "Chưa có nguồn AI tạo ảnh nào. Vào Cài đặt → API Keys để thêm.",
+      "generateNoSourceAvailable": "{source} cần API key — vào Cài đặt → API Keys.",
+      "saveToLibrary": "Lưu vào thư viện",
+      "savedToLibrary": "Đã lưu",
       "empty": "Chưa có tài nguyên nào.",
       "types": {
         "all": "Tất cả",

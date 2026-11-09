@@ -175,7 +175,7 @@ export interface ScriptResources {
 }
 
 /** Where a script version came from. */
-export type ScriptSourceType = "youtube" | "import" | "document" | "template";
+export type ScriptSourceType = "youtube" | "import" | "document" | "template" | "idea";
 
 export interface ScriptAnalyzeRequest {
   scriptText: string;
@@ -298,6 +298,19 @@ export interface ScriptFromDocumentRequest {
   documentIds: string[];
   /** What the video should be about / the angle to take (optional). */
   brief?: string;
+  targetDurationSec?: number;
+  language?: "vi" | "en";
+  provider?: "openai" | "claude";
+  model?: string;
+  effort?: "low" | "medium" | "high";
+  /** Skill whose style and instructions the script should follow. */
+  styleTemplateId?: string;
+  videoId?: string;
+}
+
+/** Script source "idea": AI writes a script straight from a free-text idea, no source material. */
+export interface ScriptFromIdeaRequest {
+  idea: string;
   targetDurationSec?: number;
   language?: "vi" | "en";
   provider?: "openai" | "claude";
@@ -436,6 +449,8 @@ export interface ResearchSourceInfo {
   keyUrl?: string;
   /** Whether the current user has what the source needs (key set, provider key...). */
   available: boolean;
+  /** AI sources only: creates new media, vs. finding existing media (web search, stock). */
+  generates?: boolean;
 }
 
 /** One search hit from a research source. */
@@ -496,6 +511,9 @@ export interface SceneResourceSelectRequest {
   candidate: AssetCandidate | null;
 }
 
+/** AI image sources: "square" for a general asset, "portrait"/"landscape" to match a vertical/horizontal video frame. */
+export type ImageAspectRatio = "square" | "portrait" | "landscape";
+
 export interface AssetResearchRequest {
   sourceKey: string;
   query: string;
@@ -503,6 +521,10 @@ export interface AssetResearchRequest {
   mediaType?: ResearchMediaType;
   description?: string;
   sceneContext?: string;
+  /** AI image sources: a style reference (data URL) to describe into the prompt. */
+  referenceImage?: string;
+  /** AI image sources: output frame shape. Omitted: square. */
+  aspectRatio?: ImageAspectRatio;
 }
 
 export interface AssetResearchResponse {

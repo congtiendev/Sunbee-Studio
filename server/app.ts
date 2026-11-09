@@ -21,7 +21,9 @@ import videosRouter from "./routes/videos.js";
 export function createApp() {
   const app = express();
 
-  app.use(express.json({ limit: "10mb" }));
+  // Script analyze requests carry up to ~600 base64 video frames (~60MB worst
+  // case at MAX_FRAMES_SAFETY_CAP) — leave real headroom above that.
+  app.use(express.json({ limit: "100mb" }));
   app.use(cookieParser());
   app.use(requestLogger);
 

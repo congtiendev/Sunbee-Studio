@@ -20,9 +20,9 @@ export default function AppLayout({
   // Route-specific styles for the main content container
   const getRouteSpecificStyles = () => {
     if (isAiRoute) {
-      return "flex-1 min-h-0 flex flex-col";
+      return "flex-1 min-h-0 min-w-0 flex flex-col";
     }
-    return "p-4 w-full md:p-6";
+    return "min-w-0 p-4 w-full md:p-6";
   };
 
   return (

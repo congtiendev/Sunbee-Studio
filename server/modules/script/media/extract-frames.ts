@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { FRAMES_PER_ANALYZE_REQUEST } from "../../../../shared/script-cost-estimate.js";
 
 /** Video length in seconds (via ffprobe), or null when it can't be read. */
 export function probeDurationSec(videoPath: string): Promise<number | null> {
@@ -35,12 +36,17 @@ function runFfmpeg(args: string[]): Promise<{ code: number }> {
   });
 }
 
-// Not a product choice — Anthropic's Messages API hard-caps a single request
-// at 100 images. Short videos get 1 frame every 2s (a 10s clip → ~5 frames,
-// a 2min clip → ~60); longer ones widen the interval so the 100 frames still
-// cover the WHOLE video instead of stopping after the first 200 seconds.
-const MAX_FRAMES_SAFETY_CAP = 100;
+// Anthropic's Messages API hard-caps a SINGLE request at 100 images — that's
+// `FRAMES_PER_ANALYZE_REQUEST` in shared/script-cost-estimate.ts, and
+// analyzeScriptForUser() splits frames into chunks of that size and calls
+// the AI once per chunk. So extraction is no longer limited to 100 frames
+// total: it targets a roughly constant sampling density (1 frame every
+// ~3s) up to a ceiling of MAX_CHUNKS requests worth of frames, and only
+// widens the interval for videos long enough to exceed that ceiling.
+const TARGET_FRAME_INTERVAL_SEC = 3;
 const MIN_FRAME_INTERVAL_SEC = 2;
+const MAX_CHUNKS = 6;
+const MAX_FRAMES_SAFETY_CAP = MAX_CHUNKS * FRAMES_PER_ANALYZE_REQUEST;
 
 export async function extractFramesFromVideoFile(
   videoPath: string,
@@ -48,13 +54,17 @@ export async function extractFramesFromVideoFile(
   const dir = await mkdtemp(join(tmpdir(), "sunbee-frames-"));
   try {
     const duration = await probeDurationSec(videoPath);
+    const idealFrameCount = duration
+      ? Math.ceil(duration / TARGET_FRAME_INTERVAL_SEC)
+      : MAX_FRAMES_SAFETY_CAP;
+    const frameCount = Math.min(idealFrameCount, MAX_FRAMES_SAFETY_CAP);
     const interval = duration
-      ? Math.max(MIN_FRAME_INTERVAL_SEC, duration / MAX_FRAMES_SAFETY_CAP)
+      ? Math.max(MIN_FRAME_INTERVAL_SEC, duration / frameCount)
       : MIN_FRAME_INTERVAL_SEC;
-    // 1 frame every `interval` seconds (2s for short videos) — short-form videos (Reels/TikTok-style, cuts every
-    // few seconds) need denser sampling to catch every scene change and keep
-    // on-screen text (chat timestamps, captions) legible; scale bumped to
-    // 640px wide for the same reason.
+    // 1 frame every `interval` seconds (down to 2s for short/short-form
+    // videos — Reels/TikTok-style, cuts every few seconds — which need
+    // denser sampling to catch every scene change and keep on-screen text
+    // legible); scale bumped to 640px wide for the same reason.
     const { code } = await runFfmpeg([
       "-i",
       videoPath,
@@ -63,7 +73,7 @@ export async function extractFramesFromVideoFile(
       "-q:v",
       "2",
       "-frames:v",
-      String(MAX_FRAMES_SAFETY_CAP),
+      String(frameCount),
       join(dir, "frame_%03d.jpg"),
     ]);
     if (code !== 0) return [];

@@ -69,7 +69,7 @@ function writePrefs(patch: Partial<ThemePrefs>): void {
     // Persistence is a convenience; the setting still applies for this session.
   }
 }
-const DEFAULT_BACKGROUND = "/images/ai/video-thumb.png";
+const DEFAULT_BACKGROUND = "/images/backgrounds/default.jpg";
 const DEFAULT_LABEL = "Ảnh mặc định";
 
 interface DominantColor {

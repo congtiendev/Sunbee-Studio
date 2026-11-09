@@ -24,6 +24,7 @@ export type ScriptLanguage = "vi" | "en";
 function modeForSource(sourceType: ScriptSourceType): ScriptSourceKey {
   if (sourceType === "youtube") return "link";
   if (sourceType === "document") return "document";
+  if (sourceType === "idea") return "idea";
   if (sourceType === "template") return "template";
   return "import";
 }
@@ -32,6 +33,7 @@ function modeForSource(sourceType: ScriptSourceType): ScriptSourceKey {
 function sourceTypeForMode(mode: ScriptSourceKey): ScriptSourceType {
   if (mode === "link") return "youtube";
   if (mode === "document") return "document";
+  if (mode === "idea") return "idea";
   if (mode === "template") return "template";
   return "import";
 }
@@ -60,6 +62,9 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   const [sourceDocumentIds, setSourceDocumentIds] = useState<string[]>([]);
   const [brief, setBrief] = useState("");
   const [targetDurationSec, setTargetDurationSec] = useState<number | null>(60);
+  // Source "idea": the idea itself and its target length.
+  const [idea, setIdea] = useState("");
+  const [ideaDurationSec, setIdeaDurationSec] = useState<number | null>(60);
   // Source "template": the analyzed version to model, the new topic, optional facts.
   const [templateVersionId, setTemplateVersionId] = useState<string | null>(null);
   const [topic, setTopic] = useState("");
@@ -72,8 +77,8 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(NO_TEMPLATE);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [frames, setFrames] = useState<string[]>([]);
-  const [provider, setProvider] = useState<AnalyzeProvider>("openai");
-  const [model, setModel] = useState<string>(defaultModelFor("openai"));
+  const [provider, setProvider] = useState<AnalyzeProvider>("claude");
+  const [model, setModel] = useState<string>(defaultModelFor("claude"));
   const [effort, setEffort] = useState<AnalyzeEffort>("medium");
   const [availableProviders, setAvailableProviders] = useState<
     Record<AnalyzeProvider, boolean>
@@ -127,7 +132,11 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
           openai: Boolean(settings.openaiApiKey),
           claude: Boolean(settings.anthropicApiKey),
         });
-        if (!settings.openaiApiKey && settings.anthropicApiKey) {
+        // Prefer Claude by default, but fall back to whichever key is
+        // actually configured if only one of them is.
+        if (!settings.anthropicApiKey && settings.openaiApiKey) {
+          changeProvider("openai");
+        } else if (!settings.openaiApiKey && settings.anthropicApiKey) {
           changeProvider("claude");
         }
       })
@@ -277,6 +286,32 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     }
   };
 
+  const writeFromIdea = async () => {
+    if (!idea.trim()) return;
+    setError(null);
+    setWriting(true);
+    setFrames([]);
+    setNoSpeechHint(false);
+    setAiDescribed(false);
+    try {
+      const res = await apiClient.script.fromIdea({
+        idea: idea.trim(),
+        targetDurationSec: ideaDurationSec ?? undefined,
+        language: scriptLanguage,
+        provider: describeProvider,
+        model: describeModel,
+        styleTemplateId: selectedTemplateId === NO_TEMPLATE ? undefined : selectedTemplateId,
+        videoId,
+      });
+      setScriptTextRaw(res.scriptText);
+      setCurrentVersionId(res.versionId ?? null);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setWriting(false);
+    }
+  };
+
   const writeFromTemplate = async () => {
     if (!templateVersionId || !topic.trim()) return;
     setError(null);
@@ -390,6 +425,11 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     targetDurationSec,
     setTargetDurationSec,
     writeFromDocuments,
+    idea,
+    setIdea,
+    ideaDurationSec,
+    setIdeaDurationSec,
+    writeFromIdea,
     templateVersionId,
     setTemplateVersionId,
     topic,

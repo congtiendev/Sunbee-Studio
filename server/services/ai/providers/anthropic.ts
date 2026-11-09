@@ -5,6 +5,7 @@ import type {
   AiRequest,
   AiStructuredRequest,
   AiWebSearchResult,
+  FoundImage,
   LlmProvider,
   WebSearchSource,
 } from "./types.js";
@@ -47,7 +48,7 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
 
   return {
     key: "claude",
-    capabilities: { vision: true, webSearch: true },
+    capabilities: { vision: true, webSearch: true, imageSearch: true },
 
     async generateText(req) {
       const response = await client.messages.create({
@@ -120,6 +121,53 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
       }
 
       return { text: texts.join("").trim(), sources: dedupeSources(sources) };
+    },
+
+    async findImages(req): Promise<FoundImage[]> {
+      const messages: Anthropic.MessageParam[] = [
+        { role: "user", content: buildContent(req) },
+      ];
+      const texts: string[] = [];
+
+      for (let turn = 0; turn <= MAX_WEB_SEARCH_CONTINUATIONS; turn++) {
+        const response = await client.messages.create({
+          model: req.model,
+          max_tokens: req.maxTokens ?? DEFAULT_TEXT_MAX_TOKENS,
+          system: req.system,
+          messages,
+          tools: [
+            { type: "web_search_20260318", name: "web_search", max_uses: 15 },
+            { type: "web_fetch_20260209", name: "web_fetch", max_uses: 15 },
+          ],
+        });
+
+        for (const block of response.content) {
+          if (block.type === "text") texts.push(block.text);
+        }
+
+        if (response.stop_reason !== "pause_turn") break;
+        messages.push({ role: "assistant", content: response.content });
+      }
+
+      const full = texts.join("");
+      const match = /```json\s*([\s\S]*?)```/.exec(full) ?? /(\[[\s\S]*\])/.exec(full);
+      if (!match) return [];
+      try {
+        const parsed = JSON.parse(match[1]!) as unknown;
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter(
+            (item): item is FoundImage =>
+              typeof item === "object" &&
+              item !== null &&
+              typeof (item as FoundImage).url === "string" &&
+              typeof (item as FoundImage).pageUrl === "string" &&
+              typeof (item as FoundImage).title === "string",
+          )
+          .slice(0, 15);
+      } catch {
+        return [];
+      }
     },
   };
 }

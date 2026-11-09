@@ -48,14 +48,20 @@ export default function LinkPanel({ step }: ScriptSourcePanelProps) {
         </p>
       </Field>
 
-      <label className="flex w-fit cursor-pointer items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-        <Switch checked={step.linkUseAi} onCheckedChange={step.setLinkUseAi} />
-        {t("link.useAi")}
-      </label>
-
-      {step.linkUseAi && (
-        <>
-          <div className="flex flex-wrap items-end gap-3">
+      {/* Công tắc nằm chung hàng với lựa chọn AI: tắt thì cả hàng chỉ còn công tắc. */}
+      <div className="flex flex-wrap items-end gap-3">
+        <Field className="w-auto">
+          <FieldLabel htmlFor="link-use-ai">{t("link.useAi")}</FieldLabel>
+          <div className="flex h-11 items-center">
+            <Switch
+              id="link-use-ai"
+              checked={step.linkUseAi}
+              onCheckedChange={step.setLinkUseAi}
+            />
+          </div>
+        </Field>
+        {step.linkUseAi && (
+          <>
             <ProviderModelFields
               providerLabel={t("link.providerLabel")}
               provider={step.describeProvider}
@@ -87,7 +93,12 @@ export default function LinkPanel({ step }: ScriptSourcePanelProps) {
                 </SelectContent>
               </Select>
             </Field>
-          </div>
+          </>
+        )}
+      </div>
+
+      {step.linkUseAi && (
+        <>
           <p className="-mt-1 text-xs text-gray-500 dark:text-gray-400">
             {t("link.whisperHint")}
           </p>

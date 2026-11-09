@@ -1136,7 +1136,8 @@
       "getKey": "Get a key",
       "mediaTypes": "Media: {types}",
       "hints": {
-        "pinterest": "Paste an access token with pins:read and boards:read. Pinterest only allows public keyword search for apps it approved (beta); otherwise the search covers your own Pins and boards. Pins are references only — the images belong to their creators."
+        "pinterest": "Paste an access token with pins:read and boards:read. Pinterest only allows public keyword search for apps it approved (beta); otherwise the search covers your own Pins and boards. Pins are references only — the images belong to their creators.",
+        "cloudflare-image": "Format: accountId:apiToken — the account ID is on your Cloudflare dashboard's right sidebar; create the token at the link below with the \"Workers AI\" permission."
       }
     }
   },
@@ -1204,6 +1205,7 @@
           "youtube": "Video link",
           "import": "Imported",
           "document": "From document",
+          "idea": "From an idea",
           "template": "From template"
         }
       },
@@ -1216,12 +1218,14 @@
       "linkCaptionHint": "Only works for videos that already have captions/subtitles on the source site.",
       "fetchingHint": "Fetching the transcript and sampling video frames — this can take a bit longer than a text-only fetch.",
       "fetchButton": "Fetch script",
-      "uploadDropHint": "Drag and drop a video here, or click to browse (MP4, WebM, MOV, up to 25MB)",
+      "uploadDropHint": "Drag and drop a video here, or click to browse (MP4, WebM, MOV, up to 500MB)",
       "uploadDropActive": "Drop the video here",
       "uploadRemove": "Remove file",
       "uploadButton": "Transcribe video",
       "transcribingHint": "Transcribing audio and sampling video frames — this can take a bit longer than a text-only transcription.",
       "scriptLabel": "Script",
+      "editScript": "Edit",
+      "doneEditing": "Done",
       "scriptResultHint": "The fetched transcript will appear here — review and edit it before analyzing.",
       "scriptPlaceholder": "Paste or edit the script here...",
       "scriptCharCount": "{count} characters",
@@ -1261,6 +1265,9 @@
         "scenesHaveAssets": "Every scene lists the assets it needs"
       },
       "scenesTitle": "Scene breakdown",
+      "scenesCount": "{count, plural, one {# scene} other {# scenes}}",
+      "scenesTotalDuration": "{duration} total",
+      "heroMoment": "Hero moment",
       "sceneContent": "Content",
       "sceneVisual": "Visual direction",
       "sceneShot": "Shot",
@@ -1330,6 +1337,14 @@
         "writeButton": "Write script",
         "writingHint": "The AI is writing the script from your documents — this usually takes 10–40 seconds."
       },
+      "fromIdeaSource": "From an idea",
+      "fromIdea": {
+        "ideaLabel": "Idea",
+        "ideaPlaceholder": "e.g. Why can humans eat almost anything, but other animals can't?",
+        "durationLabel": "Target length (min)",
+        "writeButton": "Write script",
+        "writingHint": "The AI is writing the full script from your idea — this usually takes 10–40 seconds."
+      },
       "fromTemplateSource": "From a template video",
       "fromTemplate": {
         "templateLabel": "Template video",
@@ -1362,9 +1377,10 @@
       },
       "framesClickHint": "Click a frame to highlight the matching passage in the script (estimated by position in the video).",
       "frameLabel": "Frame {index}/{count}",
-      "frameZoom": "View larger",
       "framePrev": "Previous",
-      "frameNext": "Next"
+      "frameNext": "Next",
+      "previewTitle": "Frame preview",
+      "previewPassageEmpty": "No matching passage yet."
     },
     "skills": {
       "pageTitle": "Skills",
@@ -1505,7 +1521,10 @@
         "pexels": "Pexels",
         "pixabay": "Pixabay",
         "web": "Web (AI)",
-        "pinterest": "Pinterest"
+        "pinterest": "Pinterest",
+        "cloudflare-image": "AI image (Cloudflare)",
+        "openai-image": "AI image (ChatGPT)",
+        "claude-image-search": "AI image search (Claude)"
       },
       "research": {
         "open": "Research",
@@ -1514,10 +1533,13 @@
         "queryPlaceholder": "Keywords",
         "searchButton": "Search",
         "researchButton": "Research",
+        "generateButton": "Generate",
+        "findImageButton": "Find image",
         "suggestedAi": "AI keywords:",
         "suggestedPlain": "Keywords:",
         "select": "Select",
         "selected": "Selected",
+        "autoSelect": "Auto-pick top result",
         "openSource": "Source page",
         "noResults": "Nothing found. Try other keywords.",
         "noLibraryResults": "Nothing in your library matches. Upload assets on the Asset library page.",
@@ -1528,7 +1550,9 @@
         "hints": {
           "library": "Your own uploaded assets, matched by name, tags and description.",
           "stock": "Free stock media. English keywords work best.",
-          "ai": "The AI searches the web for usable sources, references and licence notes, with links."
+          "ai": "The AI searches the web for usable sources, references and licence notes, with links.",
+          "generate": "The AI generates new images from your prompt — a handful of variations each time. No licence to credit, but review quality before using.",
+          "findImage": "The AI searches the web for a real, already-published image — it won't make one up if it can't find a match."
         },
         "showingRecent": "Nothing matched the description — showing your newest assets."
       }
@@ -1540,6 +1564,22 @@
       "searchButton": "Search",
       "uploadButton": "Upload",
       "uploadTagsPlaceholder": "Tags for uploads, comma-separated",
+      "generateButton": "Generate image",
+      "generateTitle": "Generate an image with AI",
+      "generateDescription": "Describe what you want — the AI generates a few variations. Keep the ones you like straight into the library.",
+      "generateSourceLabel": "AI source",
+      "generatePromptPlaceholder": "Describe the image to generate...",
+      "generateReferenceSet": "Style reference set",
+      "generateReferenceHint": "Optional — only its visual style is used, not its subject.",
+      "aspectSquare": "Square (1:1)",
+      "aspectPortrait": "Portrait (9:16)",
+      "aspectLandscape": "Landscape (16:9)",
+      "generateSubmit": "Generate",
+      "generating": "Generating...",
+      "generateNoSource": "No AI image source is set up yet. Go to Settings → API Keys to add one.",
+      "generateNoSourceAvailable": "{source} needs an API key — go to Settings → API Keys.",
+      "saveToLibrary": "Save to library",
+      "savedToLibrary": "Saved",
       "empty": "No assets yet.",
       "types": {
         "all": "All",

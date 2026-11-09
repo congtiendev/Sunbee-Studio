@@ -1,6 +1,9 @@
+import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
+import { CheckIcon, PencilIcon } from "@/icons";
 import { useTranslations } from "@/i18n";
+import { cn } from "@/utils";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { TextRange } from "./frame-passage";
 import type { ScriptStepState } from "./use-script-step";
@@ -8,8 +11,6 @@ import type { ScriptStepState } from "./use-script-step";
 /** A passage to highlight (from a clicked frame); `nonce` re-scrolls on a repeat click. */
 export interface ScriptHighlight extends TextRange {
   nonce: number;
-  /** Move the caret into the textarea (false while the frame dialog is open). */
-  focus: boolean;
 }
 
 // Classic "digital rain" look: each column is only ~1 character wide, so
@@ -30,90 +31,108 @@ export default function ScriptEditor({
   step,
   showResultHint,
   highlight = null,
+  className,
 }: {
   step: ScriptStepState;
   showResultHint: boolean;
   highlight?: ScriptHighlight | null;
+  className?: string;
 }) {
   const t = useTranslations("videoStudio.script");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<HTMLDivElement>(null);
+  const [editing, setEditing] = useState(false);
 
-  // The highlight is drawn by an overlay that mirrors the textarea's text box
-  // (same padding/font/wrapping, sized to its client area so the scrollbar
-  // doesn't change line breaks) and follows its scroll position.
+  // A clicked frame highlights a passage in the read view — leave edit mode
+  // so it's actually visible instead of hidden behind the plain textarea.
+  // Adjusted directly during render (not an effect) per React's guidance on
+  // resetting state in response to a prop change.
+  const [lastNonce, setLastNonce] = useState(highlight?.nonce ?? null);
+  if ((highlight?.nonce ?? null) !== lastNonce) {
+    setLastNonce(highlight?.nonce ?? null);
+    if (highlight) setEditing(false);
+  }
+
+  // Scroll the highlighted passage into view whenever a new frame is picked.
+  // Only the script box scrolls: scrollIntoView would also drag the page.
   useLayoutEffect(() => {
-    const textarea = textareaRef.current;
-    const overlay = overlayRef.current;
-    if (!highlight || !textarea || !overlay) return;
-
-    const fit = () => {
-      overlay.style.width = `${textarea.clientWidth + textarea.clientLeft * 2}px`;
-      overlay.style.height = `${textarea.clientHeight + textarea.clientTop * 2}px`;
-      overlay.scrollTop = textarea.scrollTop;
-    };
-    fit();
-
-    const mark = overlay.querySelector("mark");
-    if (mark) {
-      textarea.scrollTop = Math.max(
-        0,
-        mark.offsetTop - textarea.clientHeight / 3,
-      );
-      overlay.scrollTop = textarea.scrollTop;
-      if (highlight.focus) {
-        textarea.focus({ preventScroll: true });
-        textarea.setSelectionRange(highlight.start, highlight.start);
-        mark.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      }
-    }
-
-    const observer = new ResizeObserver(fit);
-    observer.observe(textarea);
-    return () => observer.disconnect();
+    const view = viewRef.current;
+    const mark = view?.querySelector("mark");
+    if (!highlight || !view || !mark) return;
+    // <mark> is inline (clientHeight is 0), so measure it with its rect.
+    const markRect = mark.getBoundingClientRect();
+    const offset = markRect.top - view.getBoundingClientRect().top;
+    view.scrollTo({
+      top: view.scrollTop + offset - (view.clientHeight - markRect.height) / 2,
+      behavior: "smooth",
+    });
   }, [highlight]);
 
   // Generated once per mount (lazy initializer), never during a re-render.
   const [scrollColumns] = useState(randomBitColumns);
 
   return (
-    <Field>
-      <FieldLabel>{t("scriptLabel")}</FieldLabel>
-      {showResultHint && (
-        <p className="-mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {t("scriptResultHint")}
-        </p>
-      )}
-      <div className="relative">
-        <Textarea
-          ref={textareaRef}
-          rows={20}
-          value={step.scriptText}
-          onChange={(e) => step.setScriptText(e.target.value)}
-          onScroll={(e) => {
-            if (overlayRef.current)
-              overlayRef.current.scrollTop = e.currentTarget.scrollTop;
-          }}
-          placeholder={t("scriptPlaceholder")}
-          className="resize-y text-[15px] leading-relaxed"
-        />
-        {highlight && (
+    <Field className={cn("h-full min-w-0 gap-0", className)}>
+      <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-800">
+        <div>
+          <FieldLabel>{t("scriptLabel")}</FieldLabel>
+          {showResultHint && (
+            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+              {t("scriptResultHint")}
+            </p>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5"
+          onClick={() => setEditing((prev) => !prev)}
+        >
+          {editing ? (
+            <CheckIcon className="size-4" />
+          ) : (
+            <PencilIcon className="size-4" />
+          )}
+          {editing ? t("doneEditing") : t("editScript")}
+        </Button>
+      </div>
+      <div className="relative min-h-0 flex-1">
+        {editing ? (
+          <Textarea
+            ref={textareaRef}
+            autoFocus
+            value={step.scriptText}
+            onChange={(e) => step.setScriptText(e.target.value)}
+            placeholder={t("scriptPlaceholder")}
+            className="h-full resize-none rounded-none border-0 bg-transparent px-4 py-3 text-[15px] leading-relaxed shadow-none focus:ring-0 focus-visible:ring-0 dark:bg-transparent"
+          />
+        ) : (
           <div
-            ref={overlayRef}
-            aria-hidden
-            className="pointer-events-none absolute start-0 top-0 overflow-hidden rounded-[10px] border border-transparent py-2.5 ps-4 pe-4 text-[15px] leading-relaxed break-words whitespace-pre-wrap text-transparent"
+            ref={viewRef}
+            className="h-full overflow-y-auto px-4 py-3 text-[15px] leading-relaxed break-words whitespace-pre-wrap text-gray-700 dark:text-gray-300"
           >
-            {step.scriptText.slice(0, highlight.start)}
-            <mark className="rounded-sm bg-brand-500/25 box-decoration-clone text-transparent ring-1 ring-brand-500/40 dark:bg-brand-400/30 dark:ring-brand-400/50">
-              {step.scriptText.slice(highlight.start, highlight.end)}
-            </mark>
-            {step.scriptText.slice(highlight.end)}
-            {/* Like a textarea, keep the height of a trailing empty line. */}
-            {"\n"}
+            {step.scriptText ? (
+              highlight ? (
+                <>
+                  {step.scriptText.slice(0, highlight.start)}
+                  <mark className="rounded-sm bg-brand-500/25 box-decoration-clone ring-1 ring-brand-500/40 dark:bg-brand-400/30 dark:text-white dark:ring-brand-400/50">
+                    {step.scriptText.slice(highlight.start, highlight.end)}
+                  </mark>
+                  {step.scriptText.slice(highlight.end)}
+                </>
+              ) : (
+                step.scriptText
+              )
+            ) : (
+              <span className="text-gray-400 dark:text-gray-500">
+                {t("scriptPlaceholder")}
+              </span>
+            )}
           </div>
         )}
         {step.busy && (
-          <div className="absolute inset-0 overflow-hidden rounded-lg bg-white/85 backdrop-blur-sm dark:bg-gray-900/85">
+          <div className="absolute inset-0 overflow-hidden bg-white/85 backdrop-blur-sm dark:bg-gray-900/85">
             <div className="absolute inset-0 grid grid-cols-[repeat(16,1fr)] gap-0">
               {scrollColumns.map((bits, col) => (
                 <div
@@ -153,7 +172,7 @@ export default function ScriptEditor({
         )}
       </div>
       {step.scriptText && (
-        <p className="mt-1 text-end text-xs text-gray-400 dark:text-gray-500">
+        <p className="border-t border-gray-200 px-4 py-1.5 text-end text-xs text-gray-400 dark:border-gray-800 dark:text-gray-500">
           {t("scriptCharCount", { count: String(step.scriptText.length) })}
         </p>
       )}

@@ -9,6 +9,7 @@ import {
   runTask,
   type TaskContext,
 } from "../../../services/ai/task.js";
+import { extractAudioForTranscription } from "../media/extract-audio.js";
 import { extractFramesFromVideoFile } from "../media/extract-frames.js";
 import { formatIntoParagraphs } from "../media/format-paragraphs.js";
 import {
@@ -21,8 +22,12 @@ import { verifyTranscriptTask } from "../tasks/verify-transcript.js";
 // gpt-4o-transcribe / gpt-4o-mini-transcribe as higher-quality upgrades later.
 const WHISPER_MODEL = "whisper-1";
 
-/** Size cap of OpenAI's transcription API, enforced on upload. */
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+// Just a safety net against an accidental multi-GB upload buffered fully in
+// memory (multer's memoryStorage) — NOT Whisper's limit. The uploaded video
+// itself can be any length; its audio is extracted and compressed to a tiny
+// MP3 (see extract-audio.ts) before it ever reaches the transcription API,
+// so a 20+ minute video is fine well under this cap.
+export const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
 
 export interface VideoTranscription {
   scriptText: string;
@@ -46,8 +51,12 @@ const AVG_LOGPROB_THRESHOLD = -1;
 
 /**
  * Script source "upload": transcribes an uploaded video with Whisper (OpenAI
- * key required), samples frames, and — when there's no real speech —
- * describes the frames as a stand-in script.
+ * key required), samples frames, and — when there's no real speech, or no
+ * audio track at all — describes the frames as a stand-in script. The audio
+ * is extracted and compressed to a small MP3 first (same as the "link"
+ * source), so the video's own length/size doesn't matter — only the
+ * resulting audio needs to fit Whisper's cap, and that holds for ~100
+ * minutes of speech (see extract-audio.ts).
  */
 export async function transcribeVideoFile(
   buffer: Buffer,
@@ -56,8 +65,43 @@ export async function transcribeVideoFile(
   options: UploadSourceOptions = {},
 ): Promise<VideoTranscription> {
   if (!ctx.keys.openai) throw new MissingApiKeyError("openai");
-  const frames = await extractFramesFromUploadedBuffer(buffer, filename);
-  return transcribeMedia(ctx, { media: buffer, filename, frames }, options);
+  const dir = await mkdtemp(join(tmpdir(), "sunbee-upload-"));
+  try {
+    const videoPath = join(dir, filename || "video.mp4");
+    await writeFile(videoPath, buffer);
+    const frames = await extractFramesFromVideoFile(videoPath);
+    const audio = await extractAudioForTranscription(videoPath);
+    if (audio) {
+      return transcribeMedia(
+        ctx,
+        { media: audio, filename: "audio.mp3", frames },
+        options,
+      );
+    }
+
+    // No usable audio track (silent video, or ffmpeg couldn't read one) —
+    // describe what the frames show, same as a silent "link" video.
+    if (frames.length > 0) {
+      const description = await describeFramesBestEffort(
+        ctx,
+        frames,
+        options,
+      );
+      if (description) {
+        return {
+          scriptText: description,
+          frames,
+          noSpeechDetected: true,
+          aiDescribed: true,
+        };
+      }
+    }
+    throw new Error(
+      "Không đọc được âm thanh từ video này, và cũng không thể mô tả khung hình thay thế.",
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 }
 
 /**
@@ -189,22 +233,4 @@ export async function describeFramesBestEffort(
     }
   }
   return "";
-}
-
-// Best-effort: writes the already-uploaded buffer to a temp file so ffmpeg
-// can read it, then cleans up. Never throws — see extract-frames.ts.
-async function extractFramesFromUploadedBuffer(
-  buffer: Buffer,
-  filename: string,
-): Promise<string[]> {
-  const dir = await mkdtemp(join(tmpdir(), "sunbee-upload-"));
-  try {
-    const videoPath = join(dir, filename || "video.mp4");
-    await writeFile(videoPath, buffer);
-    return await extractFramesFromVideoFile(videoPath);
-  } catch {
-    return [];
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
 }

@@ -266,7 +266,7 @@ export default function VideoStudioPage() {
                   />
                 </div>
 
-                <div className="border-t border-gray-100 pt-6 dark:border-gray-800">
+                <div className="min-w-0 border-t border-gray-100 pt-6 dark:border-gray-800">
                   <ActiveStepComponent
                     key={activeStep.key}
                     videoId={currentVideoId}

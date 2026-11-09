@@ -100,8 +100,8 @@ export default function ProviderStatus({
   };
 
   return (
-    <div className="flex h-full flex-col justify-between rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-white/3">
-      <div className="shadow-default flex flex-1 flex-col justify-between rounded-2xl bg-white px-5 pt-5 pb-5 sm:px-6 sm:pt-6 sm:pb-8 dark:bg-gray-900">
+    <div className="card-surface flex h-full flex-col justify-between overflow-hidden px-5 pt-5 pb-5 sm:px-6 sm:pt-6 sm:pb-8">
+      <div className="flex flex-1 flex-col justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
             {t("title")}
@@ -121,7 +121,7 @@ export default function ProviderStatus({
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-5 px-6 py-3.5 sm:gap-8 sm:py-5">
+      <div className="-mx-5 flex items-center justify-center gap-5 border-t border-gray-200 px-6 pt-3.5 sm:-mx-6 sm:gap-8 sm:pt-5 dark:border-gray-800">
         <ProviderStat
           icon={<GptIcon className="size-4" />}
           label={t("openai")}

@@ -1,5 +1,6 @@
 import type {
   AppSettings,
+  AssetCandidate,
   AssetQuerySuggestRequest,
   AssetQuerySuggestResponse,
   AssetResearchRequest,
@@ -33,6 +34,7 @@ import type {
   ScriptAnalyzeRequest,
   ScriptAnalyzeResponse,
   ScriptFromDocumentRequest,
+  ScriptFromIdeaRequest,
   ScriptFromTemplateRequest,
   ScriptFromTemplateResponse,
   SceneResource,
@@ -222,6 +224,12 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(req),
       }),
+    /** Source "idea": AI writes a script straight from a short idea (saved as a draft version). */
+    fromIdea: (req: ScriptFromIdeaRequest): Promise<FetchTranscriptResult> =>
+      request("/api/script/from-idea", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
     /** Source "template": new script + scenes modelled on an analyzed version. */
     fromTemplate: (req: ScriptFromTemplateRequest): Promise<ScriptFromTemplateResponse> =>
       request("/api/script/from-template", {
@@ -334,6 +342,15 @@ export const apiClient = {
         }),
       delete: (id: string): Promise<void> =>
         request(`/api/assets/library/${id}`, { method: "DELETE" }),
+      /** Keeps a research candidate (an AI-generated image, a stock pick, ...) as a library asset. */
+      fromCandidate: (
+        candidate: AssetCandidate,
+        meta: { name?: string; tags?: string; description?: string } = {},
+      ): Promise<LibraryAsset> =>
+        request("/api/assets/library/from-candidate", {
+          method: "POST",
+          body: JSON.stringify({ candidate, ...meta }),
+        }),
     },
   },
   projects: {

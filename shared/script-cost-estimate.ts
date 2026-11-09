@@ -55,6 +55,14 @@ export interface ScriptCostEstimate {
   confidence: "low" | "medium" | "high";
 }
 
+/** Claude caps a single request at 100 images — longer videos get sampled
+ * densely and the frames split across this many requests instead. */
+export const FRAMES_PER_ANALYZE_REQUEST = 100;
+
+export function chunkCountForFrames(frameCount: number): number {
+  return Math.max(1, Math.ceil(frameCount / FRAMES_PER_ANALYZE_REQUEST));
+}
+
 export function estimateAnalyzeScriptCost(
   scriptText: string,
   frameCount = 0,
@@ -62,10 +70,16 @@ export function estimateAnalyzeScriptCost(
   modelId?: string,
 ): ScriptCostEstimate {
   const model = findModel(provider, modelId);
+  // A long video is split into multiple requests (≤100 frames each); the
+  // full script text is re-sent with every one of them.
+  const chunkCount = chunkCountForFrames(frameCount);
+  const scriptTokens = Math.ceil(scriptText.length / CHARS_PER_TOKEN);
   const estimatedInputTokens =
-    Math.ceil(scriptText.length / CHARS_PER_TOKEN) + frameCount * TOKENS_PER_IMAGE;
+    scriptTokens * chunkCount + frameCount * TOKENS_PER_IMAGE;
   const estimatedOutputTokens = Math.ceil(
-    estimatedInputTokens * OUTPUT_TOKEN_MULTIPLIER,
+    (scriptTokens + (frameCount / chunkCount) * TOKENS_PER_IMAGE) *
+      OUTPUT_TOKEN_MULTIPLIER *
+      chunkCount,
   );
   const estimatedCostUsd =
     (estimatedInputTokens / 1_000_000) * model.inputPricePer1M +

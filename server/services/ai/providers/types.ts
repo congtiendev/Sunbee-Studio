@@ -35,9 +35,18 @@ export interface AiWebSearchResult {
   sources: WebSearchSource[];
 }
 
+export interface FoundImage {
+  /** The actual image file's URL — not the page it was found on. */
+  url: string;
+  pageUrl: string;
+  title: string;
+}
+
 export interface ProviderCapabilities {
   vision: boolean;
   webSearch: boolean;
+  /** Can search the web for actual, directly-linkable image files. */
+  imageSearch: boolean;
 }
 
 /**
@@ -52,4 +61,6 @@ export interface LlmProvider {
   generateStructured<T>(req: AiStructuredRequest): Promise<T | null>;
   /** Answer with live web search, returning the cited sources. */
   webSearch(req: AiRequest): Promise<AiWebSearchResult>;
+  /** Search the web for real images matching the brief (only when `capabilities.imageSearch`). */
+  findImages?(req: AiRequest): Promise<FoundImage[]>;
 }

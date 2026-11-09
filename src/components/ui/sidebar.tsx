@@ -24,7 +24,6 @@ import * as React from "react";
 import { useLocation } from "react-router";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "18.125rem"; // 290px — matches w-72.5
 const SIDEBAR_WIDTH_MOBILE = "18.125rem";
 const SIDEBAR_WIDTH_ICON = "5.625rem"; // 90px — matches w-22.5
@@ -73,7 +72,13 @@ function SidebarProvider({
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen);
+  // There is no server render step here to read the cookie before paint, so
+  // persist/restore via localStorage instead — it's readable synchronously
+  // during this initial state computation, unlike the cookie.
+  const [_open, _setOpen] = React.useState(() => {
+    const stored = localStorage.getItem(SIDEBAR_COOKIE_NAME);
+    return stored === null ? defaultOpen : stored === "true";
+  });
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -84,8 +89,7 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
-      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
+      localStorage.setItem(SIDEBAR_COOKIE_NAME, String(openState));
     },
     [setOpenProp, open],
   );
@@ -335,7 +339,7 @@ function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
     <main
       data-slot="sidebar-inset"
       className={cn(
-        "relative flex w-full flex-1 flex-col transition-all duration-300 ease-in-out xl:peer-data-[variant=inset]:m-2 xl:peer-data-[variant=inset]:ms-0 xl:peer-data-[variant=inset]:rounded-xl xl:peer-data-[variant=inset]:shadow-sm xl:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2",
+        "relative flex w-full min-w-0 flex-1 flex-col transition-all duration-300 ease-in-out xl:peer-data-[variant=inset]:m-2 xl:peer-data-[variant=inset]:ms-0 xl:peer-data-[variant=inset]:rounded-xl xl:peer-data-[variant=inset]:shadow-sm xl:peer-data-[variant=inset]:peer-data-[state=collapsed]:ms-2",
         className,
       )}
       {...props}

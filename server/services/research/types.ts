@@ -1,5 +1,6 @@
 import type {
   AssetCandidate,
+  ImageAspectRatio,
   ResearchMediaType,
   ResearchSourceKind,
 } from "../../../shared/types.js";
@@ -23,6 +24,10 @@ export interface ResearchContext {
   description?: string;
   /** The scene the asset belongs to, for AI sources. */
   sceneContext?: string;
+  /** AI image sources: a style reference (data URL) to describe into the prompt. */
+  referenceImage?: string;
+  /** AI image sources: output frame shape. Omitted: square. */
+  aspectRatio?: ImageAspectRatio;
 }
 
 export interface ResearchResult {
@@ -42,6 +47,8 @@ export interface ResearchSource {
   mediaTypes: ResearchMediaType[];
   requiresKey: boolean;
   keyUrl?: string;
+  /** AI sources only: creates new media, vs. finding existing media (web search, stock). */
+  generates?: boolean;
   /** Returns an error message, or null when the key works. */
   validateKey?(apiKey: string): Promise<string | null>;
   /** Whether the user can use it beyond an API key of its own (e.g. needs an AI key). */

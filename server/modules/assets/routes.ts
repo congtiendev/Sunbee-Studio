@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import type {
+  AssetCandidate,
   AssetQuerySuggestRequest,
   AssetResearchRequest,
   LibraryMediaType,
@@ -11,7 +12,7 @@ import { requireAuth } from "../../middleware/require-auth.js";
 import { firstAvailableProvider, runTask, taskContextFor } from "../../services/ai/task.js";
 import { canAccessVideo } from "../../services/db/videos-repo.js";
 import { findResearchSource, listResearchSources } from "../../services/research/registry.js";
-import { deleteFile, saveFile } from "../../services/storage/files.js";
+import { deleteFile, getFileForUser, saveFile } from "../../services/storage/files.js";
 import { getSettings } from "../../settings-store.js";
 import {
   createLibraryAsset,
@@ -117,6 +118,8 @@ router.post("/research", requireAuth, async (req, res) => {
           ai: taskContextFor(req.user!.id),
           description: body.description,
           sceneContext: body.sceneContext,
+          referenceImage: body.referenceImage,
+          aspectRatio: body.aspectRatio,
         },
       ),
     );
@@ -205,6 +208,57 @@ router.post(
     }
   },
 );
+
+/**
+ * Keeps a research candidate permanently — an AI-generated image, or any
+ * other source's pick. Local candidates (already under `/api/files/`, e.g.
+ * this module's own AI image sources) just get a library row; anything
+ * external is downloaded once and stored the same way uploads are.
+ */
+router.post("/library/from-candidate", requireAuth, async (req, res) => {
+  const body = req.body as {
+    candidate?: AssetCandidate;
+    name?: string;
+    tags?: string;
+    description?: string;
+  };
+  const candidate = body.candidate;
+  if (!candidate?.url) {
+    res.status(400).json({ error: "Thiếu candidate." });
+    return;
+  }
+  if (candidate.mediaType !== "image" && candidate.mediaType !== "video" && candidate.mediaType !== "audio") {
+    res.status(400).json({ error: "Chỉ lưu được ảnh, video hoặc âm thanh vào thư viện." });
+    return;
+  }
+  try {
+    const localMatch = /^\/api\/files\/([^/?#]+)$/.exec(candidate.url);
+    const fileId = localMatch
+      ? (() => {
+          const existing = getFileForUser(req.user!.id, isAdmin(req.user!), localMatch[1]!);
+          if (!existing) throw new Error("Không tìm thấy file.");
+          return existing.id;
+        })()
+      : await (async () => {
+          const downloaded = await fetch(candidate.url);
+          if (!downloaded.ok) throw new Error(`Không tải được file (HTTP ${downloaded.status}).`);
+          const buffer = Buffer.from(await downloaded.arrayBuffer());
+          const mime = downloaded.headers.get("content-type") ?? "application/octet-stream";
+          const stored = await saveFile(req.user!.id, "asset", buffer, candidate.title || "asset", mime);
+          return stored.id;
+        })();
+    const id = createLibraryAsset(req.user!.id, {
+      fileId,
+      mediaType: candidate.mediaType,
+      name: body.name?.trim() || candidate.title || "Asset",
+      tags: splitTags(body.tags),
+      description: body.description?.trim() ?? candidate.description ?? "",
+    });
+    res.json(getLibraryAsset(req.user!.id, isAdmin(req.user!), id));
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
+});
 
 router.patch("/library/:id", requireAuth, (req, res) => {
   const body = req.body as { name?: string; tags?: string[] | string; description?: string };

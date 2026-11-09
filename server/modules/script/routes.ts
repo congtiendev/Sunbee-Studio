@@ -7,6 +7,7 @@ import type {
   ScriptAnalyzeRequest,
   ScriptApproveRequest,
   ScriptFromDocumentRequest,
+  ScriptFromIdeaRequest,
   ScriptFromTemplateRequest,
 } from "../../../shared/types.js";
 import {
@@ -18,6 +19,7 @@ import {
 } from "./repo.js";
 import { analyzeScriptForUser, approveScriptVersion } from "./service.js";
 import { writeScriptFromDocuments } from "./sources/document.js";
+import { writeScriptFromIdea } from "./sources/idea.js";
 import { fetchScriptFromLink } from "./sources/link.js";
 import { writeScriptFromTemplate } from "./sources/template.js";
 import { MAX_UPLOAD_BYTES, transcribeVideoFile } from "./sources/upload.js";
@@ -145,6 +147,27 @@ router.post("/from-document", requireAuth, async (req, res) => {
       req.user!.id,
       "document",
       documentTitles.join(", "),
+      scriptText,
+      [],
+      "draft",
+      undefined,
+      body.videoId,
+    );
+    res.json({ scriptText, frames: [], versionId: version.id });
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
+});
+
+/** Source "idea": AI writes the script straight from a short idea; saved as a draft. */
+router.post("/from-idea", requireAuth, async (req, res) => {
+  try {
+    const body = req.body as ScriptFromIdeaRequest;
+    const { scriptText } = await writeScriptFromIdea(req.user!, body);
+    const version = saveScriptVersion(
+      req.user!.id,
+      "idea",
+      body.idea,
       scriptText,
       [],
       "draft",

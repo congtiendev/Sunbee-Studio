@@ -12,6 +12,7 @@ import VersionSheet from "@/pages/main/video-studio/version-sheet";
 import type { StepComponentProps } from "../registry";
 import AnalysisSettings from "./analysis-settings";
 import { passageForFrame } from "./frame-passage";
+import FramePreviewPanel from "./frame-preview";
 import FramesStrip from "./frames-strip";
 import ResourcesPanel from "./result/resources-panel";
 import SaveSkillCard from "./result/save-skill-card";
@@ -35,18 +36,19 @@ export default function ScriptStep({
   const step = useScriptStep(videoId, onComplete);
   const [versionSheetOpen, setVersionSheetOpen] = useState(false);
   const [frameFocus, setFrameFocus] = useState<{
-    frames: string[];
+    framesCount: number;
     text: string;
     index: number;
-    focus: boolean;
     nonce: number;
   } | null>(null);
 
-  // A clicked frame stays selected only while the frames and the text it was matched against are unchanged.
+  // A clicked frame stays selected only while the script text it was matched
+  // against is unchanged and its index is still in range (not a stale
+  // selection from a since-replaced frame list).
   const activeFrame =
     frameFocus &&
-    frameFocus.frames === step.frames &&
-    frameFocus.text === step.scriptText
+    frameFocus.text === step.scriptText &&
+    frameFocus.index < step.frames.length
       ? frameFocus
       : null;
   const highlight = useMemo<ScriptHighlight | null>(() => {
@@ -54,24 +56,32 @@ export default function ScriptStep({
     const range = passageForFrame(
       activeFrame.text,
       activeFrame.index,
-      activeFrame.frames.length,
+      activeFrame.framesCount,
     );
-    return range
-      ? { ...range, nonce: activeFrame.nonce, focus: activeFrame.focus }
-      : null;
+    return range ? { ...range, nonce: activeFrame.nonce } : null;
   }, [activeFrame]);
 
-  const selectFrame = (index: number, focus: boolean) =>
+  const selectFrame = (index: number) =>
     setFrameFocus((prev) => ({
-      frames: step.frames,
+      framesCount: step.frames.length,
       text: step.scriptText,
       index,
-      focus,
       nonce: (prev?.nonce ?? 0) + 1,
     }));
   const passageOf = (index: number) => {
     const range = passageForFrame(step.scriptText, index, step.frames.length);
     return range ? step.scriptText.slice(range.start, range.end) : null;
+  };
+
+  const previewIndex = activeFrame?.index ?? null;
+  const previewFrame = previewIndex !== null ? (step.frames[previewIndex] ?? null) : null;
+  const navigatePreview = (delta: number) => {
+    if (previewIndex === null) return;
+    const next = Math.min(
+      step.frames.length - 1,
+      Math.max(0, previewIndex + delta),
+    );
+    selectFrame(next);
   };
 
   const source =
@@ -80,7 +90,7 @@ export default function ScriptStep({
   const checklist = step.result ? computeScriptChecklist(step.result) : null;
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
           <CardTitle>{t("sourceTitle")}</CardTitle>
@@ -127,11 +137,23 @@ export default function ScriptStep({
 
         {SourcePanel && <SourcePanel step={step} />}
 
-        <ScriptEditor
-          step={step}
-          showResultHint={source.producesScript}
-          highlight={highlight}
-        />
+        <div className="flex h-[30rem] items-stretch overflow-hidden rounded-xl border border-gray-200 bg-white shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.02]">
+          <ScriptEditor
+            step={step}
+            showResultHint={source.producesScript}
+            highlight={highlight}
+            className="min-w-0 flex-1"
+          />
+          <FramePreviewPanel
+            open={activeFrame !== null}
+            onOpenChange={(open) => !open && setFrameFocus(null)}
+            frame={previewFrame}
+            index={previewIndex}
+            total={step.frames.length}
+            passage={previewIndex !== null ? passageOf(previewIndex) : null}
+            onNavigate={navigatePreview}
+          />
+        </div>
 
         {step.noSpeechHint && (
           <Alert variant={step.aiDescribed ? "info" : "warning"}>
@@ -145,7 +167,6 @@ export default function ScriptStep({
           frames={step.frames}
           activeIndex={activeFrame?.index ?? null}
           onSelect={selectFrame}
-          passageOf={passageOf}
         />
 
         <AnalysisSettings step={step} />
@@ -161,7 +182,8 @@ export default function ScriptStep({
             type="button"
             onClick={() => void step.analyze()}
             disabled={
-              (!step.scriptText && step.frames.length === 0) || step.analyzing
+              (!step.scriptText && step.frames.length === 0) ||
+              step.analyzing
             }
           >
             {step.analyzing && <Spinner />}

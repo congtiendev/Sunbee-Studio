@@ -15,7 +15,7 @@ import { useTranslations } from "@/i18n";
 import { CheckCircleIcon, PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
 import type { RequiredAsset, RequiredAssetType, ScriptScene } from "@shared/types";
 import { useState } from "react";
-import ScenesTable from "./scenes-table";
+import ScenesList from "./scenes-list";
 
 const ASSET_TYPES: RequiredAssetType[] = ["video", "image", "audio", "graphic"];
 
@@ -256,7 +256,7 @@ export default function SceneEditor({
           ))}
         </div>
       ) : (
-        <ScenesTable scenes={scenes} />
+        <ScenesList scenes={scenes} />
       )}
     </div>
   );
