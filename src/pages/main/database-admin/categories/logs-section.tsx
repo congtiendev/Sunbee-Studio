@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SkeletonTable } from "@/components/shared/skeleton-blocks";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -9,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -112,7 +112,7 @@ export default function LogsSection() {
         )}
 
         {loading ? (
-          <Spinner />
+          <SkeletonTable rows={6} cols={4} />
         ) : entries.length === 0 ? (
           <p className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
             {t("empty")}

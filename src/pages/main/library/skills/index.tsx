@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SkeletonCardGrid } from "@/components/shared/skeleton-blocks";
 import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import {
@@ -160,9 +161,7 @@ export default function VideoStudioSkillsPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <SkeletonCardGrid count={6} />
       ) : skills.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("empty")}</p>
@@ -193,12 +192,15 @@ export default function VideoStudioSkillsPage() {
                   {skill.description}
                 </p>
               )}
+              {skill.genre && (
+                <p
+                  className="mt-1.5 line-clamp-1 text-xs text-gray-400 dark:text-gray-500"
+                  title={skill.genre}
+                >
+                  {skill.genre}
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {skill.genre && (
-                  <Badge variant="light" color="info" size="sm">
-                    {skill.genre}
-                  </Badge>
-                )}
                 {skill.styleTags.slice(0, 4).map((tag) => (
                   <Badge key={tag} variant="light" color="gray" size="sm">
                     {tag}
@@ -207,6 +209,11 @@ export default function VideoStudioSkillsPage() {
                 {skill.instructions?.trim() && (
                   <Badge variant="light" color="success" size="sm">
                     {t("hasInstructions")}
+                  </Badge>
+                )}
+                {skill.graphicsStyle?.trim() && (
+                  <Badge variant="light" color="success" size="sm">
+                    {t("hasGraphicsStyle")}
                   </Badge>
                 )}
               </div>

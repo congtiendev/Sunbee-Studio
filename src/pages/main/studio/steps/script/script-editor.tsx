@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckIcon, PencilIcon } from "@/icons";
+import { useConfirmLeave } from "@/hooks/use-confirm-leave";
+import { CheckIcon, CopyIcon, PencilIcon } from "@/icons";
 import { useTranslations } from "@/i18n";
 import { cn } from "@/utils";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -11,6 +12,12 @@ import type { ScriptStepState } from "./use-script-step";
 /** A passage to highlight (from a clicked frame); `nonce` re-scrolls on a repeat click. */
 export interface ScriptHighlight extends TextRange {
   nonce: number;
+}
+
+function formatElapsed(totalSec: number): string {
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 // Classic "digital rain" look: each column is only ~1 character wide, so
@@ -42,6 +49,19 @@ export default function ScriptEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useConfirmLeave(step.busy, t("leaveConfirm"));
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(step.scriptText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
 
   // A clicked frame highlights a passage in the read view — leave edit mode
   // so it's actually visible instead of hidden behind the plain textarea.
@@ -82,20 +102,42 @@ export default function ScriptEditor({
             </p>
           )}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="shrink-0 gap-1.5"
-          onClick={() => setEditing((prev) => !prev)}
-        >
-          {editing ? (
-            <CheckIcon className="size-4" />
-          ) : (
-            <PencilIcon className="size-4" />
-          )}
-          {editing ? t("doneEditing") : t("editScript")}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={!step.scriptText}
+            onClick={() => void handleCopy()}
+          >
+            {copied ? (
+              <>
+                <CheckIcon className="size-4 text-green-500" />
+                <span className="text-green-500">{t("copied")}</span>
+              </>
+            ) : (
+              <>
+                <CopyIcon className="size-4" />
+                {t("copyScript")}
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setEditing((prev) => !prev)}
+          >
+            {editing ? (
+              <CheckIcon className="size-4" />
+            ) : (
+              <PencilIcon className="size-4" />
+            )}
+            {editing ? t("doneEditing") : t("editScript")}
+          </Button>
+        </div>
       </div>
       <div className="relative min-h-0 flex-1">
         {editing ? (
@@ -166,6 +208,12 @@ export default function ScriptEditor({
                   : step.transcribing
                     ? t("transcribingHint")
                     : t("analyzingHint")}
+              </p>
+              <p className="font-jetbrains-mono text-xs text-gray-400 dark:text-gray-500">
+                {formatElapsed(step.elapsedSec)}
+              </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {t("doNotLeaveHint")}
               </p>
             </div>
           </div>

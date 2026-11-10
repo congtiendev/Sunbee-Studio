@@ -1,9 +1,9 @@
+import { SkeletonPanel } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress-bar";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { SearchIcon, StarFilledIcon, TrashBinIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
@@ -12,14 +12,25 @@ import type {
   ResearchSourceInfo,
   SceneResource,
   ScriptAnalysisRecord,
+  StyleTemplate,
 } from "@shared/types";
 import { useEffect, useMemo, useState } from "react";
 import type { StepComponentProps } from "../registry";
 import CandidatePreview from "./candidate-preview";
+import GraphicsSkillSelect, { NO_GRAPHICS_SKILL } from "./graphics-skill-select";
 import ResearchSheet, { type ResearchTarget } from "./research-sheet";
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 const slotKey = (sceneIndex: number, assetIndex: number) => `${sceneIndex}:${assetIndex}`;
@@ -36,6 +47,9 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<ResearchTarget | null>(null);
   const [clearing, setClearing] = useState<string | null>(null);
+  const [imageSkills, setImageSkills] = useState<StyleTemplate[]>([]);
+  const [graphicsSkillId, setGraphicsSkillId] = useState(NO_GRAPHICS_SKILL);
+  const [referenceImage, setReferenceImage] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -43,14 +57,16 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
       apiClient.script.history(videoId),
       apiClient.assets.sources(),
       apiClient.assets.selections(videoId),
+      apiClient.templates.list(),
     ])
-      .then(([history, sourceList, picks]) => {
+      .then(([history, sourceList, picks, templates]) => {
         if (!active) return;
         // The newest analyzed version is the one the scenes come from.
         setVersion(history.find((v) => v.kind === "analyzed" && v.scenes.length > 0) ?? null);
         const order = { library: 0, stock: 1, ai: 2 } as const;
         setSources([...sourceList].sort((a, b) => order[a.kind] - order[b.kind]));
         setSelections(picks);
+        setImageSkills(templates.filter((t) => t.type === "image"));
         setError(null);
       })
       .catch((err) => {
@@ -68,6 +84,37 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
     () => new Map(selections.map((pick) => [slotKey(pick.sceneIndex, pick.assetIndex), pick])),
     [selections],
   );
+  // Stable reference across re-renders (not a fresh `?? []` every render) so
+  // ResearchSheet's effects keyed on it don't re-fire unless it actually changed.
+  const characterRoster = useMemo(() => version?.characterRoster ?? [], [version]);
+  const graphicsSkill = useMemo(
+    () => imageSkills.find((skill) => skill.id === graphicsSkillId),
+    [imageSkills, graphicsSkillId],
+  );
+  const graphicsStyle = graphicsSkill?.graphicsStyle;
+
+  // The skill's reference illustration (style only) — fetched once per skill
+  // selection and described into every generation alongside graphicsStyle.
+  useEffect(() => {
+    let active = true;
+    const fileId = graphicsSkill?.referenceImageFileId;
+    if (!fileId) {
+      setReferenceImage(undefined);
+      return;
+    }
+    fetch(apiClient.documents.fileUrl(fileId))
+      .then((res) => res.blob())
+      .then(blobToDataUrl)
+      .then((dataUrl) => {
+        if (active) setReferenceImage(dataUrl);
+      })
+      .catch(() => {
+        if (active) setReferenceImage(undefined);
+      });
+    return () => {
+      active = false;
+    };
+  }, [graphicsSkill?.referenceImageFileId]);
   const totalSlots = version?.scenes.reduce((sum, scene) => sum + scene.requiredAssets.length, 0) ?? 0;
   const filledSlots =
     version?.scenes.reduce(
@@ -116,8 +163,13 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
 
   if (loadedFor !== videoId) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner />
+      <div className="space-y-5">
+        <SkeletonPanel className="h-10" />
+        <div className="space-y-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <SkeletonPanel key={i} className="h-32" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -143,6 +195,13 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
         />
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
+
+      <GraphicsSkillSelect
+        skills={imageSkills}
+        value={graphicsSkillId}
+        onChange={setGraphicsSkillId}
+        className="max-w-md"
+      />
 
       {error && (
         <Alert variant="destructive">
@@ -246,6 +305,9 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
         target={target}
         sources={sources}
         selected={target ? bySlot.get(slotKey(target.scene.index, target.assetIndex))?.candidate : undefined}
+        characterRoster={characterRoster}
+        graphicsStyle={graphicsStyle}
+        referenceImage={referenceImage}
         onOpenChange={(open) => !open && setTarget(null)}
         onSelect={select}
       />

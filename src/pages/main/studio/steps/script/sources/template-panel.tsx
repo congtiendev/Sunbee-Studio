@@ -1,3 +1,4 @@
+import { SkeletonCard } from "@/components/shared/skeleton-blocks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -57,8 +58,9 @@ export default function TemplatePanel({ step }: ScriptSourcePanelProps) {
         <FieldLabel>{t("fromTemplate.templateLabel")}</FieldLabel>
         <FieldDescription>{t("fromTemplate.templateHint")}</FieldDescription>
         {loading ? (
-          <div className="flex justify-center py-4">
-            <Spinner />
+          <div className="grid gap-2 md:grid-cols-2">
+            <SkeletonCard />
+            <SkeletonCard />
           </div>
         ) : templates.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("fromTemplate.noTemplates")}</p>

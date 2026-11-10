@@ -22,3 +22,6 @@ export const SKILL_GUIDE_OUTPUT_TOKENS = 32_000;
 
 /** Notes on one part of a training source. */
 export const SOURCE_NOTES_OUTPUT_TOKENS = 8_000;
+
+/** A short list of character names + one-line descriptions. */
+export const CHARACTER_ROSTER_OUTPUT_TOKENS = 2_000;

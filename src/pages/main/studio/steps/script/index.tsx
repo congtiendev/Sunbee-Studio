@@ -9,7 +9,7 @@ import { BrainIcon, ClockIcon } from "@/icons";
 import { trainingUrl } from "@/lib/paths";
 import { Link } from "react-router";
 import { useTranslations } from "@/i18n";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import VersionSheet from "@/pages/main/studio/version-sheet";
 import type { StepComponentProps } from "../registry";
 import AnalysisSettings from "./analysis-settings";
@@ -32,10 +32,15 @@ const SECTION =
 export default function ScriptStep({
   videoId,
   onComplete,
+  onBusyChange,
 }: StepComponentProps) {
   const t = useTranslations("videoStudio.script");
   const step = useScriptStep(videoId, onComplete);
   const [versionSheetOpen, setVersionSheetOpen] = useState(false);
+
+  useEffect(() => {
+    onBusyChange?.(step.busy);
+  }, [step.busy, onBusyChange]);
   const [frameFocus, setFrameFocus] = useState<{
     framesCount: number;
     text: string;
@@ -241,6 +246,7 @@ export default function ScriptStep({
             <SceneEditor
               key={step.resultKey}
               scenes={step.result.scenes}
+              characterRoster={step.result.characterRoster ?? []}
               approved={step.approved}
               approving={step.approving}
               canApprove={Boolean(step.currentVersionId)}

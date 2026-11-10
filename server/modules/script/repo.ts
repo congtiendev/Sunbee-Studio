@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
+  RecurringCharacter,
+  ScriptAnalysisListItem,
   ScriptAnalysisRecord,
   ScriptAnalysisSummary,
   ScriptAnalyzeResult,
@@ -18,6 +20,7 @@ interface ScriptAnalysisRow {
   resources_json: string;
   style_json: string | null;
   frames_json: string | null;
+  character_roster_json: string | null;
   kind: "draft" | "analyzed";
   video_id: string | null;
   approved: number;
@@ -46,6 +49,9 @@ function rowToRecord(row: ScriptAnalysisRow): ScriptAnalysisRecord {
     scenes: JSON.parse(row.scenes_json),
     resources: JSON.parse(row.resources_json),
     style: row.style_json ? JSON.parse(row.style_json) : undefined,
+    characterRoster: row.character_roster_json
+      ? JSON.parse(row.character_roster_json)
+      : undefined,
     videoId: row.video_id ?? undefined,
     approved: row.approved === 1,
     templateSourceId: row.template_source_id ?? undefined,
@@ -63,7 +69,11 @@ export function saveScriptVersion(
   kind: "draft" | "analyzed",
   result?: ScriptAnalyzeResult,
   videoId?: string,
-  options: { approved?: boolean; templateSourceId?: string } = {},
+  options: {
+    approved?: boolean;
+    templateSourceId?: string;
+    characterRoster?: RecurringCharacter[];
+  } = {},
 ): ScriptAnalysisRecord {
   const record = {
     id: randomUUID(),
@@ -76,6 +86,7 @@ export function saveScriptVersion(
     scenes: result?.scenes ?? [],
     resources: result?.resources ?? EMPTY_RESOURCES,
     style: result?.style,
+    characterRoster: options.characterRoster,
     videoId,
     approved: Boolean(options.approved),
     templateSourceId: options.templateSourceId,
@@ -83,8 +94,8 @@ export function saveScriptVersion(
 
   getDb()
     .prepare(
-      `INSERT INTO script_analyses (id, created_at, source_type, source_url, script_text, scenes_json, resources_json, style_json, frames_json, kind, video_id, approved, template_source_id, user_id)
-       VALUES (@id, @createdAt, @sourceType, @sourceUrl, @scriptText, @scenesJson, @resourcesJson, @styleJson, @framesJson, @kind, @videoId, @approved, @templateSourceId, @userId)`,
+      `INSERT INTO script_analyses (id, created_at, source_type, source_url, script_text, scenes_json, resources_json, style_json, frames_json, character_roster_json, kind, video_id, approved, template_source_id, user_id)
+       VALUES (@id, @createdAt, @sourceType, @sourceUrl, @scriptText, @scenesJson, @resourcesJson, @styleJson, @framesJson, @characterRosterJson, @kind, @videoId, @approved, @templateSourceId, @userId)`,
     )
     .run({
       id: record.id,
@@ -96,6 +107,9 @@ export function saveScriptVersion(
       resourcesJson: JSON.stringify(record.resources),
       styleJson: record.style ? JSON.stringify(record.style) : null,
       framesJson: JSON.stringify(record.frames),
+      characterRosterJson: record.characterRoster
+        ? JSON.stringify(record.characterRoster)
+        : null,
       kind: record.kind,
       videoId: record.videoId ?? null,
       approved: record.approved ? 1 : 0,
@@ -124,7 +138,8 @@ export function deleteScriptAnalysis(
 
 const SELECT_BASE = `
   SELECT sa.id, sa.created_at, sa.source_type, sa.source_url, sa.script_text,
-         sa.scenes_json, sa.resources_json, sa.style_json, sa.frames_json, sa.kind,
+         sa.scenes_json, sa.resources_json, sa.style_json, sa.frames_json,
+         sa.character_roster_json, sa.kind,
          sa.video_id, sa.approved, sa.template_source_id, sa.user_id, u.email AS owner_email
   FROM script_analyses sa
   LEFT JOIN users u ON u.id = sa.user_id
@@ -145,6 +160,53 @@ export function listScriptAnalyses(
         .all(userId) as ScriptAnalysisRow[]);
 
   return rows.map(rowToRecord);
+}
+
+interface ListItemRow {
+  id: string;
+  created_at: string;
+  source_type: ScriptSourceType;
+  source_url: string | null;
+  kind: "draft" | "analyzed";
+  scenes_json: string;
+  video_id: string | null;
+  owner_email: string | null;
+}
+
+/**
+ * Same rows as `listScriptAnalyses` but without script_text/frames_json/
+ * resources_json/style_json — the big blobs a dashboard/admin list never
+ * renders. Use `listScriptAnalyses` only where the full body is needed
+ * (export/backup, the MCP tool).
+ */
+export function listScriptAnalysesLight(
+  userId: string,
+  isAdmin: boolean,
+): ScriptAnalysisListItem[] {
+  const select = `
+    SELECT sa.id, sa.created_at, sa.source_type, sa.source_url, sa.kind,
+           sa.scenes_json, sa.video_id, u.email AS owner_email
+    FROM script_analyses sa
+    LEFT JOIN users u ON u.id = sa.user_id
+  `;
+  const rows = isAdmin
+    ? (getDb()
+        .prepare(`${select} ORDER BY sa.created_at DESC`)
+        .all() as ListItemRow[])
+    : (getDb()
+        .prepare(`${select} WHERE sa.user_id = ? ORDER BY sa.created_at DESC`)
+        .all(userId) as ListItemRow[]);
+
+  return rows.map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    sourceType: row.source_type,
+    sourceUrl: row.source_url ?? undefined,
+    kind: row.kind,
+    sceneCount: (JSON.parse(row.scenes_json) as unknown[]).length,
+    videoId: row.video_id ?? undefined,
+    ownerEmail: row.owner_email ?? undefined,
+  }));
 }
 
 export function listVersionsForVideo(
@@ -180,7 +242,20 @@ export function getScriptAnalysesByIds(
   isAdmin: boolean,
   ids: string[],
 ): ScriptAnalysisRecord[] {
-  return ids.flatMap((id) => getScriptAnalysisById(userId, isAdmin, id) ?? []);
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = isAdmin
+    ? (getDb()
+        .prepare(`${SELECT_BASE} WHERE sa.id IN (${placeholders})`)
+        .all(...ids) as ScriptAnalysisRow[])
+    : (getDb()
+        .prepare(
+          `${SELECT_BASE} WHERE sa.id IN (${placeholders}) AND sa.user_id = ?`,
+        )
+        .all(...ids, userId) as ScriptAnalysisRow[]);
+
+  const byId = new Map(rows.map((row) => [row.id, rowToRecord(row)]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
 }
 
 interface SummaryRow {

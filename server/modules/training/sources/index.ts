@@ -5,6 +5,7 @@ import type {
 } from "../../../../shared/types.js";
 import type { Caller } from "../../../services/skills/skills.js";
 import { documentSource } from "./document.js";
+import { imageSource } from "./images.js";
 import { linkSource, uploadSource } from "./script-versions.js";
 import type { TrainingMaterial, TrainingSource } from "./types.js";
 
@@ -17,6 +18,7 @@ export const TRAINING_SOURCES: TrainingSource[] = [
   linkSource,
   uploadSource,
   documentSource,
+  imageSource,
 ];
 
 export function sourceFor(

@@ -3,9 +3,12 @@ import multer from "multer";
 import { requireAuth } from "../middleware/require-auth.js";
 import {
   deleteTemplate,
+  getTemplateById,
   listTemplates,
   saveTemplate,
+  setReferenceImage,
 } from "../services/db/style-templates-repo.js";
+import { deleteFile, saveFile } from "../services/storage/files.js";
 import { exportSkill, importSkillFile } from "../services/skills/package.js";
 import { getSkillDetail, updateSkill, withSkillDefaults } from "../services/skills/skills.js";
 import type { SkillInput, SkillUpdateRequest } from "../../shared/types.js";
@@ -13,8 +16,17 @@ import type { SkillInput, SkillUpdateRequest } from "../../shared/types.js";
 /** Skills (stored as "style templates"; the API path is kept for compatibility). */
 const router = Router();
 
+function isAdmin(user: { role: string }): boolean {
+  return user.role === "admin";
+}
+
 const MAX_SKILL_FILE_BYTES = 20 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_SKILL_FILE_BYTES } });
+const MAX_REFERENCE_IMAGE_BYTES = 10 * 1024 * 1024;
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_REFERENCE_IMAGE_BYTES },
+});
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -93,8 +105,70 @@ router.get("/:id/export", requireAuth, (req, res) => {
   res.json(pkg);
 });
 
-router.delete("/:id", requireAuth, (req, res) => {
-  deleteTemplate(req.user!.id, req.user!.role === "admin", req.params.id as string);
+/** type "image" skills: an optional reference illustration — its *style* only, described into every image-gen prompt alongside graphicsStyle. */
+router.post(
+  "/:id/reference-image",
+  requireAuth,
+  (req, res, next) => {
+    uploadImage.single("file")(req, res, (err: unknown) => {
+      if (err) {
+        res.status(400).json({ error: errorMessage(err) });
+        return;
+      }
+      next();
+    });
+  },
+  async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "Chưa chọn ảnh." });
+      return;
+    }
+    if (!req.file.mimetype.startsWith("image/")) {
+      res.status(400).json({ error: "Chỉ nhận file ảnh." });
+      return;
+    }
+    const admin = isAdmin(req.user!);
+    const existing = getTemplateById(req.user!.id, admin, req.params.id as string);
+    if (!existing) {
+      res.status(404).json({ error: "Không tìm thấy skill." });
+      return;
+    }
+    const stored = await saveFile(
+      req.user!.id,
+      "skill-attachment",
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+    );
+    setReferenceImage(req.user!.id, admin, existing.id, stored.id);
+    if (existing.referenceImageFileId) {
+      await deleteFile(req.user!.id, admin, existing.referenceImageFileId);
+    }
+    res.json(getSkillDetail(req.user!, existing.id));
+  },
+);
+
+router.delete("/:id/reference-image", requireAuth, async (req, res) => {
+  const admin = isAdmin(req.user!);
+  const existing = getTemplateById(req.user!.id, admin, req.params.id as string);
+  if (!existing) {
+    res.status(404).json({ error: "Không tìm thấy skill." });
+    return;
+  }
+  setReferenceImage(req.user!.id, admin, existing.id, null);
+  if (existing.referenceImageFileId) {
+    await deleteFile(req.user!.id, admin, existing.referenceImageFileId);
+  }
+  res.json(getSkillDetail(req.user!, existing.id));
+});
+
+router.delete("/:id", requireAuth, async (req, res) => {
+  const admin = isAdmin(req.user!);
+  const existing = getTemplateById(req.user!.id, admin, req.params.id as string);
+  deleteTemplate(req.user!.id, admin, req.params.id as string);
+  if (existing?.referenceImageFileId) {
+    await deleteFile(req.user!.id, admin, existing.referenceImageFileId);
+  }
   res.json({ ok: true });
 });
 

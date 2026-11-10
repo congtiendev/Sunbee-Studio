@@ -1166,7 +1166,8 @@
     "comingSoon": "This step is coming soon.",
     "navigation": {
       "back": "Back",
-      "next": "Next"
+      "next": "Next",
+      "busyHint": "AI is still working on this step — please wait for it to finish."
     },
     "script": {
       "version": {
@@ -1202,6 +1203,8 @@
       "uploadButton": "Transcribe video",
       "transcribingHint": "Transcribing audio and sampling video frames — this can take a bit longer than a text-only transcription.",
       "scriptLabel": "Script",
+      "copyScript": "Copy script",
+      "copied": "Copied",
       "editScript": "Edit",
       "doneEditing": "Done",
       "scriptResultHint": "The fetched transcript will appear here — review and edit it before analyzing.",
@@ -1217,6 +1220,8 @@
       "scriptLanguageEn": "English",
       "analyzeButton": "Analyze script",
       "analyzingHint": "Analyzing the script and visuals — this can take a little while.",
+      "doNotLeaveHint": "Please don't close or leave this page while it's running — progress is lost if you do.",
+      "leaveConfirm": "AI is still working on your script. If you leave now, this run's progress will be lost. Leave anyway?",
       "costEstimate": "Estimated cost: ${amount} ({confidence} confidence)",
       "confidence": {
         "low": "low",
@@ -1245,10 +1250,14 @@
       "scenesTitle": "Scene breakdown",
       "scenesCount": "{count, plural, one {# scene} other {# scenes}}",
       "scenesTotalDuration": "{duration} total",
+      "scenesCharacterCount": "{count, plural, one {# character} other {# characters}}",
+      "characterRosterTitle": "Characters throughout this video",
+      "characterRosterHint": "Locked appearance — reused verbatim when generating images in every scene to keep them the same person.",
       "heroMoment": "Hero moment",
       "sceneContent": "Content",
       "sceneVisual": "Visual direction",
       "sceneShot": "Shot",
+      "sceneCharacters": "Characters in this scene",
       "sceneAssets": "Assets needed",
       "sceneDuration": "Duration",
       "narrativeRoles": {
@@ -1306,7 +1315,6 @@
         "briefPlaceholder": "What should the video focus on? e.g. Introduce the Cau Dat Arabica to office workers, end with a 10% discount.",
         "providerLabel": "Write with",
         "durationLabel": "Target length (s)",
-        "skillHint": "The skill selected under \"Analyze with\" below is also applied to the writing.",
         "writeButton": "Write script",
         "writingHint": "The AI is writing the script from your documents — this usually takes 10–40 seconds."
       },
@@ -1375,6 +1383,7 @@
       "deleteTitle": "Delete skill?",
       "deleteDescription": "\"{name}\" and its example links will be deleted. Approved versions stay in their videos.",
       "hasInstructions": "Instructions",
+      "hasGraphicsStyle": "Has graphics style",
       "origin": {
         "app": "Sunbee",
         "anthropic": "Agent Skill"
@@ -1394,6 +1403,10 @@
         "numberInvalid": "Enter a number ≥ 0.",
         "description": "Description",
         "descriptionPlaceholder": "When to use this skill",
+        "type": "Skill type",
+        "typeScript": "Script",
+        "typeImage": "Graphics",
+        "typeHint": "A script skill applies when writing the script; a graphics skill applies when generating images in the Assets step.",
         "styleSection": "Style",
         "genre": "Genre",
         "genrePlaceholder": "e.g. vlog, review, tutorial",
@@ -1406,7 +1419,14 @@
         "styleHint": "Leave the style empty if the skill only carries instructions.",
         "instructions": "Instructions",
         "instructionsHint": "Rules the AI always follows with this skill (Markdown is fine).",
-        "instructionsPlaceholder": "e.g. Keep every scene under 8 seconds. Open with a question hook."
+        "instructionsPlaceholder": "e.g. Keep every scene under 8 seconds. Open with a question hook.",
+        "graphicsStyle": "Graphics style",
+        "graphicsStyleHint": "The art style the AI always follows when generating images in the Assets step (colors, line work, character proportions, identity rules...).",
+        "graphicsStylePlaceholder": "e.g. Chibi paper-cut style, thick brown outlines, warm pastel colors...",
+        "referenceImage": "Reference illustration (optional)",
+        "referenceImageHint": "The AI only takes the visual STYLE from this image (colors, line work, texture...), never its subject or content. Applied together with the graphics style above to every image generated in the Assets step.",
+        "referenceImageUpload": "Upload image",
+        "referenceImageRemove": "Remove image"
       },
       "examples": {
         "title": "Examples",
@@ -1485,6 +1505,10 @@
       "outdated": "The asset description changed since this was picked.",
       "change": "Change",
       "remove": "Remove",
+      "graphicsSkillLabel": "Graphics style (optional)",
+      "graphicsSkillPlaceholder": "Keep a saved style",
+      "graphicsSkillNone": "None",
+      "graphicsSkillHint": "Applied to every AI-generated image in this step (OpenAI/Cloudflare). A style that needs a transparent background requires the OpenAI source (gpt-image-1.5) — Cloudflare can't output a real transparent background.",
       "assetSources": {
         "stock": "Stock",
         "generate": "Generate",
@@ -1713,7 +1737,11 @@
       "namePlaceholder": "Skill name (leave empty to let the AI name it)",
       "pickSkill": "Choose a skill",
       "noSkills": "No skills yet — create a new one first.",
-      "refineHint": "Cumulative training: the AI re-reads everything this skill learned before, plus what you add below, and merges it into the current guide — new material refines the skill, it doesn't replace it. Saved as a new version."
+      "refineHint": "Cumulative training: the AI re-reads everything this skill learned before, plus what you add below, and merges it into the current guide — new material refines the skill, it doesn't replace it. Saved as a new version.",
+      "type": "Skill type",
+      "typeScript": "Script",
+      "typeImage": "Graphics",
+      "typeHint": "A script skill learns from videos/documents to write scripts. A graphics skill learns from many example images to keep generated images visually consistent in the Assets step."
     },
     "sources": {
       "title": "2. What to learn from",
@@ -1738,6 +1766,11 @@
         "title": "From documents",
         "hint": "Voice or brand guides, sample texts, product or subject knowledge. New ones are saved to the document library too.",
         "empty": "No documents yet."
+      },
+      "image": {
+        "title": "Example images",
+        "hint": "Upload many images in the same style (characters, scenery, items...); the AI analyzes their shared visual style and writes it into a graphics skill.",
+        "empty": "No example images yet."
       },
       "refineHint": "The skill keeps everything it learned. Add new material below; drop a learned source only if it no longer fits.",
       "addNew": "Add new material",
@@ -1766,8 +1799,10 @@
       "submit": "Train",
       "training": "Training… long sources are read in full first, this can take a few minutes",
       "needsSource": "Add or pick at least one video or document.",
+      "needsSourceImage": "Add or pick at least one example image.",
       "needsSkill": "Choose the skill to train.",
       "summary": "Learns from {videos, plural, one {# script} other {# scripts}} and {documents, plural, one {# document} other {# documents}}.",
+      "summaryImage": "Learns from {images, plural, one {# example image} other {# example images}}.",
       "fewVideos": "Add a few more videos for a more accurate voice.",
       "submitRefine": "Train (merge)",
       "summaryRefine": "Merges {learned, plural, one {# learned source} other {# learned sources}} with {added, plural, =0 {nothing new} one {# new one} other {# new ones}}.",
@@ -1824,6 +1859,10 @@
         "paste": "Paste text",
         "hint": "PDF, DOCX, TXT, MD, CSV, JSON.",
         "noText": "No text could be read from this file."
+      },
+      "image": {
+        "upload": "Upload images",
+        "hint": "Pick multiple images at once, up to 10MB each."
       }
     }
   }

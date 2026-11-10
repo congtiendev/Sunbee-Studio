@@ -1,5 +1,9 @@
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
+import {
+  SkeletonCard,
+  SkeletonFormCard,
+} from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { BrainIcon, CheckIcon } from "@/icons";
@@ -63,8 +68,24 @@ export default function TrainingPage() {
 
       {!state.skills || !state.sourceLists ? (
         !state.loadError && (
-          <div className="flex justify-center py-12">
-            <Spinner />
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <div className="min-w-0 space-y-5 xl:col-span-2">
+              <SkeletonFormCard rows={1} />
+              <div className="card-surface flex flex-col gap-4 p-5 sm:p-6">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-3.5 w-2/3" />
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+              <SkeletonFormCard rows={2} />
+            </div>
+            <div className="card-surface flex h-fit flex-col gap-4 p-5">
+              <Skeleton className="h-5 w-28" />
+              <div className="space-y-3">
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            </div>
           </div>
         )
       ) : (
@@ -127,11 +148,42 @@ function TargetCard({ state }: Props) {
       </RadioGroup>
 
       {state.target === "new" ? (
-        <Input
-          value={state.name}
-          onChange={(e) => state.setName(e.target.value)}
-          placeholder={t("namePlaceholder")}
-        />
+        <>
+          <Input
+            value={state.name}
+            onChange={(e) => state.setName(e.target.value)}
+            placeholder={t("namePlaceholder")}
+          />
+          <Field>
+            <FieldLabel>{t("type")}</FieldLabel>
+            <RadioGroup
+              value={state.newType}
+              onValueChange={(value) =>
+                state.setNewType(value as "script" | "image")
+              }
+              className="flex flex-wrap items-center gap-6"
+            >
+              {(["script", "image"] as const).map((value) => (
+                <Field
+                  key={value}
+                  orientation="horizontal"
+                  className="w-auto gap-2.5"
+                >
+                  <RadioGroupItem id={`training-type-${value}`} value={value} />
+                  <Label
+                    htmlFor={`training-type-${value}`}
+                    className="cursor-pointer"
+                  >
+                    {t(value === "script" ? "typeScript" : "typeImage")}
+                  </Label>
+                </Field>
+              ))}
+            </RadioGroup>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {t("typeHint")}
+            </p>
+          </Field>
+        </>
       ) : skills.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t("noSkills")}
@@ -182,17 +234,21 @@ function SourcesCard({ state }: Props) {
           {t("addNew")}
         </p>
       )}
-      {(state.sourceLists ?? []).map((list) => (
-        <SourcePicker
-          key={list.kind}
-          list={list}
-          selected={state.selection[list.kind] ?? []}
-          onChange={(ids) => state.setKindSelection(list.kind, ids)}
-          ai={{ provider: state.provider, model: state.model }}
-          onAdded={state.addCandidate}
-          learnedIds={state.learnedIdsOf(list.kind)}
-        />
-      ))}
+      {(state.sourceLists ?? [])
+        .filter(
+          (list) => (list.kind === "image") === (state.targetType === "image"),
+        )
+        .map((list) => (
+          <SourcePicker
+            key={list.kind}
+            list={list}
+            selected={state.selection[list.kind] ?? []}
+            onChange={(ids) => state.setKindSelection(list.kind, ids)}
+            ai={{ provider: state.provider, model: state.model }}
+            onAdded={state.addCandidate}
+            learnedIds={state.learnedIdsOf(list.kind)}
+          />
+        ))}
     </Card>
   );
 }
@@ -266,13 +322,14 @@ function RunCard({ state }: Props) {
     medium: tScript("effortMedium"),
     high: tScript("effortHigh"),
   };
-  const { newScripts, newDocuments, learnedKept, learnedScripts } =
+  const { newScripts, newDocuments, newImages, learnedKept, learnedScripts } =
     state.counts;
+  const isImage = state.targetType === "image";
   const refining = state.target === "existing";
-  const added = newScripts + newDocuments;
+  const added = isImage ? newImages : newScripts + newDocuments;
   const nothing = refining ? added + learnedKept === 0 : added === 0;
   const scripts = newScripts + (refining ? learnedScripts : 0);
-  const fewScripts = scripts > 0 && scripts < 3;
+  const fewScripts = !isImage && scripts > 0 && scripts < 3;
 
   return (
     <Card className="gap-4 p-5">
@@ -357,14 +414,16 @@ function RunCard({ state }: Props) {
           {refining && !state.skillId
             ? t("needsSkill")
             : nothing
-              ? t("needsSource")
+              ? t(isImage ? "needsSourceImage" : "needsSource")
               : (refining
                   ? t("summaryRefine", { learned: learnedKept, added }) +
                     (added === 0 ? ` ${t("resynthesize")}` : "")
-                  : t("summary", {
-                      videos: newScripts,
-                      documents: newDocuments,
-                    })) + (fewScripts ? ` ${t("fewVideos")}` : "")}
+                  : isImage
+                    ? t("summaryImage", { images: newImages })
+                    : t("summary", {
+                        videos: newScripts,
+                        documents: newDocuments,
+                      })) + (fewScripts ? ` ${t("fewVideos")}` : "")}
         </span>
       </div>
     </Card>
@@ -412,7 +471,13 @@ function ResultCard({ state }: Props) {
           ))}
         </div>
       )}
-      <GuidePreview text={result.skill.instructions ?? ""} />
+      <GuidePreview
+        text={
+          result.skill.type === "image"
+            ? (result.skill.graphicsStyle ?? "")
+            : (result.skill.instructions ?? "")
+        }
+      />
       <div className="flex flex-wrap items-center gap-3">
         <p className="me-auto text-xs text-gray-500 dark:text-gray-400">
           {t("useHint")}

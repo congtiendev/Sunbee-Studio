@@ -58,10 +58,12 @@ export function snapshotOf(skill: StyleTemplate): SkillSnapshot {
   return {
     name: skill.name,
     description: skill.description ?? "",
+    type: skill.type ?? "script",
     genre: skill.genre,
     styleTags: skill.styleTags,
     toneDescription: skill.toneDescription,
     instructions: skill.instructions ?? "",
+    graphicsStyle: skill.graphicsStyle ?? "",
     pacing: skill.pacing,
     resourceInventory: skill.resourceInventory,
   };

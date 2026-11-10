@@ -1,7 +1,7 @@
+import { SkeletonTable } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import {
   Table,
   TableBody,
@@ -12,13 +12,13 @@ import {
 import { useTranslations } from "@/i18n";
 import { TrashBinIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
-import type { ScriptAnalysisRecord } from "@shared/types";
+import type { ScriptAnalysisListItem } from "@shared/types";
 import { useEffect, useState } from "react";
 
 export default function ScriptAnalysesSection() {
   const t = useTranslations("databaseAdmin.scriptAnalyses");
 
-  const [rows, setRows] = useState<ScriptAnalysisRecord[]>([]);
+  const [rows, setRows] = useState<ScriptAnalysisListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +26,7 @@ export default function ScriptAnalysesSection() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiClient.script.history();
+      const data = await apiClient.script.historyOverview();
       setRows(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -54,7 +54,7 @@ export default function ScriptAnalysesSection() {
         )}
 
         {loading ? (
-          <Spinner />
+          <SkeletonTable rows={6} cols={5} />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -101,7 +101,7 @@ export default function ScriptAnalysesSection() {
                       {row.sourceUrl ? ` · ${row.sourceUrl}` : ""}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {row.scenes.length}
+                      {row.sceneCount}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-end">
                       <Button

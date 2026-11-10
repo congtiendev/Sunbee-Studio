@@ -1187,7 +1187,8 @@
     "comingSoon": "Bước này sắp ra mắt.",
     "navigation": {
       "back": "Quay lại",
-      "next": "Tiếp theo"
+      "next": "Tiếp theo",
+      "busyHint": "AI đang xử lý bước này — vui lòng chờ xử lý xong."
     },
     "script": {
       "version": {
@@ -1223,6 +1224,8 @@
       "uploadButton": "Chuyển video thành văn bản",
       "transcribingHint": "Đang chuyển âm thanh thành văn bản và trích khung hình video — có thể lâu hơn so với chỉ chuyển văn bản.",
       "scriptLabel": "Kịch bản",
+      "copyScript": "Sao chép kịch bản",
+      "copied": "Đã sao chép",
       "editScript": "Chỉnh sửa",
       "doneEditing": "Xong",
       "scriptResultHint": "Transcript lấy được sẽ hiện ở đây — xem lại và chỉnh sửa trước khi phân tích.",
@@ -1238,6 +1241,8 @@
       "scriptLanguageEn": "Tiếng Anh",
       "analyzeButton": "Phân tích kịch bản",
       "analyzingHint": "Đang phân tích kịch bản và hình ảnh — có thể mất một chút thời gian.",
+      "doNotLeaveHint": "Vui lòng không đóng hoặc rời khỏi trang trong lúc xử lý — rời đi sẽ làm mất tiến trình.",
+      "leaveConfirm": "AI vẫn đang xử lý kịch bản của bạn. Nếu rời đi bây giờ, kết quả của lần chạy này sẽ bị mất. Vẫn muốn rời đi?",
       "costEstimate": "Chi phí ước tính: ${amount} (độ tin cậy {confidence})",
       "confidence": {
         "low": "thấp",
@@ -1266,10 +1271,14 @@
       "scenesTitle": "Phân cảnh",
       "scenesCount": "{count, plural, one {# cảnh} other {# cảnh}}",
       "scenesTotalDuration": "Tổng {duration}",
+      "scenesCharacterCount": "{count, plural, one {# nhân vật} other {# nhân vật}}",
+      "characterRosterTitle": "Nhân vật xuyên suốt video",
+      "characterRosterHint": "Ngoại hình đã chốt — dùng lại nguyên văn khi tạo ảnh ở mọi cảnh để giữ đúng một người.",
       "heroMoment": "Khoảnh khắc nổi bật",
       "sceneContent": "Nội dung",
       "sceneVisual": "Hướng hình ảnh",
       "sceneShot": "Cỡ cảnh",
+      "sceneCharacters": "Nhân vật trong cảnh",
       "sceneAssets": "Tài nguyên cần",
       "sceneDuration": "Thời lượng",
       "narrativeRoles": {
@@ -1327,7 +1336,6 @@
         "briefPlaceholder": "Video nên tập trung vào gì? VD: Giới thiệu Arabica Cầu Đất cho dân văn phòng, kết thúc bằng ưu đãi 10%.",
         "providerLabel": "Viết bằng",
         "durationLabel": "Thời lượng (giây)",
-        "skillHint": "Skill chọn ở phần \"Phân tích bằng\" bên dưới cũng được áp dụng khi viết.",
         "writeButton": "Viết kịch bản",
         "writingHint": "AI đang viết kịch bản từ tài liệu — thường mất 10–40 giây."
       },
@@ -1396,6 +1404,7 @@
       "deleteTitle": "Xoá skill?",
       "deleteDescription": "\"{name}\" và liên kết ví dụ sẽ bị xoá. Các bản đã duyệt vẫn còn trong video.",
       "hasInstructions": "Có hướng dẫn",
+      "hasGraphicsStyle": "Có phong cách đồ hoạ",
       "origin": {
         "app": "Sunbee",
         "anthropic": "Agent Skill"
@@ -1415,6 +1424,10 @@
         "numberInvalid": "Nhập số ≥ 0.",
         "description": "Mô tả",
         "descriptionPlaceholder": "Khi nào dùng skill này",
+        "type": "Loại skill",
+        "typeScript": "Kịch bản",
+        "typeImage": "Đồ hoạ",
+        "typeHint": "Skill kịch bản áp dụng khi viết kịch bản; skill đồ hoạ áp dụng khi tạo ảnh ở bước Tài sản.",
         "styleSection": "Phong cách",
         "genre": "Thể loại",
         "genrePlaceholder": "VD: vlog, review, hướng dẫn",
@@ -1427,7 +1440,14 @@
         "styleHint": "Để trống phần phong cách nếu skill chỉ có hướng dẫn.",
         "instructions": "Hướng dẫn",
         "instructionsHint": "Quy tắc AI luôn tuân theo khi dùng skill này (có thể viết Markdown).",
-        "instructionsPlaceholder": "VD: Mỗi cảnh tối đa 8 giây. Mở đầu bằng một câu hỏi."
+        "instructionsPlaceholder": "VD: Mỗi cảnh tối đa 8 giây. Mở đầu bằng một câu hỏi.",
+        "graphicsStyle": "Phong cách đồ hoạ",
+        "graphicsStyleHint": "Mô tả phong cách tạo hình AI luôn tuân theo khi tạo ảnh ở bước Tài sản (màu sắc, nét vẽ, tỉ lệ nhân vật, quy tắc nhận diện...).",
+        "graphicsStylePlaceholder": "VD: Phong cách chibi nét giấy, viền nâu đậm, màu pastel ấm...",
+        "referenceImage": "Ảnh minh hoạ (tuỳ chọn)",
+        "referenceImageHint": "AI chỉ lấy PHONG CÁCH thị giác từ ảnh này (màu sắc, nét vẽ, chất liệu...), không copy lại nội dung/chủ thể của ảnh. Áp dụng cùng với phong cách đồ hoạ ở trên cho mọi ảnh tạo ra ở bước Tài sản.",
+        "referenceImageUpload": "Tải ảnh lên",
+        "referenceImageRemove": "Xoá ảnh"
       },
       "examples": {
         "title": "Ví dụ",
@@ -1506,6 +1526,10 @@
       "outdated": "Mô tả tài nguyên đã thay đổi sau khi chọn.",
       "change": "Đổi",
       "remove": "Bỏ chọn",
+      "graphicsSkillLabel": "Phong cách đồ hoạ (tuỳ chọn)",
+      "graphicsSkillPlaceholder": "Giữ theo một phong cách đã lưu",
+      "graphicsSkillNone": "Không dùng",
+      "graphicsSkillHint": "Áp dụng cho mọi ảnh AI tạo ra trong bước này (OpenAI/Cloudflare). Chọn skill có nền trong suốt cần dùng nguồn OpenAI (gpt-image-1.5) — Cloudflare không xuất được nền trong suốt thật.",
       "assetSources": {
         "stock": "Stock",
         "generate": "Tạo mới",
@@ -1787,7 +1811,11 @@
       "namePlaceholder": "Tên skill (để trống để AI tự đặt)",
       "pickSkill": "Chọn skill",
       "noSkills": "Chưa có skill nào — hãy tạo skill mới trước.",
-      "refineHint": "Huấn luyện tích luỹ: AI đọc lại mọi nguồn skill đã học trước đây cùng những gì bạn thêm bên dưới, rồi tổng hợp vào bộ hướng dẫn hiện tại — nguồn mới giúp tinh chỉnh skill chứ không thay thế nó. Kết quả lưu thành phiên bản mới."
+      "refineHint": "Huấn luyện tích luỹ: AI đọc lại mọi nguồn skill đã học trước đây cùng những gì bạn thêm bên dưới, rồi tổng hợp vào bộ hướng dẫn hiện tại — nguồn mới giúp tinh chỉnh skill chứ không thay thế nó. Kết quả lưu thành phiên bản mới.",
+      "type": "Loại skill",
+      "typeScript": "Kịch bản",
+      "typeImage": "Đồ hoạ",
+      "typeHint": "Skill kịch bản học từ video/tài liệu để viết kịch bản. Skill đồ hoạ học từ nhiều ảnh mẫu để tạo ảnh đồng nhất phong cách ở bước Tài sản."
     },
     "sources": {
       "title": "2. Nguồn để học",
@@ -1812,6 +1840,11 @@
         "title": "Viết từ tài liệu",
         "hint": "Hướng dẫn giọng văn/thương hiệu, văn bản mẫu, kiến thức sản phẩm hoặc chuyên môn. Tài liệu mới cũng được lưu vào Thư viện tài liệu.",
         "empty": "Chưa có tài liệu nào."
+      },
+      "image": {
+        "title": "Ảnh mẫu",
+        "hint": "Tải nhiều ảnh cùng phong cách (nhân vật, bối cảnh, item...); AI phân tích phong cách thị giác chung của chúng để viết thành skill đồ hoạ.",
+        "empty": "Chưa có ảnh mẫu nào."
       },
       "refineHint": "Skill giữ lại mọi thứ đã học. Thêm nguồn mới bên dưới; chỉ bỏ một nguồn đã học khi nó không còn phù hợp.",
       "addNew": "Thêm nguồn mới",
@@ -1840,8 +1873,10 @@
       "submit": "Huấn luyện",
       "training": "Đang huấn luyện… nguồn dài được đọc trọn vẹn trước, có thể mất vài phút",
       "needsSource": "Hãy thêm hoặc chọn ít nhất một video hoặc tài liệu.",
+      "needsSourceImage": "Hãy thêm hoặc chọn ít nhất một ảnh mẫu.",
       "needsSkill": "Hãy chọn skill cần huấn luyện.",
       "summary": "Học từ {videos} kịch bản và {documents} tài liệu.",
+      "summaryImage": "Học từ {images} ảnh mẫu.",
       "fewVideos": "Thêm vài video nữa để giọng văn chính xác hơn.",
       "submitRefine": "Huấn luyện (tổng hợp)",
       "summaryRefine": "Tổng hợp {learned} nguồn đã học với {added} nguồn mới.",
@@ -1898,6 +1933,10 @@
         "paste": "Dán văn bản",
         "hint": "PDF, DOCX, TXT, MD, CSV, JSON.",
         "noText": "Không đọc được chữ nào từ file này."
+      },
+      "image": {
+        "upload": "Tải ảnh lên",
+        "hint": "Có thể chọn nhiều ảnh cùng lúc, tối đa 10MB mỗi ảnh."
       }
     }
   }

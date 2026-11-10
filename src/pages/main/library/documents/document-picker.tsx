@@ -1,6 +1,6 @@
+import { SkeletonLines } from "@/components/shared/skeleton-blocks";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { paths } from "@/lib/paths";
 import { cn } from "@/utils";
@@ -26,11 +26,7 @@ export default function DocumentPicker({
   const t = useTranslations("videoStudio.documents");
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-4">
-        <Spinner />
-      </div>
-    );
+    return <SkeletonLines count={3} />;
   }
   if (documents.length === 0) {
     return (

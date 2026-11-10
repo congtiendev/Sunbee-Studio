@@ -16,6 +16,7 @@ import DocumentPicker from "@/pages/main/library/documents/document-picker";
 import type { DocumentSummary } from "@shared/types";
 import { useEffect, useState } from "react";
 import ProviderModelFields from "../provider-model-fields";
+import SkillSelectField from "../skill-select-field";
 import type { ScriptLanguage } from "../use-script-step";
 import type { ScriptSourcePanelProps } from "./registry";
 
@@ -107,8 +108,8 @@ export default function DocumentPanel({ step }: ScriptSourcePanelProps) {
             </SelectContent>
           </Select>
         </Field>
+        <SkillSelectField step={step} className="w-56" />
       </div>
-      <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">{t("fromDocument.skillHint")}</p>
 
       <div>
         <Button

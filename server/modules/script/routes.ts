@@ -14,7 +14,7 @@ import type {
 import {
   deleteScriptAnalysis,
   listAnalyzedSummaries,
-  listScriptAnalyses,
+  listScriptAnalysesLight,
   listVersionsForVideo,
   saveScriptVersion,
 } from "./repo.js";
@@ -230,7 +230,9 @@ router.get("/history", requireAuth, requireVideoAccess, (req, res) => {
     res.json(listVersionsForVideo(req.user!.id, videoId));
     return;
   }
-  res.json(listScriptAnalyses(req.user!.id, req.user!.role === "admin"));
+  // No videoId: a dashboard/admin-style list across every video, so only the
+  // light projection (no script text/frames/scenes bodies) is sent.
+  res.json(listScriptAnalysesLight(req.user!.id, req.user!.role === "admin"));
 });
 
 router.delete("/history/:id", requireAuth, (req, res) => {

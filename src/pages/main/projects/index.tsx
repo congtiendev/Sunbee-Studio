@@ -2,11 +2,11 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { NameDialog } from "@/components/shared/name-dialog";
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
+import { SkeletonCardGrid } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { FolderIcon, PlusIcon, SearchIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
@@ -86,11 +86,7 @@ export default function ProjectsPage() {
       )}
 
       {projects === null ? (
-        !error && (
-          <div className="flex justify-center py-12">
-            <Spinner />
-          </div>
-        )
+        !error && <SkeletonCardGrid count={6} />
       ) : projects.length === 0 ? (
         <Card className="items-center gap-3 py-12 text-center">
           <FolderIcon className="size-10 text-gray-400 dark:text-gray-600" />

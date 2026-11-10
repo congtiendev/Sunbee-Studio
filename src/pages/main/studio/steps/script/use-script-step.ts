@@ -6,6 +6,7 @@ import {
 } from "@shared/script-cost-estimate";
 import type {
   LinkScriptOrigin,
+  RecurringCharacter,
   ScriptAnalysisRecord,
   ScriptAnalyzeResult,
   ScriptScene,
@@ -72,7 +73,9 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   /** null → same length as the template. */
   const [templateDurationSec, setTemplateDurationSec] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ScriptAnalyzeResult | null>(null);
+  const [result, setResult] = useState<
+    (ScriptAnalyzeResult & { characterRoster?: RecurringCharacter[] }) | null
+  >(null);
   const [styleTemplates, setStyleTemplates] = useState<StyleTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState(NO_TEMPLATE);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -95,6 +98,18 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   const [approved, setApproved] = useState(false);
   const [approving, setApproving] = useState(false);
 
+  const busy = fetching || transcribing || writing || analyzing;
+
+  // Seconds elapsed since the current AI call started — shown so a long
+  // fetch/analysis doesn't look stalled.
+  const [elapsedSec, setElapsedSec] = useState(0);
+  useEffect(() => {
+    if (!busy) return;
+    setElapsedSec(0);
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [busy]);
+
   const changeProvider = (next: AnalyzeProvider) => {
     setProvider(next);
     setModel(defaultModelFor(next));
@@ -116,7 +131,8 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   const refreshTemplates = () =>
     apiClient.templates
       .list()
-      .then(setStyleTemplates)
+      // Image-type skills apply to the Assets step, not script writing.
+      .then((templates) => setStyleTemplates(templates.filter((t) => (t.type ?? "script") === "script")))
       .catch(() => {
         // Non-critical: the style-template picker just stays empty.
       });
@@ -160,7 +176,12 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     if (record.templateSourceId) setTemplateVersionId(record.templateSourceId);
     setResult(
       record.kind === "analyzed" && record.style
-        ? { scenes: record.scenes, resources: record.resources, style: record.style }
+        ? {
+            scenes: record.scenes,
+            resources: record.resources,
+            style: record.style,
+            characterRoster: record.characterRoster,
+          }
         : null,
     );
     setResultKey((key) => key + 1);
@@ -335,7 +356,12 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         videoId,
       });
       setScriptTextRaw(res.scriptText);
-      setResult({ scenes: res.scenes, resources: res.resources, style: res.style });
+      setResult({
+        scenes: res.scenes,
+        resources: res.resources,
+        style: res.style,
+        characterRoster: res.characterRoster,
+      });
       setResultKey((key) => key + 1);
       setCurrentVersionId(res.versionId);
       onAnalyzed?.();
@@ -386,7 +412,12 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         resources: result.resources,
         style: result.style,
       });
-      setResult({ scenes: record.scenes, resources: record.resources, style: result.style });
+      setResult({
+        scenes: record.scenes,
+        resources: record.resources,
+        style: result.style,
+        characterRoster: record.characterRoster,
+      });
       setResultKey((key) => key + 1);
       setCurrentVersionId(record.id);
       setApproved(true);
@@ -417,7 +448,8 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     transcribing,
     writing,
     analyzing,
-    busy: fetching || transcribing || writing || analyzing,
+    busy,
+    elapsedSec,
     sourceDocumentIds,
     setSourceDocumentIds,
     brief,

@@ -1,5 +1,6 @@
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
+import { SkeletonMediaGrid } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -200,9 +201,7 @@ export default function AssetLibraryPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <SkeletonMediaGrid count={8} />
       ) : assets.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-700">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("empty")}</p>

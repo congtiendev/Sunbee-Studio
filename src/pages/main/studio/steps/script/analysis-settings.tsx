@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/select";
 import { useTranslations } from "@/i18n";
 import ProviderModelFields from "./provider-model-fields";
-import { NO_TEMPLATE, type AnalyzeEffort, type ScriptStepState } from "./use-script-step";
+import SkillSelectField from "./skill-select-field";
+import type { AnalyzeEffort, ScriptStepState } from "./use-script-step";
 
 /** Provider, model, effort and skill used by "Analyze script". */
 export default function AnalysisSettings({ step }: { step: ScriptStepState }) {
@@ -54,34 +55,7 @@ export default function AnalysisSettings({ step }: { step: ScriptStepState }) {
         </p>
       ) : null}
 
-      {step.styleTemplates.length > 0 && (
-        <Field>
-          <FieldLabel>{t("styleTemplateLabel")}</FieldLabel>
-          <Select
-            value={step.selectedTemplateId}
-            onValueChange={(value) => step.setSelectedTemplateId(value as string)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("styleTemplatePlaceholder")}>
-                {() =>
-                  step.selectedTemplateId === NO_TEMPLATE
-                    ? t("styleTemplateNone")
-                    : (step.styleTemplates.find((tpl) => tpl.id === step.selectedTemplateId)
-                        ?.name ?? t("styleTemplatePlaceholder"))
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_TEMPLATE}>{t("styleTemplateNone")}</SelectItem>
-              {step.styleTemplates.map((template) => (
-                <SelectItem key={template.id} value={template.id}>
-                  {template.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      )}
+      <SkillSelectField step={step} />
     </>
   );
 }

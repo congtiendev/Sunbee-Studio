@@ -24,6 +24,8 @@ export interface AnalyzeScriptInput {
   effort?: AiEffort;
   /** Skill, approved examples and reference documents to ground the analysis. */
   context?: ContextInput;
+  /** Character roster already locked in for this script (name + description, free text) — use these exact names instead of inventing new ones. */
+  knownCharacters?: string;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -31,6 +33,7 @@ const DEFAULT_SYSTEM_PROMPT =
   "- content: nội dung/thoại/hành động diễn ra trong cảnh.\n" +
   '- visualDescription: mô tả hình ảnh CHI TIẾT và SỐNG ĐỘNG, viết như đang kể lại cảnh quay cho một người hoàn toàn chưa xem video và sẽ không được xem ảnh minh hoạ — họ chỉ có đúng đoạn mô tả này để hình dung. Tối thiểu 3-4 câu cụ thể, nêu rõ: bối cảnh/địa điểm, thời điểm trong ngày và kiểu ánh sáng, nhân vật xuất hiện (ngoại hình, trang phục, tư thế, biểu cảm, hành động đang làm), màu sắc chủ đạo, bố cục khung hình, và các chi tiết đáng chú ý trong nền hoặc chữ/overlay nếu có. Tránh câu chung chung kiểu "một người đang đứng trong phòng" — hãy cụ thể hoá tối đa những gì thực sự quan sát được (hoặc, nếu không có khung hình tham khảo, những gì hợp lý nhất để hình dung từ kịch bản).\n' +
   "- thời lượng ước tính tính bằng giây, vai trò trong mạch truyện (narrativeRole), cỡ cảnh gợi ý (shotSize), chuyển động máy quay gợi ý (cameraMovement), có phải là cảnh cao trào/đáng chia sẻ nhất không (heroMoment), và danh sách tài nguyên cần cho riêng cảnh đó (requiredAssets: loại, mô tả, nguồn sinh/tìm/đã có).\n" +
+  "- characters: danh sách NHÂN VẬT (người/con vật có vai trò riêng trong câu chuyện) xuất hiện trong cảnh này, mỗi người gồm `name` (tên/định danh ngắn gọn) và `action` (hành động/cử chỉ cụ thể họ đang làm trong cảnh, ngắn gọn). Dùng ĐÚNG MỘT tên nhất quán cho cùng một nhân vật xuyên suốt toàn bộ kịch bản (không đổi cách gọi giữa chừng, ví dụ không lúc gọi \"Người dẫn chuyện\" lúc gọi \"MC\") để đếm và gom nhóm chính xác được số nhân vật khác nhau trong cả video. Cảnh không có ai xuất hiện (chỉ cảnh vật/đồ vật/chữ) thì để mảng rỗng.\n" +
   "Với mỗi tài nguyên trong requiredAssets, chọn đúng `source` theo nguyên tắc: NHÂN VẬT cụ thể (ngoại hình, trang phục, biểu cảm riêng của một người/con vật trong câu chuyện) và VẬT PHẨM/đồ vật đặc thù (có chi tiết/hình dạng riêng, hoặc ảnh ghép có chú thích tuỳ chỉnh như bản đồ có ghim, biểu đồ có số liệu riêng, ảnh có chữ overlay cụ thể) hầu như chắc chắn KHÔNG có sẵn y hệt trên mạng → dùng `generate` (cần AI tạo mới). Ngược lại, BỐI CẢNH/NỀN chung chung (văn phòng, thiên nhiên, thành phố, bầu trời, đường phố, phong cảnh, b-roll minh hoạ không cần đúng y hệt, chỉ cần đúng không khí/chủ đề) thường tìm được ảnh/video có sẵn → dùng `stock` (tìm trên mạng), không cần tạo mới tốn kém. Chỉ dùng `provided` khi rõ ràng đây là tài sản riêng của người dùng (logo thương hiệu của họ, ảnh thật họ tự chụp...).\n" +
   "Ngoài ra liệt kê tài nguyên tổng thể cần chuẩn bị để quay/dựng (số cảnh quay, giọng đọc cần, nhạc nền, hình ảnh/b-roll cần, ghi chú khác), và tóm tắt phong cách tổng thể (thể loại, các từ khoá phong cách, mô tả tone/giọng điệu) để có thể lưu lại dùng cho các video sau. Trả lời bằng cùng ngôn ngữ với kịch bản gốc.";
 
@@ -75,10 +78,15 @@ export const analyzeScriptTask = defineTask<
   async run(input, ctx) {
     const provider = providerFor(ctx, input.provider);
     const hasFrames = input.frames.length > 0;
+    const knownCharacters = input.knownCharacters?.trim();
     const system =
       promptOf(ctx, this, "system") +
       buildContext(input.context ?? {}) +
-      (hasFrames ? `\n\n${promptOf(ctx, this, "framesHint")}` : "");
+      (hasFrames ? `\n\n${promptOf(ctx, this, "framesHint")}` : "") +
+      (knownCharacters
+        ? `\n\nDanh sách nhân vật đã chốt trước cho toàn bộ kịch bản (đoạn bạn đang phân tích chỉ là MỘT PHẦN của kịch bản dài hơn):\n${knownCharacters}\n` +
+          "Với mỗi nhân vật xuất hiện trong đoạn này, nếu khớp một nhân vật trong danh sách trên thì PHẢI dùng ĐÚNG tên đã cho (không tự đổi cách viết/viết tắt). Chỉ thêm nhân vật mới ngoài danh sách này nếu đoạn này thực sự có người/con vật khác không nằm trong danh sách."
+        : "");
 
     const result = await provider.generateStructured<ScriptAnalyzeResult>({
       maxTokens: ANALYSIS_PASSAGE_OUTPUT_TOKENS,

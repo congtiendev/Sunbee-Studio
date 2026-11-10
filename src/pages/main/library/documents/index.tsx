@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SkeletonTable } from "@/components/shared/skeleton-blocks";
 import { Spinner } from "@/components/ui/spinner";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import { useTranslations } from "@/i18n";
@@ -148,9 +149,7 @@ export default function VideoStudioDocumentsPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Spinner />
-        </div>
+        <SkeletonTable rows={6} cols={6} />
       ) : documents.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-700">
           <FileIcon className="mx-auto mb-3 size-8 text-gray-400" />

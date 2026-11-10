@@ -212,6 +212,82 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    id: 9,
+    name: "missing_owner_indexes",
+    up: (db) => {
+      db.exec(`
+        -- script_analyses had no indexes at all: every history/by-id lookup
+        -- (user's own or admin's) scanned the full table, including the
+        -- frames_json/script_text blobs of every row.
+        CREATE INDEX idx_script_analyses_user ON script_analyses(user_id);
+        CREATE INDEX idx_script_analyses_video ON script_analyses(video_id);
+        CREATE INDEX idx_script_analyses_kind ON script_analyses(kind, user_id);
+
+        CREATE INDEX idx_projects_user ON projects(user_id);
+        CREATE INDEX idx_categories_user ON categories(user_id);
+        CREATE INDEX idx_style_templates_user ON style_templates(user_id);
+      `);
+    },
+  },
+  {
+    id: 10,
+    name: "character_roster",
+    up: (db) => {
+      db.exec(`
+        -- Recurring characters (appear in 2+ scenes) with a locked appearance
+        -- description, so independent image generations of the same person
+        -- across scenes start from the same wording instead of improvising.
+        ALTER TABLE script_analyses ADD COLUMN character_roster_json TEXT;
+      `);
+    },
+  },
+  {
+    id: 11,
+    name: "skill_graphics_style",
+    up: (db) => {
+      db.exec(`
+        -- A skill is now exactly one type: "script" (instructions/examples/pacing,
+        -- used in the Script step) or "image" (graphics_style, used in the Assets
+        -- step). Existing skills default to "script" (they're all script-purpose
+        -- today). graphics_style is a skill's art-style methodology, folded into
+        -- every image-gen prompt so a whole video's generated art stays consistent.
+        ALTER TABLE style_templates ADD COLUMN type TEXT NOT NULL DEFAULT 'script';
+        ALTER TABLE style_templates ADD COLUMN graphics_style TEXT;
+      `);
+    },
+  },
+  {
+    id: 12,
+    name: "skill_reference_image",
+    up: (db) => {
+      db.exec(`
+        -- type "image" skills: an optional reference illustration (style.
+        -- not content, described into the prompt like graphics_style).
+        -- Stored as a files.id, set only via the dedicated upload endpoint.
+        ALTER TABLE style_templates ADD COLUMN reference_image_file_id TEXT;
+      `);
+    },
+  },
+  {
+    id: 13,
+    name: "training_images",
+    up: (db) => {
+      db.exec(`
+        -- A user's reusable library of example images for training an "image"
+        -- skill (AI reads them and writes graphicsStyle), mirroring how the
+        -- document library backs the "document" training source.
+        CREATE TABLE training_images (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          file_id TEXT NOT NULL REFERENCES files(id),
+          title TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX idx_training_images_user ON training_images(user_id);
+      `);
+    },
+  },
 ];
 
 export function runNumberedMigrations(db: Database.Database): void {

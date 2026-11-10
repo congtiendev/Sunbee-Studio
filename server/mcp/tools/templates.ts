@@ -56,6 +56,7 @@ export function registerTemplateTools(server: McpServer) {
       const user = requireMcpUser(ctx);
       const template = saveTemplate(user.id, {
         name,
+        type: "script",
         genre,
         styleTags: style_tags,
         toneDescription: tone_description,

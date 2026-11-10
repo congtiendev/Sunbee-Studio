@@ -13,7 +13,12 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/i18n";
 import { CheckCircleIcon, PencilIcon, PlusIcon, TrashBinIcon } from "@/icons";
-import type { RequiredAsset, RequiredAssetType, ScriptScene } from "@shared/types";
+import type {
+  RecurringCharacter,
+  RequiredAsset,
+  RequiredAssetType,
+  ScriptScene,
+} from "@shared/types";
 import { useState } from "react";
 import ScenesList from "./scenes-list";
 
@@ -21,6 +26,7 @@ const ASSET_TYPES: RequiredAssetType[] = ["video", "image", "audio", "graphic"];
 
 interface SceneEditorProps {
   scenes: ScriptScene[];
+  characterRoster: RecurringCharacter[];
   approved: boolean;
   approving: boolean;
   /** False when the result isn't tied to a saved version (nothing to approve). */
@@ -34,6 +40,7 @@ interface SceneEditorProps {
  */
 export default function SceneEditor({
   scenes,
+  characterRoster,
   approved,
   approving,
   canApprove,
@@ -256,7 +263,7 @@ export default function SceneEditor({
           ))}
         </div>
       ) : (
-        <ScenesList scenes={scenes} />
+        <ScenesList scenes={scenes} characterRoster={characterRoster} />
       )}
     </div>
   );

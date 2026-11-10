@@ -1,3 +1,4 @@
+import { SkeletonPanel } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import { OverflowTabsList } from "@/components/ui/overflow-tabs";
+import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts";
@@ -510,7 +511,7 @@ export default function PromptsSection() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        {!tasks && !error && <Spinner />}
+        {!tasks && !error && <SkeletonPanel className="h-96" />}
 
         {tasks && (
           <Tabs

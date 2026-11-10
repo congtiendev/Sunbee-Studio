@@ -9,8 +9,9 @@ import type { Caller } from "../../../services/skills/skills.js";
  * How the AI should read a piece of material:
  * - "sample": writing by the author — learn the voice by comparing samples;
  * - "reference": guides, rules, sample texts, subject knowledge — follow and summarize.
+ * - "visual": example images for an image skill — read by a vision call, not `text`.
  */
-export type MaterialRole = "sample" | "reference";
+export type MaterialRole = "sample" | "reference" | "visual";
 
 /** One piece of material, loaded and ready for the training prompt. */
 export interface TrainingMaterial {
@@ -19,6 +20,8 @@ export interface TrainingMaterial {
   title: string;
   text: string;
   role: MaterialRole;
+  /** "visual" role only: the image(s), as data URLs, for a vision call. */
+  images?: string[];
   /** A video's analyzed scenes: adds the visual/editing style. */
   scenes?: ScriptScene[];
   /**

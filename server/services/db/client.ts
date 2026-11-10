@@ -131,6 +131,11 @@ export function getDb(): Database.Database {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
   db = new Database(dbPath);
+  // Single-process, mixed read/write workload: WAL lets reads run alongside
+  // writes instead of blocking, NORMAL skips the extra fsync WAL already
+  // makes safe for process (not OS) crashes.
+  db.pragma("journal_mode = WAL");
+  db.pragma("synchronous = NORMAL");
   runMigrations(db); // baseline schema ("migration 0")
   runNumberedMigrations(db);
   return db;

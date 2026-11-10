@@ -1,3 +1,4 @@
+import { SkeletonLines } from "@/components/shared/skeleton-blocks";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -196,13 +197,13 @@ function NewVideoForm({
   };
 
   if (!projects) {
-    return (
+    return error ? (
       <div className="flex justify-center py-10">
-        {error ? (
-          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-        ) : (
-          <Spinner />
-        )}
+        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+      </div>
+    ) : (
+      <div className="space-y-4 py-2">
+        <SkeletonLines count={3} />
       </div>
     );
   }
@@ -229,9 +230,7 @@ function NewVideoForm({
       />
 
       {categories === null ? (
-        <div className="flex justify-center py-2">
-          <Spinner />
-        </div>
+        <SkeletonLines count={1} />
       ) : (
         <PickOrCreateField
           label={t("category")}

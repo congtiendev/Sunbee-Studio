@@ -28,10 +28,12 @@ import type {
   SkillTrainingRequest,
   SkillTrainingResult,
   SkillVersion,
+  TrainingImageSummary,
   TrainingSourceList,
   SkillImportResult,
   SkillInput,
   SkillUpdateRequest,
+  ScriptAnalysisListItem,
   ScriptAnalysisRecord,
   ScriptAnalysisSummary,
   ScriptApproveRequest,
@@ -199,6 +201,14 @@ export const apiClient = {
     exportUrl: (id: string): string => `/api/templates/${id}/export`,
     delete: (id: string): Promise<void> =>
       request(`/api/templates/${id}`, { method: "DELETE" }),
+    /** type "image" skills: an optional reference illustration (style only). */
+    setReferenceImage: (id: string, file: File): Promise<SkillDetail> => {
+      const formData = new FormData();
+      formData.set("file", file);
+      return requestUpload(`/api/templates/${id}/reference-image`, formData);
+    },
+    deleteReferenceImage: (id: string): Promise<SkillDetail> =>
+      request(`/api/templates/${id}/reference-image`, { method: "DELETE" }),
   },
   script: {
     fetchTranscript: (
@@ -246,8 +256,12 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(req),
       }),
-    history: (videoId?: string): Promise<ScriptAnalysisRecord[]> =>
-      request(`/api/script/history${videoId ? `?videoId=${videoId}` : ""}`),
+    /** Full versions of one video — the body (script text, frames, scenes) included. */
+    history: (videoId: string): Promise<ScriptAnalysisRecord[]> =>
+      request(`/api/script/history?videoId=${videoId}`),
+    /** Every version across all videos, light rows only (dashboard/admin lists). */
+    historyOverview: (): Promise<ScriptAnalysisListItem[]> =>
+      request("/api/script/history"),
     deleteHistory: (id: string): Promise<void> =>
       request(`/api/script/history/${id}`, { method: "DELETE" }),
     /** Saves the (edited) scenes as a new approved version — the examples skills learn from. */
@@ -369,6 +383,12 @@ export const apiClient = {
       request(`/api/training/skills/${skillId}/versions/${versionId}/restore`, {
         method: "POST",
       }),
+    /** Image-skill training material: a reusable library of example images. */
+    uploadImage: (file: File): Promise<TrainingImageSummary> => {
+      const formData = new FormData();
+      formData.set("file", file);
+      return requestUpload("/api/training/images", formData);
+    },
   },
   projects: {
     list: (): Promise<Project[]> => request("/api/projects"),

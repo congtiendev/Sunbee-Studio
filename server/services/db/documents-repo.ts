@@ -78,7 +78,20 @@ export function listDocuments(userId: string, isAdmin: boolean): DocumentSummary
 
 /** Only the given ids the caller may read, in the given order. */
 export function getDocumentsByIds(userId: string, isAdmin: boolean, ids: string[]): DocumentRecord[] {
-  return ids.flatMap((id) => getDocument(userId, isAdmin, id) ?? []);
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = getDb()
+    .prepare(
+      `SELECT ${SUMMARY_COLUMNS}, d.text_content FROM documents d
+       LEFT JOIN users u ON u.id = d.user_id WHERE d.id IN (${placeholders})`,
+    )
+    .all(...ids) as DocumentRow[];
+  const byId = new Map(
+    rows
+      .filter((row) => isAdmin || row.user_id === userId)
+      .map((row) => [row.id, { ...rowToSummary(row), textContent: row.text_content ?? "" }]),
+  );
+  return ids.flatMap((id) => byId.get(id) ?? []);
 }
 
 export function renameDocument(userId: string, isAdmin: boolean, id: string, title: string): boolean {

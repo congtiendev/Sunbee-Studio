@@ -1,3 +1,4 @@
+import { SkeletonCard } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { TrashBinIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
@@ -86,8 +86,10 @@ export default function VersionSheet({
         )}
 
         {loading ? (
-          <div className="flex justify-center py-8">
-            <Spinner />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }, (_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : rows.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">

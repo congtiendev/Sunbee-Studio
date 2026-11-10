@@ -1,3 +1,4 @@
+import { SkeletonLines } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -123,8 +124,9 @@ function DocumentSheetBody({
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     ) : (
-      <div className="flex justify-center py-12">
-        <Spinner />
+      <div className="space-y-6 px-1">
+        <SkeletonLines count={2} />
+        <SkeletonLines count={4} />
       </div>
     );
   }

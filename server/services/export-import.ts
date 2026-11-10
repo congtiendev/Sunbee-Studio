@@ -128,11 +128,16 @@ export function importBundle(
   for (const template of bundle.styleTemplates) {
     saveTemplate(userId, {
       name: template.name,
+      // Older backups predate this field.
+      type: template.type ?? "script",
       genre: template.genre,
       styleTags: template.styleTags,
       pacing: template.pacing,
       toneDescription: template.toneDescription,
       resourceInventory: template.resourceInventory,
+      description: template.description,
+      instructions: template.instructions,
+      graphicsStyle: template.graphicsStyle,
     });
   }
 

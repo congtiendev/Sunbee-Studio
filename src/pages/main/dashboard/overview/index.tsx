@@ -1,13 +1,13 @@
 import { PageMeta } from "@/components/shared/page-meta";
+import { SkeletonPanel, SkeletonStatGrid } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { FolderIcon, LayerIcon, TagIcon, TextIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
 import type {
   AppSettings,
   Project,
-  ScriptAnalysisRecord,
+  ScriptAnalysisListItem,
   StyleTemplate,
   VideoSummary,
 } from "@shared/types";
@@ -23,7 +23,7 @@ import NewVideoDialog from "@/pages/main/projects/new-video-dialog";
 interface OverviewData {
   projects: Project[];
   templates: StyleTemplate[];
-  analyses: ScriptAnalysisRecord[];
+  analyses: ScriptAnalysisListItem[];
   settings: AppSettings;
   recentVideos: VideoSummary[];
 }
@@ -43,7 +43,7 @@ export default function OverviewPage() {
           await Promise.all([
             apiClient.projects.list(),
             apiClient.templates.list(),
-            apiClient.script.history(),
+            apiClient.script.historyOverview(),
             apiClient.settings.get(),
             apiClient.videos.recent(8),
           ]);
@@ -61,7 +61,7 @@ export default function OverviewPage() {
   }, []);
 
   const totalScenes =
-    data?.analyses.reduce((sum, record) => sum + record.scenes.length, 0) ?? 0;
+    data?.analyses.reduce((sum, record) => sum + record.sceneCount, 0) ?? 0;
 
   return (
     <>
@@ -85,9 +85,26 @@ export default function OverviewPage() {
         )}
 
         {!data && !error && (
-          <div className="col-span-12 flex justify-center py-12">
-            <Spinner />
-          </div>
+          <>
+            <div className="col-span-12">
+              <SkeletonPanel className="h-40" />
+            </div>
+            <div className="col-span-12">
+              <SkeletonStatGrid />
+            </div>
+            <div className="col-span-12 xl:col-span-7">
+              <SkeletonPanel className="h-72" />
+            </div>
+            <div className="col-span-12 xl:col-span-5">
+              <SkeletonPanel className="h-72" />
+            </div>
+            <div className="col-span-12 xl:col-span-7">
+              <SkeletonPanel className="h-64" />
+            </div>
+            <div className="col-span-12 xl:col-span-5">
+              <SkeletonPanel className="h-64" />
+            </div>
+          </>
         )}
 
         {data && (

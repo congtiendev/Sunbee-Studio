@@ -19,6 +19,8 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
   const [completedSteps, setCompletedSteps] = useState<
     ReadonlySet<VideoStudioStepKey>
   >(() => new Set());
+  // The active step's own AI call in progress — switching away would abandon it.
+  const [stepBusy, setStepBusy] = useState(false);
 
   const steps = VIDEO_STUDIO_STEPS.map((step) => ({
     key: step.key,
@@ -38,18 +40,20 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
     );
 
   const goToStep = (index: number) => {
+    if (stepBusy) return;
     if (index <= furthestIndex) setActiveIndex(index);
   };
 
   const handleNext = () => {
-    if (!canGoNext || isLastStep) return;
+    if (stepBusy || !canGoNext || isLastStep) return;
     const nextIndex = activeIndex + 1;
     setActiveIndex(nextIndex);
     setFurthestIndex((prev) => Math.max(prev, nextIndex));
   };
 
   const handleBack = () => {
-    if (activeIndex > 0) setActiveIndex(activeIndex - 1);
+    if (stepBusy || activeIndex === 0) return;
+    setActiveIndex(activeIndex - 1);
   };
 
   const ActiveStepComponent = activeStep.Component;
@@ -63,6 +67,7 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
             activeIndex={activeIndex}
             furthestIndex={furthestIndex}
             onStepClick={goToStep}
+            disabled={stepBusy}
           />
         </div>
 
@@ -71,6 +76,7 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
             key={activeStep.key}
             videoId={videoId}
             onComplete={() => markStepComplete(activeStep.key)}
+            onBusyChange={setStepBusy}
           />
         </div>
       </Card>
@@ -80,7 +86,8 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
           type="button"
           variant="outline"
           onClick={handleBack}
-          disabled={activeIndex === 0}
+          disabled={activeIndex === 0 || stepBusy}
+          title={stepBusy ? t("navigation.busyHint") : undefined}
           className="gap-1.5"
         >
           <ChevronLeftIcon className="size-4 rtl:rotate-180" />
@@ -91,7 +98,8 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
           <Button
             type="button"
             onClick={handleNext}
-            disabled={!canGoNext}
+            disabled={!canGoNext || stepBusy}
+            title={stepBusy ? t("navigation.busyHint") : undefined}
             className="gap-1.5"
           >
             {t("navigation.next")}

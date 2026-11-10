@@ -14,6 +14,8 @@ interface StepperProps {
   activeIndex: number;
   furthestIndex: number;
   onStepClick: (index: number) => void;
+  /** Blocks every step button (e.g. a long-running AI call on the active step). */
+  disabled?: boolean;
 }
 
 export default function Stepper({
@@ -21,6 +23,7 @@ export default function Stepper({
   activeIndex,
   furthestIndex,
   onStepClick,
+  disabled = false,
 }: StepperProps) {
   const progress =
     steps.length > 1 ? (furthestIndex / (steps.length - 1)) * 100 : 0;
@@ -60,7 +63,7 @@ export default function Stepper({
             >
               <button
                 type="button"
-                disabled={!isReachable}
+                disabled={!isReachable || disabled}
                 onClick={() => onStepClick(index)}
                 aria-current={isCurrent ? "step" : undefined}
                 className={cn(

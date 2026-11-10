@@ -6,6 +6,7 @@ import {
 } from "@shared/script-cost-estimate";
 import type {
   SkillTrainingResult,
+  SkillType,
   SkillVersion,
   SkillVersionSource,
   StyleTemplate,
@@ -69,6 +70,8 @@ export function useTraining() {
   );
   const [skillId, setSkillId] = useState<string | null>(initialSkillId);
   const [name, setName] = useState("");
+  /** New skill only: which kind to create. An existing skill's own type always wins. */
+  const [newType, setNewType] = useState<SkillType>("script");
   /** New material picked for this run. */
   const [selection, setSelection] = useState<TrainingSelection>({});
   const [versions, setVersions] = useState<SkillVersion[] | null>(null);
@@ -227,11 +230,17 @@ export function useTraining() {
   const counts = {
     newScripts: newCountOf(SCRIPT_KINDS),
     newDocuments: newCountOf(["document"]),
+    newImages: newCountOf(["image"]),
     learnedKept: learned.length - removedRefs.length,
     learnedScripts: learned.filter(
       (s) => SCRIPT_KINDS.includes(s.kind) && !isRemoved(s),
     ).length,
   };
+
+  const currentSkill = skills?.find((s) => s.id === skillId) ?? null;
+  /** What kind of skill this run would produce — an existing skill's own type always wins. */
+  const targetType: SkillType =
+    target === "existing" ? (currentSkill?.type ?? "script") : newType;
 
   const canRun =
     !training &&
@@ -248,6 +257,7 @@ export function useTraining() {
       const outcome = await apiClient.training.run({
         skillId: target === "existing" ? (skillId ?? undefined) : undefined,
         name: target === "new" ? name.trim() || undefined : undefined,
+        type: target === "new" ? newType : undefined,
         sources: newRefs,
         removeSources: removedRefs,
         attachToSkill,
@@ -296,7 +306,10 @@ export function useTraining() {
     chooseTarget,
     skillId,
     chooseSkill,
-    currentSkill: skills?.find((s) => s.id === skillId) ?? null,
+    currentSkill,
+    newType,
+    setNewType,
+    targetType,
     name,
     setName,
     selection,

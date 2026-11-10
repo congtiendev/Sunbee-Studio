@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { CameraIcon, ClockIcon, StarFilledIcon } from "@/icons";
+import { CameraIcon, ClockIcon, StarFilledIcon, UsersIcon } from "@/icons";
 import { useTranslations } from "@/i18n";
-import type { ScriptScene } from "@shared/types";
+import type { RecurringCharacter, ScriptScene } from "@shared/types";
 
 const SECTION_LABEL =
   "text-[11px] font-medium tracking-wide text-gray-400 uppercase dark:text-gray-500";
@@ -17,9 +17,18 @@ function formatDuration(totalSeconds: number): string {
  * by a timeline rail, each with its own labeled content/visual/assets
  * sections instead of cramming everything into dense table columns.
  */
-export default function ScenesList({ scenes }: { scenes: ScriptScene[] }) {
+export default function ScenesList({
+  scenes,
+  characterRoster = [],
+}: {
+  scenes: ScriptScene[];
+  characterRoster?: RecurringCharacter[];
+}) {
   const t = useTranslations("videoStudio.script");
   const totalDuration = scenes.reduce((sum, s) => sum + s.estimatedDurationSec, 0);
+  const characterCount = new Set(
+    scenes.flatMap((s) => (s.characters ?? []).map((c) => c.name.trim().toLocaleLowerCase())),
+  ).size;
 
   return (
     <div className="space-y-4">
@@ -29,7 +38,34 @@ export default function ScenesList({ scenes }: { scenes: ScriptScene[] }) {
           <ClockIcon className="size-3.5" />
           {t("scenesTotalDuration", { duration: formatDuration(totalDuration) })}
         </span>
+        {characterCount > 0 && (
+          <span className="flex items-center gap-1">
+            <UsersIcon className="size-3.5" />
+            {t("scenesCharacterCount", { count: String(characterCount) })}
+          </span>
+        )}
       </div>
+
+      {characterRoster.length > 0 && (
+        <div className="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+          <span className={SECTION_LABEL}>{t("characterRosterTitle")}</span>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            {t("characterRosterHint")}
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {characterRoster.map((character) => (
+              <li key={character.name} className="flex items-start gap-1.5">
+                <Badge variant="light" color="primary" size="sm" className="mt-0.5 shrink-0">
+                  {character.name}
+                </Badge>
+                <span className="min-w-0 flex-1 text-sm leading-relaxed break-words text-gray-600 dark:text-gray-400">
+                  {character.appearance}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex flex-col">
         {scenes.map((scene, i) => (
@@ -81,6 +117,24 @@ export default function ScenesList({ scenes }: { scenes: ScriptScene[] }) {
                     {scene.visualDescription}
                   </p>
                 </div>
+
+                {scene.characters && scene.characters.length > 0 && (
+                  <div className="mt-3">
+                    <span className={SECTION_LABEL}>{t("sceneCharacters")}</span>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {scene.characters.map((character, characterIndex) => (
+                        <li key={characterIndex} className="flex items-start gap-1.5">
+                          <Badge variant="light" color="primary" size="sm" className="mt-0.5 shrink-0">
+                            {character.name}
+                          </Badge>
+                          <span className="min-w-0 flex-1 text-sm leading-relaxed break-words text-gray-600 dark:text-gray-400">
+                            {character.action}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {scene.requiredAssets.length > 0 && (
                   <div className="mt-3">

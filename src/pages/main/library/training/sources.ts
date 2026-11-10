@@ -1,8 +1,9 @@
-import { DocIcon, LinkIcon, UploadIcon, type IconProps } from "@/icons";
+import { CameraIcon, DocIcon, LinkIcon, UploadIcon, type IconProps } from "@/icons";
 import { paths } from "@/lib/paths";
 import type { TrainingSourceKind } from "@shared/types";
 import type { ComponentType } from "react";
 import DocumentAdder from "./adders/document-adder";
+import ImageAdder from "./adders/image-adder";
 import LinkAdder from "./adders/link-adder";
 import type { SourceAdderProps } from "./adders/types";
 import UploadAdder from "./adders/upload-adder";
@@ -30,6 +31,7 @@ export const TRAINING_SOURCE_UI: Record<
     Adder: DocumentAdder,
     manageTo: paths.libraryDocuments,
   },
+  image: { icon: CameraIcon, Adder: ImageAdder },
 };
 
 export type TrainingSelection = Partial<Record<TrainingSourceKind, string[]>>;

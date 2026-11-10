@@ -120,6 +120,7 @@ router.post("/research", requireAuth, async (req, res) => {
           sceneContext: body.sceneContext,
           referenceImage: body.referenceImage,
           aspectRatio: body.aspectRatio,
+          graphicsStyle: body.graphicsStyle,
         },
       ),
     );

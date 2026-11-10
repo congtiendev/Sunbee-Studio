@@ -1,3 +1,4 @@
+import { SkeletonLines } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -168,7 +169,7 @@ export default function ResearchKeysSection() {
         <CardDescription>{t("description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        {!loaded && <Spinner />}
+        {!loaded && <SkeletonLines count={4} />}
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

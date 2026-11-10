@@ -46,6 +46,18 @@ export const SCRIPT_ANALYSIS_SCHEMA = {
           shotSize: { type: "string", enum: SHOT_SIZES },
           cameraMovement: { type: "string", enum: CAMERA_MOVEMENTS },
           heroMoment: { type: "boolean" },
+          characters: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                action: { type: "string" },
+              },
+              required: ["name", "action"],
+              additionalProperties: false,
+            },
+          },
           requiredAssets: {
             type: "array",
             items: {
@@ -69,6 +81,7 @@ export const SCRIPT_ANALYSIS_SCHEMA = {
           "shotSize",
           "cameraMovement",
           "heroMoment",
+          "characters",
           "requiredAssets",
         ],
         additionalProperties: false,

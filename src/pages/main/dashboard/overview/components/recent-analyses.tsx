@@ -8,14 +8,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTranslations } from "@/i18n";
-import type { ScriptAnalysisRecord } from "@shared/types";
+import type { ScriptAnalysisListItem } from "@shared/types";
 import { paths } from "@/lib/paths";
 import { Link } from "react-router";
 
 export default function RecentAnalyses({
   data,
 }: {
-  data: ScriptAnalysisRecord[];
+  data: ScriptAnalysisListItem[];
 }) {
   const t = useTranslations("overview.recentAnalyses");
   const tCommon = useTranslations("common");
@@ -86,7 +86,7 @@ export default function RecentAnalyses({
                     )}
                   </TableCell>
                   <TableCell className="py-3 text-sm text-gray-500 dark:text-gray-400">
-                    {row.scenes.length}
+                    {row.sceneCount}
                   </TableCell>
                   <TableCell className="py-3">
                     <Badge

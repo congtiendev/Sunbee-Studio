@@ -25,10 +25,15 @@ export interface AppSettings extends UiPreferences {
   researchApiKeys?: Record<string, string>;
 }
 
+/** "script": voice/style for writing (instructions, examples, pacing). "image": graphics methodology for the Assets step (graphicsStyle). Each skill is exactly one. */
+export type SkillType = "script" | "image";
+
 export interface StyleTemplate {
   id: string;
   name: string;
   createdAt: string;
+  /** Which step this skill applies to; governs which of instructions/graphicsStyle is used. */
+  type: SkillType;
   genre: string;
   styleTags: string[];
   pacing: { avgShotLengthSec: number; cutsPerMinute: number };
@@ -36,8 +41,12 @@ export interface StyleTemplate {
   resourceInventory: Record<string, unknown>;
   /** What the skill is for (shown in the library). */
   description?: string;
-  /** Free-form instructions added to every AI call that uses the skill. */
+  /** type "script": free-form instructions added to every AI call that uses the skill. */
   instructions?: string;
+  /** type "image": graphics/art-style methodology, folded into every image-gen prompt in the Assets step so a video's generated art stays visually consistent. */
+  graphicsStyle?: string;
+  /** type "image": an optional reference illustration (its *style* only, never copied content) described into every image-gen prompt alongside graphicsStyle. Set only via the dedicated upload endpoint. */
+  referenceImageFileId?: string;
   /** "anthropic" when imported from an Agent Skill (SKILL.md). */
   origin?: SkillOrigin;
   /** The original SKILL.md, kept for Agent Skills so they can be re-exported. */
@@ -55,7 +64,10 @@ export interface SkillDetail extends StyleTemplate {
   documents: DocumentSummary[];
 }
 
-export type SkillInput = Omit<StyleTemplate, "id" | "createdAt" | "updatedAt" | "userId" | "ownerEmail">;
+export type SkillInput = Omit<
+  StyleTemplate,
+  "id" | "createdAt" | "updatedAt" | "userId" | "ownerEmail" | "referenceImageFileId"
+>;
 
 export interface SkillUpdateRequest extends Partial<SkillInput> {
   exampleIds?: string[];
@@ -164,6 +176,12 @@ export interface RequiredAsset {
   source: RequiredAssetSource;
 }
 
+/** One character appearing in a scene: who (consistent across scenes) and what they're doing here. */
+export interface SceneCharacter {
+  name: string;
+  action: string;
+}
+
 export interface ScriptScene {
   index: number;
   content: string;
@@ -173,6 +191,8 @@ export interface ScriptScene {
   shotSize: ShotSize;
   cameraMovement: CameraMovement;
   heroMoment: boolean;
+  /** Absent on versions analyzed before this field existed. */
+  characters?: SceneCharacter[];
   requiredAssets: RequiredAsset[];
 }
 
@@ -205,6 +225,12 @@ export interface ScriptStyle {
   toneDescription: string;
 }
 
+/** A character appearing in 2+ scenes, with a locked appearance reused in every scene's image-gen prompt. */
+export interface RecurringCharacter {
+  name: string;
+  appearance: string;
+}
+
 export interface ScriptAnalyzeResult {
   scenes: ScriptScene[];
   resources: ScriptResources;
@@ -213,6 +239,8 @@ export interface ScriptAnalyzeResult {
 
 export interface ScriptAnalyzeResponse extends ScriptAnalyzeResult {
   versionId: string;
+  /** Absent for responses that don't compute a roster (e.g. "write from template"). */
+  characterRoster?: RecurringCharacter[];
 }
 
 export interface ScriptAnalysisRecord {
@@ -226,12 +254,26 @@ export interface ScriptAnalysisRecord {
   scenes: ScriptScene[];
   resources: ScriptResources;
   style?: ScriptStyle;
+  /** Absent on versions saved before this field existed. */
+  characterRoster?: RecurringCharacter[];
   videoId?: string;
   /** Reviewed (and possibly edited) by the user; usable as a few-shot example. */
   approved?: boolean;
   /** Source "template": the analyzed version this script was modelled on. */
   templateSourceId?: string;
   userId?: string;
+  ownerEmail?: string;
+}
+
+/** A light row for list/dashboard views: no script text, frames, scenes or resources. */
+export interface ScriptAnalysisListItem {
+  id: string;
+  createdAt: string;
+  sourceType: ScriptSourceType;
+  sourceUrl?: string;
+  kind: "draft" | "analyzed";
+  sceneCount: number;
+  videoId?: string;
   ownerEmail?: string;
 }
 
@@ -339,7 +381,7 @@ export interface ScriptFromIdeaRequest {
  * kind is one training source on the server (`server/modules/training/sources/`);
  * adding a kind adds a value here.
  */
-export type TrainingSourceKind = "link" | "upload" | "document";
+export type TrainingSourceKind = "link" | "upload" | "document" | "image";
 
 /** A piece of material picked for training, by kind and id (a video id, a document id…). */
 export interface TrainingSourceRef {
@@ -358,6 +400,8 @@ export interface TrainingCandidate extends TrainingSourceRef {
   badges: string[];
   /** The project video this belongs to, if any (lets the studio pre-pick it). */
   videoId?: string;
+  /** Image sources only: a thumbnail, shown instead of a text excerpt. */
+  previewUrl?: string;
 }
 
 /** Every source kind with its candidates and how many one run may use. */
@@ -377,6 +421,8 @@ export interface SkillTrainingRequest {
   skillId?: string;
   /** New skill's name (the AI suggests one when empty). Ignored when refining. */
   name?: string;
+  /** New skill only: "script" or "image" (an existing skill's own type always wins). Omitted → "script". */
+  type?: SkillType;
   /** Material added in this run (on top of what the skill already learned from). */
   sources: TrainingSourceRef[];
   /** Previously learned sources to drop from the skill from now on. */
@@ -394,10 +440,12 @@ export interface SkillTrainingRequest {
 export interface SkillSnapshot {
   name: string;
   description: string;
+  type: SkillType;
   genre: string;
   styleTags: string[];
   toneDescription: string;
   instructions: string;
+  graphicsStyle: string;
   pacing: { avgShotLengthSec: number; cutsPerMinute: number };
   resourceInventory: Record<string, unknown>;
 }
@@ -431,6 +479,13 @@ export interface SkillVersionSource extends TrainingSourceRef {
 export interface SkillTrainingResult {
   skill: SkillDetail;
   version: SkillVersion;
+}
+
+/** An uploaded training image, saved to the library of a user's image-skill training material. */
+export interface TrainingImageSummary {
+  id: string;
+  title: string;
+  fileId: string;
 }
 
 export interface DocumentRecord extends DocumentSummary {
@@ -637,6 +692,8 @@ export interface AssetResearchRequest {
   referenceImage?: string;
   /** AI image sources: output frame shape. Omitted: square. */
   aspectRatio?: ImageAspectRatio;
+  /** AI image sources: a type "image" skill's locked graphics methodology, applied to every scene's generation this session. */
+  graphicsStyle?: string;
 }
 
 export interface AssetResearchResponse {

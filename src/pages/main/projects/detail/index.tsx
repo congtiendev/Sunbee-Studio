@@ -2,10 +2,10 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { NameDialog } from "@/components/shared/name-dialog";
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
+import { SkeletonSection } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { FolderIcon, PlusIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
@@ -108,8 +108,13 @@ function ProjectDetail({ projectId }: { projectId: string | null }) {
 
   if (!data) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner />
+      <div>
+        <PageMeta title={t("title")} description={t("metaDescription")} />
+        <PageBreadcrumb pageTitle={t("title")} trail={[{ label: t("title"), to: paths.projects }]} />
+        <div className="space-y-5">
+          <SkeletonSection cards={2} />
+          <SkeletonSection cards={3} />
+        </div>
       </div>
     );
   }

@@ -17,6 +17,8 @@ export interface StepComponentProps {
   videoId: string;
   /** Mark the step done, which unlocks "Next" when the step requires completion. */
   onComplete: () => void;
+  /** Report a long-running AI call in progress, so step switching is blocked until it finishes. */
+  onBusyChange?: (busy: boolean) => void;
 }
 
 /**

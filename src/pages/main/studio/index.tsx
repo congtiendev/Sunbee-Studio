@@ -2,6 +2,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { NameDialog } from "@/components/shared/name-dialog";
 import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
+import { SkeletonPanel } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { PlayIcon, PlusIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
@@ -126,9 +126,10 @@ function StudioForVideo({ videoId }: { videoId: string }) {
 
   if (!video) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner />
-      </div>
+      <>
+        <PageBreadcrumb pageTitle={t("title")} />
+        <SkeletonPanel className="h-96" />
+      </>
     );
   }
 

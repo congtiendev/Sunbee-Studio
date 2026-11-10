@@ -100,6 +100,7 @@ export function withSkillDefaults(input: Partial<SkillInput> & { name: string })
   return {
     ...input,
     name: input.name.trim(),
+    type: input.type ?? "script",
     genre: input.genre ?? "",
     styleTags: input.styleTags ?? [],
     toneDescription: input.toneDescription ?? "",

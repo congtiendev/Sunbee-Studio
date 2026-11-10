@@ -1,7 +1,7 @@
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { SkeletonCard } from "@/components/shared/skeleton-blocks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { ANALYZE_MODELS } from "@shared/script-cost-estimate";
 import type { SkillVersion } from "@shared/types";
@@ -28,8 +28,9 @@ export default function VersionHistory({
 
   if (versions === null) {
     return (
-      <div className="flex justify-center py-6">
-        <Spinner />
+      <div className="space-y-3">
+        <SkeletonCard />
+        <SkeletonCard />
       </div>
     );
   }
@@ -134,7 +135,11 @@ export default function VersionHistory({
 
               {open && (
                 <GuidePreview
-                  text={version.snapshot.instructions}
+                  text={
+                    version.snapshot.type === "image"
+                      ? version.snapshot.graphicsStyle
+                      : version.snapshot.instructions
+                  }
                   className="mt-2 max-h-72"
                 />
               )}

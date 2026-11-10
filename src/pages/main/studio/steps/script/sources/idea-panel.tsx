@@ -12,6 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/i18n";
 import ProviderModelFields from "../provider-model-fields";
+import SkillSelectField from "../skill-select-field";
 import type { ScriptLanguage } from "../use-script-step";
 import type { ScriptSourcePanelProps } from "./registry";
 
@@ -71,8 +72,8 @@ export default function IdeaPanel({ step }: ScriptSourcePanelProps) {
             </SelectContent>
           </Select>
         </Field>
+        <SkillSelectField step={step} className="w-56" />
       </div>
-      <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">{t("fromDocument.skillHint")}</p>
 
       <div>
         <Button

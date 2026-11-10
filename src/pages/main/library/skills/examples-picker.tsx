@@ -1,6 +1,6 @@
+import { SkeletonLines } from "@/components/shared/skeleton-blocks";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { cn } from "@/utils";
 import type { ScriptAnalysisSummary } from "@shared/types";
@@ -23,11 +23,7 @@ export default function ExamplesPicker({
     onChange(checked ? [...selected, id] : selected.filter((x) => x !== id));
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-4">
-        <Spinner />
-      </div>
-    );
+    return <SkeletonLines count={3} />;
   }
   if (options.length === 0) {
     return <p className="text-sm text-gray-500 dark:text-gray-400">{t("examples.empty")}</p>;

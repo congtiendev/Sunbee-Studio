@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { SkillInput, SkillOrigin, StyleTemplate } from "../../../shared/types.js";
+import type { SkillInput, SkillOrigin, SkillType, StyleTemplate } from "../../../shared/types.js";
 import { getDb } from "./client.js";
 
 /**
@@ -11,6 +11,7 @@ interface StyleTemplateRow {
   name: string;
   created_at: string;
   updated_at: string | null;
+  type: SkillType;
   genre: string;
   style_tags_json: string;
   pacing_json: string;
@@ -18,6 +19,8 @@ interface StyleTemplateRow {
   resource_inventory_json: string;
   description: string;
   instructions: string;
+  graphics_style: string | null;
+  reference_image_file_id: string | null;
   origin: SkillOrigin;
   skill_md: string | null;
   user_id: string | null;
@@ -30,6 +33,7 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
     name: row.name,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? row.created_at,
+    type: row.type,
     genre: row.genre,
     styleTags: JSON.parse(row.style_tags_json),
     pacing: JSON.parse(row.pacing_json),
@@ -37,6 +41,8 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
     resourceInventory: JSON.parse(row.resource_inventory_json),
     description: row.description,
     instructions: row.instructions,
+    graphicsStyle: row.graphics_style ?? undefined,
+    referenceImageFileId: row.reference_image_file_id ?? undefined,
     origin: row.origin,
     skillMd: row.skill_md ?? undefined,
     userId: row.user_id ?? undefined,
@@ -45,9 +51,10 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
 }
 
 const SELECT_BASE = `
-  SELECT st.id, st.name, st.created_at, st.updated_at, st.genre, st.style_tags_json,
+  SELECT st.id, st.name, st.created_at, st.updated_at, st.type, st.genre, st.style_tags_json,
          st.pacing_json, st.tone_description, st.resource_inventory_json, st.description,
-         st.instructions, st.origin, st.skill_md, st.user_id, u.email AS owner_email
+         st.instructions, st.graphics_style, st.reference_image_file_id, st.origin, st.skill_md,
+         st.user_id, u.email AS owner_email
   FROM style_templates st
   LEFT JOIN users u ON u.id = st.user_id
 `;
@@ -79,15 +86,17 @@ export function saveTemplate(userId: string, template: SkillInput): StyleTemplat
   const id = randomUUID();
   getDb()
     .prepare(
-      `INSERT INTO style_templates (id, name, created_at, updated_at, genre, style_tags_json, pacing_json,
-         tone_description, resource_inventory_json, description, instructions, origin, skill_md, user_id)
-       VALUES (@id, @name, @now, @now, @genre, @styleTagsJson, @pacingJson, @toneDescription,
-         @resourceInventoryJson, @description, @instructions, @origin, @skillMd, @userId)`,
+      `INSERT INTO style_templates (id, name, created_at, updated_at, type, genre, style_tags_json, pacing_json,
+         tone_description, resource_inventory_json, description, instructions, graphics_style,
+         reference_image_file_id, origin, skill_md, user_id)
+       VALUES (@id, @name, @now, @now, @type, @genre, @styleTagsJson, @pacingJson, @toneDescription,
+         @resourceInventoryJson, @description, @instructions, @graphicsStyle, NULL, @origin, @skillMd, @userId)`,
     )
     .run({
       id,
       now,
       name: template.name,
+      type: template.type ?? "script",
       genre: template.genre,
       styleTagsJson: JSON.stringify(template.styleTags),
       pacingJson: JSON.stringify(template.pacing),
@@ -95,6 +104,7 @@ export function saveTemplate(userId: string, template: SkillInput): StyleTemplat
       resourceInventoryJson: JSON.stringify(template.resourceInventory ?? {}),
       description: template.description ?? "",
       instructions: template.instructions ?? "",
+      graphicsStyle: template.graphicsStyle ?? null,
       origin: template.origin ?? "app",
       skillMd: template.skillMd ?? null,
       userId,
@@ -113,16 +123,17 @@ export function updateTemplate(
   const next = { ...current, ...patch };
   getDb()
     .prepare(
-      `UPDATE style_templates SET name = @name, updated_at = @now, genre = @genre,
+      `UPDATE style_templates SET name = @name, updated_at = @now, type = @type, genre = @genre,
          style_tags_json = @styleTagsJson, pacing_json = @pacingJson, tone_description = @toneDescription,
          resource_inventory_json = @resourceInventoryJson, description = @description,
-         instructions = @instructions, origin = @origin, skill_md = @skillMd
+         instructions = @instructions, graphics_style = @graphicsStyle, origin = @origin, skill_md = @skillMd
        WHERE id = @id`,
     )
     .run({
       id,
       now: new Date().toISOString(),
       name: next.name,
+      type: next.type ?? "script",
       genre: next.genre,
       styleTagsJson: JSON.stringify(next.styleTags),
       pacingJson: JSON.stringify(next.pacing),
@@ -130,9 +141,24 @@ export function updateTemplate(
       resourceInventoryJson: JSON.stringify(next.resourceInventory ?? {}),
       description: next.description ?? "",
       instructions: next.instructions ?? "",
+      graphicsStyle: next.graphicsStyle ?? null,
       origin: next.origin ?? "app",
       skillMd: next.skillMd ?? null,
     });
+  return getTemplateById(userId, isAdmin, id);
+}
+
+/** Sets or clears the skill's reference image. Kept separate from `updateTemplate`'s field patch so the generic save/update flow never touches it by accident. */
+export function setReferenceImage(
+  userId: string,
+  isAdmin: boolean,
+  id: string,
+  fileId: string | null,
+): StyleTemplate | null {
+  if (!getTemplateById(userId, isAdmin, id)) return null;
+  getDb()
+    .prepare(`UPDATE style_templates SET reference_image_file_id = ? WHERE id = ?`)
+    .run(fileId, id);
   return getTemplateById(userId, isAdmin, id);
 }
 

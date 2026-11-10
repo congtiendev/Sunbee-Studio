@@ -1,13 +1,13 @@
 import { useTheme } from "@/contexts";
 import { useTranslations } from "@/i18n";
-import type { ScriptAnalysisRecord } from "@shared/types";
+import type { ScriptAnalysisListItem } from "@shared/types";
 import type { ApexOptions } from "apexcharts";
 import { useMemo } from "react";
 import ReactApexChart from "react-apexcharts";
 
 const DAYS = 14;
 
-function buildSeries(records: ScriptAnalysisRecord[]) {
+function buildSeries(records: ScriptAnalysisListItem[]) {
   const counts = new Map<string, number>();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -36,7 +36,7 @@ function buildSeries(records: ScriptAnalysisRecord[]) {
 export default function ActivityChart({
   data,
 }: {
-  data: ScriptAnalysisRecord[];
+  data: ScriptAnalysisListItem[];
 }) {
   const { theme } = useTheme();
   const t = useTranslations("overview.activity");

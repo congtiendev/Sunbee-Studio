@@ -1,7 +1,9 @@
 import type {
   SkillDetail,
+  SkillInput,
   SkillTrainingRequest,
   SkillTrainingResult,
+  SkillType,
   SkillVersion,
   StyleTemplate,
   TrainingSourceRef,
@@ -11,7 +13,9 @@ import {
   hasProviderKey,
   runTask,
   taskContextFor,
+  type TaskContext,
 } from "../../services/ai/task.js";
+import type { ProviderKey } from "../../services/ai/providers/index.js";
 import {
   getTemplateById,
   saveTemplate,
@@ -33,6 +37,7 @@ import {
 } from "./repo.js";
 import { groupByKind, labelSources, loadMaterials } from "./sources/index.js";
 import type { TrainingMaterial } from "./sources/types.js";
+import { trainGraphicsStyleTask } from "./tasks/train-graphics-style.js";
 import { trainSkillTask } from "./tasks/train-skill.js";
 
 const isAdmin = (caller: Caller) => caller.role === "admin";
@@ -93,6 +98,95 @@ function materialsFor(
 }
 
 /**
+ * Image-skill training: unlike text training, a refine run does NOT resend
+ * every previously-learned image's bytes to the AI each time — the skill's
+ * current `graphicsStyle` already distills what those taught it, and
+ * re-reading/re-encoding a growing image library on every run would scale
+ * cost for no benefit the text summary doesn't already give. Only this run's
+ * newly-picked images are read and analyzed; `currentGraphicsStyle` carries
+ * everything learned before. Learned/removed sources are still recorded in
+ * the version for provenance.
+ */
+async function runImageTraining(
+  caller: Caller,
+  req: SkillTrainingRequest,
+  existing: StyleTemplate | null,
+  provider: ProviderKey,
+  ctx: TaskContext,
+): Promise<SkillTrainingResult> {
+  const removed = new Set((req.removeSources ?? []).map(refKey));
+  const learnedRefs = existing
+    ? (listSkillVersions(existing.id)[0]?.sources ?? [])
+        .filter((ref) => !removed.has(refKey(ref)))
+        .map(({ kind, id }) => ({ kind, id }))
+    : [];
+  const learnedKeys = new Set(learnedRefs.map(refKey));
+  const newRefs = (Array.isArray(req.sources) ? req.sources : [])
+    .filter((ref) => ref.kind === "image" && !learnedKeys.has(refKey(ref)));
+
+  if (newRefs.length === 0 && !existing?.graphicsStyle?.trim()) {
+    throw new Error("Hãy chọn ít nhất một ảnh mẫu.");
+  }
+
+  let fields: Partial<SkillInput> = { type: "image" };
+  if (newRefs.length > 0) {
+    const images = loadMaterials(caller, newRefs).flatMap((m) => m.images ?? []);
+    if (images.length === 0) throw new Error("Không đọc được ảnh nào đã chọn.");
+    const output = await runTask(
+      trainGraphicsStyleTask,
+      {
+        images,
+        currentGraphicsStyle: existing?.graphicsStyle,
+        provider,
+        model: req.model,
+        effort: req.effort,
+      },
+      ctx,
+    );
+    fields = { type: "image", graphicsStyle: output.graphicsStyle };
+  }
+  // No new images: nothing to learn this run — keep graphicsStyle as-is
+  // (e.g. the user only dropped a learned source).
+
+  const skill = existing
+    ? updateTemplate(caller.id, isAdmin(caller), existing.id, fields)
+    : saveTemplate(
+        caller.id,
+        withSkillDefaults({ name: req.name?.trim() || "Skill mới", ...fields }),
+      );
+  if (!skill) throw new Error("Không lưu được skill.");
+
+  if (existing && countSkillVersions(existing.id) === 0) {
+    insertSkillVersion({
+      skillId: existing.id,
+      userId: caller.id,
+      kind: "snapshot",
+      note: "Trước lần huấn luyện đầu tiên",
+      snapshot: snapshotOf(existing),
+    });
+  }
+
+  const version = insertSkillVersion({
+    skillId: skill.id,
+    userId: caller.id,
+    kind: "train",
+    note: req.note,
+    snapshot: snapshotOf(skill),
+    sources: [
+      ...learnedRefs.map((ref) => ({ ...ref, added: false })),
+      ...newRefs.map((ref) => ({ ...ref, added: true })),
+    ],
+    provider,
+    model: req.model,
+  });
+
+  return {
+    skill: readDetail(caller, skill.id),
+    version: toVersion(caller, version),
+  };
+}
+
+/**
  * One training run: gather the material (cumulatively for an existing skill),
  * let the AI write a complete guide (voice, structure, visual style, knowledge)
  * — merged with the current guide when refining — then save the skill. Every run
@@ -107,6 +201,11 @@ export async function runSkillTraining(
   if (!hasProviderKey(ctx, provider)) throw new MissingApiKeyError(provider);
 
   const existing = req.skillId ? requireSkill(caller, req.skillId) : null;
+  const targetType: SkillType = existing?.type ?? req.type ?? "script";
+  if (targetType === "image") {
+    return runImageTraining(caller, req, existing, provider, ctx);
+  }
+
   const materials = materialsFor(caller, existing, req);
   if (materials.length === 0) {
     throw new Error(

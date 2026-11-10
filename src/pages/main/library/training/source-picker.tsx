@@ -138,6 +138,13 @@ export default function SourcePicker({
                           toggle(candidate.id, Boolean(value))
                         }
                       />
+                      {candidate.previewUrl && (
+                        <img
+                          src={candidate.previewUrl}
+                          alt=""
+                          className="size-10 shrink-0 rounded-md border border-gray-200 object-cover dark:border-gray-800"
+                        />
+                      )}
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-1.5">
                           <span className="truncate text-sm font-medium text-gray-800 dark:text-white/90">
@@ -158,9 +165,11 @@ export default function SourcePicker({
                               {tBadge(badge, { defaultValue: badge })}
                             </Badge>
                           ))}
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {t("chars", { count: candidate.charCount })}
-                          </span>
+                          {!candidate.previewUrl && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {t("chars", { count: candidate.charCount })}
+                            </span>
+                          )}
                         </span>
                         {candidate.excerpt && (
                           <span className="mt-0.5 line-clamp-1 text-xs text-gray-500 dark:text-gray-400">

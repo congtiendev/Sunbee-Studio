@@ -28,6 +28,8 @@ export interface ResearchContext {
   referenceImage?: string;
   /** AI image sources: output frame shape. Omitted: square. */
   aspectRatio?: ImageAspectRatio;
+  /** AI image sources: a type "image" skill's locked graphics methodology, applied to every scene's generation this session. */
+  graphicsStyle?: string;
 }
 
 export interface ResearchResult {

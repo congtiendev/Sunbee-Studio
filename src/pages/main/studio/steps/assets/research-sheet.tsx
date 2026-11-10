@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SkeletonMediaGrid } from "@/components/shared/skeleton-blocks";
 import { Spinner } from "@/components/ui/spinner";
 import { OverflowTabsList } from "@/components/ui/overflow-tabs";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -26,6 +27,7 @@ import { apiClient } from "@/lib/api-client";
 import { cn } from "@/utils";
 import type {
   AssetCandidate,
+  RecurringCharacter,
   RequiredAsset,
   ResearchMediaType,
   ResearchSourceInfo,
@@ -75,14 +77,32 @@ function defaultMediaType(
   return source.mediaTypes.includes(wanted) ? wanted : source.mediaTypes[0]!;
 }
 
-function sceneContextOf(scene: ScriptScene): string {
-  return `${scene.content} | ${scene.visualDescription}`;
+/**
+ * Content/visual description for the research prompt, plus the locked
+ * appearance of any recurring character present in this scene — so every
+ * asset generated for them (in any scene) starts from the same wording
+ * instead of each generation improvising a different look.
+ */
+function sceneContextOf(scene: ScriptScene, characterRoster: RecurringCharacter[]): string {
+  const names = new Set((scene.characters ?? []).map((c) => c.name));
+  const locked = characterRoster
+    .filter((c) => names.has(c.name))
+    .map((c) => `${c.name}: ${c.appearance}`)
+    .join(" | ");
+  return [`${scene.content} | ${scene.visualDescription}`, locked && `Nhân vật: ${locked}`]
+    .filter(Boolean)
+    .join(" | ");
 }
 
 interface ResearchSheetProps {
   target: ResearchTarget | null;
   sources: ResearchSourceInfo[];
   selected?: AssetCandidate;
+  characterRoster: RecurringCharacter[];
+  /** A type "image" skill's locked graphics methodology, applied to every AI image generation this session. */
+  graphicsStyle?: string;
+  /** That same skill's reference illustration (data URL) — style only, described into the prompt like graphicsStyle. */
+  referenceImage?: string;
   onOpenChange: (open: boolean) => void;
   onSelect: (candidate: AssetCandidate) => Promise<void>;
 }
@@ -91,6 +111,9 @@ export default function ResearchSheet({
   target,
   sources,
   selected,
+  characterRoster,
+  graphicsStyle,
+  referenceImage,
   onOpenChange,
   onSelect,
 }: ResearchSheetProps) {
@@ -113,6 +136,9 @@ export default function ResearchSheet({
             target={target}
             sources={sources}
             selected={selected}
+            characterRoster={characterRoster}
+            graphicsStyle={graphicsStyle}
+            referenceImage={referenceImage}
             onSelect={onSelect}
           />
         )}
@@ -125,6 +151,9 @@ function ResearchBody({
   target,
   sources,
   selected,
+  characterRoster,
+  graphicsStyle,
+  referenceImage,
   onSelect,
 }: Omit<ResearchSheetProps, "onOpenChange" | "target"> & {
   target: ResearchTarget;
@@ -168,7 +197,7 @@ function ResearchBody({
     apiClient.assets
       .suggestQueries({
         description: asset.description,
-        sceneContext: sceneContextOf(scene),
+        sceneContext: sceneContextOf(scene, characterRoster),
         mediaType:
           asset.type === "video"
             ? "video"
@@ -231,7 +260,7 @@ function ResearchBody({
     return () => {
       alive = false;
     };
-  }, [asset, scene, sources]);
+  }, [asset, scene, sources, characterRoster]);
 
   const search = async (source: ResearchSourceInfo) => {
     const tab = tabs[source.key]!;
@@ -243,7 +272,9 @@ function ResearchBody({
         query: tab.query.trim(),
         mediaType: tab.mediaType === "any" ? undefined : tab.mediaType,
         description: asset.description,
-        sceneContext: sceneContextOf(scene),
+        sceneContext: sceneContextOf(scene, characterRoster),
+        graphicsStyle,
+        referenceImage,
       });
       patchTab(source.key, {
         loading: false,
@@ -459,9 +490,7 @@ function ResearchBody({
                 )}
 
                 {tab.loading && !tab.candidates ? (
-                  <div className="flex justify-center py-8">
-                    <Spinner />
-                  </div>
+                  <SkeletonMediaGrid count={isLinkSource ? 3 : 6} />
                 ) : tab.candidates && tab.candidates.length === 0 ? (
                   <p className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                     {t(
