@@ -22,6 +22,7 @@ import ScriptChecklist, {
   computeScriptChecklist,
 } from "./result/script-checklist";
 import ScriptEditor, { type ScriptHighlight } from "./script-editor";
+import SaveStatus from "./save-status";
 import { SCRIPT_SOURCES, type ScriptSourceKey } from "./sources/registry";
 import { useScriptStep } from "./use-script-step";
 
@@ -100,16 +101,19 @@ export default function ScriptStep({
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
           <CardTitle>{t("sourceTitle")}</CardTitle>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={() => setVersionSheetOpen(true)}
-          >
-            <ClockIcon className="size-4" />
-            {t("history.openButton")}
-          </Button>
+          <div className="flex items-center gap-3">
+            <SaveStatus step={step} />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setVersionSheetOpen(true)}
+            >
+              <ClockIcon className="size-4" />
+              {t("history.openButton")}
+            </Button>
+          </div>
         </div>
         <VersionSheet
           open={versionSheetOpen}
@@ -196,6 +200,12 @@ export default function ScriptStep({
             {t("analyzeButton")}
           </Button>
 
+          {step.analyzing && (
+            <Button type="button" variant="outline" onClick={step.cancelAnalyze}>
+              {t("cancelAnalyze")}
+            </Button>
+          )}
+
           {/* Next to Analyze: opens AI training with this video already picked. */}
           <Button
             variant="outline"
@@ -247,6 +257,7 @@ export default function ScriptStep({
               key={step.resultKey}
               scenes={step.result.scenes}
               characterRoster={step.result.characterRoster ?? []}
+              objectRoster={step.result.objectRoster ?? []}
               approved={step.approved}
               approving={step.approving}
               canApprove={Boolean(step.currentVersionId)}

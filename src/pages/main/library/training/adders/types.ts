@@ -1,5 +1,5 @@
 import type { AnalyzeProvider } from "@shared/script-cost-estimate";
-import type { TrainingCandidate } from "@shared/types";
+import type { SkillType, TrainingCandidate } from "@shared/types";
 
 /**
  * The "add new" part of a source section: makes new material right on the
@@ -11,6 +11,8 @@ export interface SourceAdderProps {
   ai: { provider: AnalyzeProvider; model: string };
   onAdded: (candidate: TrainingCandidate) => void;
   disabled?: boolean;
+  /** What's being trained — some adders word themselves differently for "editing" (the script fetched is just a means to the video's frames). */
+  targetType: SkillType;
 }
 
 /** Shorter scripts say too little to learn from (matches the server). */

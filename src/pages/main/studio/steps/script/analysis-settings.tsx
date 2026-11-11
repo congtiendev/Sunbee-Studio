@@ -7,8 +7,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslations } from "@/i18n";
+import EditingSkillSelect from "./editing-skill-select";
 import ProviderModelFields from "./provider-model-fields";
-import SkillSelectField from "./skill-select-field";
 import type { AnalyzeEffort, ScriptStepState } from "./use-script-step";
 
 /** Provider, model, effort and skill used by "Analyze script". */
@@ -55,7 +55,7 @@ export default function AnalysisSettings({ step }: { step: ScriptStepState }) {
         </p>
       ) : null}
 
-      <SkillSelectField step={step} />
+      <EditingSkillSelect step={step} />
     </>
   );
 }

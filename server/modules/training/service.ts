@@ -37,6 +37,7 @@ import {
 } from "./repo.js";
 import { groupByKind, labelSources, loadMaterials } from "./sources/index.js";
 import type { TrainingMaterial } from "./sources/types.js";
+import { trainEditingStyleTask } from "./tasks/train-editing-style.js";
 import { trainGraphicsStyleTask } from "./tasks/train-graphics-style.js";
 import { trainSkillTask } from "./tasks/train-skill.js";
 
@@ -187,6 +188,95 @@ async function runImageTraining(
 }
 
 /**
+ * Editing-skill training: a separate AI call (`trainEditingStyleTask`) from
+ * Script-skill training below — different prompt, and only the cutting
+ * methodology is kept (editingStyle + measured pacing) — even though both can
+ * learn from the same scripts/videos, writing a script's voice and cutting it
+ * into scenes are different crafts.
+ */
+async function runEditingTraining(
+  caller: Caller,
+  req: SkillTrainingRequest,
+  existing: StyleTemplate | null,
+  provider: ProviderKey,
+  ctx: TaskContext,
+): Promise<SkillTrainingResult> {
+  const materials = materialsFor(caller, existing, req);
+  if (materials.length === 0) {
+    throw new Error("Hãy chọn ít nhất một video có phân cảnh hoặc một tài liệu.");
+  }
+
+  if (existing && countSkillVersions(existing.id) === 0) {
+    insertSkillVersion({
+      skillId: existing.id,
+      userId: caller.id,
+      kind: "snapshot",
+      note: "Trước lần huấn luyện đầu tiên",
+      snapshot: snapshotOf(existing),
+    });
+  }
+
+  const prepared = await withDigests(materials, ctx, {
+    provider,
+    model: req.model,
+  });
+
+  const output = await runTask(
+    trainEditingStyleTask,
+    {
+      materials: prepared,
+      currentGuide: existing?.editingStyle,
+      provider,
+      model: req.model,
+      effort: req.effort,
+    },
+    ctx,
+  );
+
+  const fields = {
+    type: "editing" as const,
+    editingStyle: output.editingGuide.trim(),
+    ...measuredPacing(materials),
+  };
+  const skill = existing
+    ? updateTemplate(caller.id, isAdmin(caller), existing.id, fields)
+    : saveTemplate(
+        caller.id,
+        withSkillDefaults({ name: req.name?.trim() || "Skill mới", ...fields }),
+      );
+  if (!skill) throw new Error("Không lưu được skill.");
+
+  if (req.attachToSkill) {
+    const addedRefs = materials
+      .filter((m) => m.isNew)
+      .map(({ kind, id }) => ({ kind, id }));
+    for (const [source, ids] of groupByKind(addedRefs)) {
+      source.attachToSkill?.(caller, skill.id, ids);
+    }
+  }
+
+  const version = insertSkillVersion({
+    skillId: skill.id,
+    userId: caller.id,
+    kind: "train",
+    note: req.note,
+    snapshot: snapshotOf(skill),
+    sources: materials.map(({ kind, id, isNew }) => ({
+      kind,
+      id,
+      added: isNew,
+    })),
+    provider,
+    model: req.model,
+  });
+
+  return {
+    skill: readDetail(caller, skill.id),
+    version: toVersion(caller, version),
+  };
+}
+
+/**
  * One training run: gather the material (cumulatively for an existing skill),
  * let the AI write a complete guide (voice, structure, visual style, knowledge)
  * — merged with the current guide when refining — then save the skill. Every run
@@ -204,6 +294,9 @@ export async function runSkillTraining(
   const targetType: SkillType = existing?.type ?? req.type ?? "script";
   if (targetType === "image") {
     return runImageTraining(caller, req, existing, provider, ctx);
+  }
+  if (targetType === "editing") {
+    return runEditingTraining(caller, req, existing, provider, ctx);
   }
 
   const materials = materialsFor(caller, existing, req);
@@ -248,8 +341,7 @@ export async function runSkillTraining(
     description: output.description.trim() || existing?.description || "",
     genre: output.genre.trim() || existing?.genre || "",
     styleTags: output.styleTags.map((tag) => tag.trim()).filter(Boolean),
-    toneDescription:
-      output.toneDescription.trim() || existing?.toneDescription || "",
+    toneDescription: output.toneDescription.trim() || existing?.toneDescription || "",
     instructions: instructionsOf(output, materials),
     ...measuredPacing(materials),
   };

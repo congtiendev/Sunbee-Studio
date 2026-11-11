@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import type {
   AssetCandidate,
+  AssetPromptBatchRequest,
   AssetQuerySuggestRequest,
   AssetResearchRequest,
   LibraryMediaType,
@@ -9,7 +10,12 @@ import type {
   User,
 } from "../../../shared/types.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { firstAvailableProvider, runTask, taskContextFor } from "../../services/ai/task.js";
+import {
+  firstAvailableProvider,
+  hasProviderKey,
+  runTask,
+  taskContextFor,
+} from "../../services/ai/task.js";
 import { canAccessVideo } from "../../services/db/videos-repo.js";
 import { findResearchSource, listResearchSources } from "../../services/research/registry.js";
 import { deleteFile, getFileForUser, saveFile } from "../../services/storage/files.js";
@@ -23,6 +29,7 @@ import {
   setSceneResource,
   updateLibraryAsset,
 } from "./repo.js";
+import { imagePromptTask } from "./tasks/image-prompt.js";
 import { searchQueryTask } from "./tasks/search-query.js";
 
 const router = Router();
@@ -118,12 +125,56 @@ router.post("/research", requireAuth, async (req, res) => {
           ai: taskContextFor(req.user!.id),
           description: body.description,
           sceneContext: body.sceneContext,
-          referenceImage: body.referenceImage,
+          referenceImages: body.referenceImages,
           aspectRatio: body.aspectRatio,
           graphicsStyle: body.graphicsStyle,
         },
       ),
     );
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
+});
+
+/**
+ * Ready-to-paste prompts for many required assets at once, for a skill
+ * attached directly in an external AI chat — deliberately no graphicsStyle or
+ * referenceImages (the attached skill covers style), and never generates an
+ * image, only rewrites prompt text. Per-character reference photos (if the
+ * roster has any) are the one exception: the external tool has no way to
+ * know which specific person that is, so their look is described in anyway.
+ * One sequential call per item: modest batch sizes, not a hot path, and
+ * keeps this simple.
+ */
+router.post("/image-prompts", requireAuth, async (req, res) => {
+  const body = req.body as AssetPromptBatchRequest;
+  const items = Array.isArray(body.items) ? body.items : [];
+  if (items.length === 0) {
+    res.status(400).json({ error: "Thiếu danh sách tài nguyên cần tạo prompt." });
+    return;
+  }
+  const ctx = taskContextFor(req.user!.id);
+  const provider = body.provider ?? "claude";
+  if (!hasProviderKey(ctx, provider)) {
+    res.status(400).json({ error: `Chưa thiết lập API key cho ${provider}.` });
+    return;
+  }
+  try {
+    const results = [];
+    for (const item of items) {
+      const output = await runTask(
+        imagePromptTask,
+        {
+          description: item.description,
+          sceneContext: item.sceneContext,
+          characterReferenceImages: item.characterImages,
+          provider,
+        },
+        ctx,
+      );
+      results.push({ key: item.key, prompt: output.prompt, count: output.count });
+    }
+    res.json({ results });
   } catch (err) {
     res.status(400).json({ error: errorMessage(err) });
   }

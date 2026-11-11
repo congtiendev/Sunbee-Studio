@@ -26,6 +26,10 @@ export interface AnalyzeScriptInput {
   context?: ContextInput;
   /** Character roster already locked in for this script (name + description, free text) — use these exact names instead of inventing new ones. */
   knownCharacters?: string;
+  /** Recurring object/prop roster already locked in for this script — use these exact names in requiredAssets descriptions instead of inventing new wording for the same thing. */
+  knownObjects?: string;
+  /** A type "editing" skill's locked shot/cut/pacing methodology, applied as a hard constraint independent of `context`'s skill. */
+  editingStyle?: string;
 }
 
 const DEFAULT_SYSTEM_PROMPT =
@@ -79,6 +83,8 @@ export const analyzeScriptTask = defineTask<
     const provider = providerFor(ctx, input.provider);
     const hasFrames = input.frames.length > 0;
     const knownCharacters = input.knownCharacters?.trim();
+    const knownObjects = input.knownObjects?.trim();
+    const editingStyle = input.editingStyle?.trim();
     const system =
       promptOf(ctx, this, "system") +
       buildContext(input.context ?? {}) +
@@ -86,6 +92,13 @@ export const analyzeScriptTask = defineTask<
       (knownCharacters
         ? `\n\nDanh sách nhân vật đã chốt trước cho toàn bộ kịch bản (đoạn bạn đang phân tích chỉ là MỘT PHẦN của kịch bản dài hơn):\n${knownCharacters}\n` +
           "Với mỗi nhân vật xuất hiện trong đoạn này, nếu khớp một nhân vật trong danh sách trên thì PHẢI dùng ĐÚNG tên đã cho (không tự đổi cách viết/viết tắt). Chỉ thêm nhân vật mới ngoài danh sách này nếu đoạn này thực sự có người/con vật khác không nằm trong danh sách."
+        : "") +
+      (knownObjects
+        ? `\n\nDanh sách vật phẩm/đồ vật đặc thù đã chốt trước cho toàn bộ kịch bản:\n${knownObjects}\n` +
+          "Nếu cảnh này cần tài nguyên liên quan tới một trong các vật phẩm trên, mô tả requiredAssets PHẢI nhắc ĐÚNG tên vật phẩm đã cho (không tự đổi cách gọi), để nhận ra đây là cùng một vật phẩm xuyên suốt."
+        : "") +
+      (editingStyle
+        ? `\n\nPhong cách dựng/phân cảnh cố định (bắt buộc áp dụng khi chọn shotSize, cameraMovement, heroMoment và cách chia cảnh): ${editingStyle}`
         : "");
 
     const result = await provider.generateStructured<ScriptAnalyzeResult>({

@@ -185,7 +185,7 @@ function sectionOf(
 }
 
 /** New material first, so it is never the part cut short. */
-function newFirst(items: TrainingMaterial[]): TrainingMaterial[] {
+export function newFirst(items: TrainingMaterial[]): TrainingMaterial[] {
   return [...items.filter((m) => m.isNew), ...items.filter((m) => !m.isNew)];
 }
 
@@ -197,6 +197,8 @@ function newFirst(items: TrainingMaterial[]): TrainingMaterial[] {
 export function userTextOf(
   materials: TrainingMaterial[],
   refining: boolean,
+  /** The output field to tell the AI to leave empty when no scene data exists — differs by which task reuses this builder. */
+  emptyScenesField = "visualGuide",
 ): string {
   const samples = newFirst(materials.filter((m) => m.role === "sample"));
   const references = newFirst(materials.filter((m) => m.role === "reference"));
@@ -216,7 +218,7 @@ export function userTextOf(
       sectionOf(m, `Tài liệu ${i + 1}`, referenceShares[i]!, refining),
     ),
     samples.every((m) => !m.scenes?.length && !m.digest?.visual.length)
-      ? "(Không có dữ liệu phân cảnh — để visualGuide rỗng.)"
+      ? `(Không có dữ liệu phân cảnh — để ${emptyScenesField} rỗng.)`
       : "",
   ]
     .filter(Boolean)
@@ -227,12 +229,12 @@ export const trainSkillTask = defineTask<TrainSkillInput, TrainSkillOutput>({
   key: "training.skill",
   module: "training",
   label: {
-    en: "Train a skill from scripts and documents",
-    vi: "Huấn luyện skill từ kịch bản và tài liệu",
+    en: "Train a Script skill from scripts and documents",
+    vi: "Huấn luyện skill Kịch bản từ kịch bản và tài liệu",
   },
   description: {
-    en: "Compares scripts by the same author (and their scenes, if analyzed) and reads reference documents, then writes the voice, structure, visual-style and knowledge guide saved as a skill — or refines an existing skill's guide.",
-    vi: "So sánh các kịch bản của cùng tác giả (kèm phân cảnh nếu đã phân tích) và đọc tài liệu tham khảo, rồi viết bộ hướng dẫn giọng văn, cấu trúc, phong cách hình ảnh và kiến thức lưu thành skill — hoặc tinh chỉnh skill có sẵn.",
+    en: "Compares scripts by the same author and reads reference documents, then writes the voice, structure and knowledge guide saved as a Script skill — or refines an existing skill's guide. Editing skills (shot/cut style) have their own separate training prompt below.",
+    vi: "So sánh các kịch bản của cùng tác giả và đọc tài liệu tham khảo, rồi viết bộ hướng dẫn giọng văn, cấu trúc và kiến thức lưu thành skill Kịch bản — hoặc tinh chỉnh skill có sẵn. Skill Phân cảnh (phong cách dựng) có prompt huấn luyện riêng ở mục bên dưới.",
   },
   prompts: [
     {

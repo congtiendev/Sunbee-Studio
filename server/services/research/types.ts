@@ -24,8 +24,8 @@ export interface ResearchContext {
   description?: string;
   /** The scene the asset belongs to, for AI sources. */
   sceneContext?: string;
-  /** AI image sources: a style reference (data URL) to describe into the prompt. */
-  referenceImage?: string;
+  /** AI image sources: style references (data URLs, up to 10) to describe into the prompt. */
+  referenceImages?: string[];
   /** AI image sources: output frame shape. Omitted: square. */
   aspectRatio?: ImageAspectRatio;
   /** AI image sources: a type "image" skill's locked graphics methodology, applied to every scene's generation this session. */

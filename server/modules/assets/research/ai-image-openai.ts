@@ -34,7 +34,7 @@ export const aiImageOpenAiSource: ResearchSource = {
 
   isAvailable: ({ ai }) => hasProviderKey(ai, "openai"),
 
-  async search({ query, perPage }, { userId, ai, sceneContext, referenceImage, aspectRatio, graphicsStyle }) {
+  async search({ query, perPage }, { userId, ai, sceneContext, referenceImages, aspectRatio, graphicsStyle }) {
     if (!ai.keys.openai) throw new MissingApiKeyError("openai");
     const description = query.trim();
     if (!description) throw new Error("Vui lòng nhập mô tả ảnh cần tạo.");
@@ -45,7 +45,7 @@ export const aiImageOpenAiSource: ResearchSource = {
     // count, so it's worth running here too.
     const provider = firstAvailableProvider(ai, "openai");
     const { prompt, count: requestedCount } = provider
-      ? await runTask(imagePromptTask, { description, sceneContext, referenceImage, graphicsStyle, provider }, ai)
+      ? await runTask(imagePromptTask, { description, sceneContext, referenceImages, graphicsStyle, provider }, ai)
       : { prompt: description, count };
     const n = Math.max(1, Math.min(perPage ?? requestedCount, MAX_VARIATIONS));
 

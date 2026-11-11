@@ -288,6 +288,77 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    id: 14,
+    name: "skill_reference_images_list",
+    up: (db) => {
+      // Up to 10 reference illustrations per image skill, replacing the single
+      // reference_image_file_id — carries forward any existing single value.
+      db.exec(`ALTER TABLE style_templates ADD COLUMN reference_image_files_json TEXT;`);
+      const rows = db
+        .prepare(
+          `SELECT id, reference_image_file_id FROM style_templates WHERE reference_image_file_id IS NOT NULL`,
+        )
+        .all() as { id: string; reference_image_file_id: string }[];
+      const update = db.prepare(
+        `UPDATE style_templates SET reference_image_files_json = ? WHERE id = ?`,
+      );
+      for (const row of rows) {
+        update.run(JSON.stringify([row.reference_image_file_id]), row.id);
+      }
+    },
+  },
+  {
+    id: 15,
+    name: "script_analysis_style_template",
+    up: (db) => {
+      // Which skill was selected when writing/analyzing this version, so a
+      // page refresh (which reloads the newest draft/analyzed version) also
+      // restores the chosen skill instead of resetting it to "none".
+      db.exec(`ALTER TABLE script_analyses ADD COLUMN style_template_id TEXT;`);
+    },
+  },
+  {
+    id: 16,
+    name: "skill_editing_style",
+    up: (db) => {
+      // A 3rd skill type: "editing" (shot size, camera movement, cut rhythm,
+      // scene transitions), used by the scene-breakdown (analyze) step
+      // independently of the "script" (voice/writing) skill.
+      db.exec(`ALTER TABLE style_templates ADD COLUMN editing_style TEXT;`);
+    },
+  },
+  {
+    id: 17,
+    name: "script_analysis_editing_style_template",
+    up: (db) => {
+      // The type "editing" skill selected when analyzing this version, so it
+      // also survives a page refresh, mirroring style_template_id above.
+      db.exec(`ALTER TABLE script_analyses ADD COLUMN editing_style_template_id TEXT;`);
+    },
+  },
+  {
+    id: 18,
+    name: "script_analysis_provider_model_language",
+    up: (db) => {
+      // Records which AI provider/model/script language produced this
+      // version, so versions can be compared side by side in history.
+      db.exec(`ALTER TABLE script_analyses ADD COLUMN provider TEXT;`);
+      db.exec(`ALTER TABLE script_analyses ADD COLUMN model TEXT;`);
+      db.exec(`ALTER TABLE script_analyses ADD COLUMN language TEXT;`);
+    },
+  },
+  {
+    id: 19,
+    name: "script_analysis_object_roster",
+    up: (db) => {
+      // Same idea as character_roster_json (migration 10), but for recurring
+      // objects/props (a character's signature item, a brand logo...) so
+      // their look also stays consistent across every scene's image-gen
+      // prompt instead of each generation improvising a different one.
+      db.exec(`ALTER TABLE script_analyses ADD COLUMN object_roster_json TEXT;`);
+    },
+  },
 ];
 
 export function runNumberedMigrations(db: Database.Database): void {

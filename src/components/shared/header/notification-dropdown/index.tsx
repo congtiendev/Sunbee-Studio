@@ -58,7 +58,7 @@ export default function NotificationDropdown() {
       <DropdownMenuContent
         align="end"
         sideOffset={12}
-        className="w-87.5 overflow-hidden p-3 sm:w-90.25 dark:bg-[#1E2635]"
+        className="w-87.5 overflow-hidden p-3 sm:w-90.25 dark:bg-surface-popover"
       >
         <div className="flex items-center justify-between pb-3">
           <h5 className="text-title-sm font-semibold text-gray-800 dark:text-gray-200">

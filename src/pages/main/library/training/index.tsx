@@ -25,6 +25,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "@/i18n";
 import { BrainIcon, CheckIcon } from "@/icons";
 import { paths } from "@/lib/paths";
+import type { SkillType } from "@shared/types";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router";
 import ProviderModelFields from "@/pages/main/studio/steps/script/provider-model-fields";
@@ -159,11 +160,11 @@ function TargetCard({ state }: Props) {
             <RadioGroup
               value={state.newType}
               onValueChange={(value) =>
-                state.setNewType(value as "script" | "image")
+                state.setNewType(value as SkillType)
               }
               className="flex flex-wrap items-center gap-6"
             >
-              {(["script", "image"] as const).map((value) => (
+              {(["script", "editing", "image"] as const).map((value) => (
                 <Field
                   key={value}
                   orientation="horizontal"
@@ -174,7 +175,13 @@ function TargetCard({ state }: Props) {
                     htmlFor={`training-type-${value}`}
                     className="cursor-pointer"
                   >
-                    {t(value === "script" ? "typeScript" : "typeImage")}
+                    {t(
+                      value === "script"
+                        ? "typeScript"
+                        : value === "editing"
+                          ? "typeEditing"
+                          : "typeImage",
+                    )}
                   </Label>
                 </Field>
               ))}
@@ -246,6 +253,7 @@ function SourcesCard({ state }: Props) {
             onChange={(ids) => state.setKindSelection(list.kind, ids)}
             ai={{ provider: state.provider, model: state.model }}
             onAdded={state.addCandidate}
+            targetType={state.targetType}
             learnedIds={state.learnedIdsOf(list.kind)}
           />
         ))}

@@ -96,18 +96,20 @@ export default function LiquidGlassPanel() {
             <SelectTrigger size="sm" className="flex-1">
               <SelectValue>
                 {() =>
-                  themeMode === "auto"
-                    ? t("themeAuto")
-                    : themeMode === "light"
-                      ? t("themeLight")
-                      : t("themeDark")
+                  ({
+                    auto: t("themeAuto"),
+                    light: t("themeLight"),
+                    navy: t("themeNavy"),
+                    black: t("themeBlack"),
+                  })[themeMode]
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="auto">{t("themeAuto")}</SelectItem>
               <SelectItem value="light">{t("themeLight")}</SelectItem>
-              <SelectItem value="dark">{t("themeDark")}</SelectItem>
+              <SelectItem value="navy">{t("themeNavy")}</SelectItem>
+              <SelectItem value="black">{t("themeBlack")}</SelectItem>
             </SelectContent>
           </Select>
         </Row>

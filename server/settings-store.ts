@@ -29,6 +29,10 @@ const UI_PREFERENCE_KEYS = [
   "glassOpacity",
   "glassRadius",
   "scaleMode",
+  "scriptIdeaDurationSec",
+  "scriptDocumentDurationSec",
+  "scriptIdeaText",
+  "scriptDocumentBrief",
 ] as const satisfies readonly (keyof UiPreferences)[];
 
 function filePath() {

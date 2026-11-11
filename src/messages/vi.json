@@ -13,7 +13,12 @@
     "moreTabs": "Thêm",
     "rename": "Đổi tên",
     "create": "Tạo",
-    "open": "Mở"
+    "open": "Mở",
+    "markdownEditor": {
+      "edit": "Soạn thảo",
+      "preview": "Xem trước",
+      "empty": "Chưa có nội dung để xem trước."
+    }
   },
   "sidebar": {
     "groups": {
@@ -1195,12 +1200,23 @@
         "draft": "bản nháp",
         "analyzed": "đã phân tích"
       },
+      "saveStatus": {
+        "saving": "Đang lưu…",
+        "saved": "Đã lưu lúc {time}",
+        "unsavedJustNow": "Chưa lưu",
+        "unsavedMinutes": "Chưa lưu được {minutes} phút",
+        "saveNow": "Lưu ngay"
+      },
       "history": {
         "openButton": "Lịch sử",
         "title": "Lịch sử kịch bản",
         "description": "Các version đã lưu cho dự án này, mới nhất trước.",
         "empty": "Dự án này chưa có version nào.",
         "sceneCount": "{count, plural, one {# cảnh} other {# cảnh}}",
+        "language": {
+          "vi": "Tiếng Việt",
+          "en": "Tiếng Anh"
+        },
         "sources": {
           "youtube": "Link video",
           "import": "Nhập tay",
@@ -1240,6 +1256,7 @@
       "scriptLanguageVi": "Tiếng Việt",
       "scriptLanguageEn": "Tiếng Anh",
       "analyzeButton": "Phân tích kịch bản",
+      "cancelAnalyze": "Huỷ",
       "analyzingHint": "Đang phân tích kịch bản và hình ảnh — có thể mất một chút thời gian.",
       "doNotLeaveHint": "Vui lòng không đóng hoặc rời khỏi trang trong lúc xử lý — rời đi sẽ làm mất tiến trình.",
       "leaveConfirm": "AI vẫn đang xử lý kịch bản của bạn. Nếu rời đi bây giờ, kết quả của lần chạy này sẽ bị mất. Vẫn muốn rời đi?",
@@ -1261,6 +1278,10 @@
       "styleTemplateLabel": "Skill phong cách (tuỳ chọn)",
       "styleTemplatePlaceholder": "Giữ theo một phong cách đã lưu",
       "styleTemplateNone": "Không dùng",
+      "editingStyleTemplateLabel": "Skill phân cảnh (tuỳ chọn)",
+      "editingStyleTemplateHint": "Áp dụng khi chia kịch bản thành cảnh (cỡ cảnh, chuyển động máy, nhịp cắt) — độc lập với skill viết kịch bản ở trên.",
+      "editingStyleTemplatePlaceholder": "Giữ theo một phong cách dựng đã lưu",
+      "editingStyleTemplateNone": "Không dùng",
       "checklistTitle": "Checklist sẵn sàng",
       "checklist": {
         "hasScenes": "Có ít nhất một cảnh",
@@ -1272,8 +1293,13 @@
       "scenesCount": "{count, plural, one {# cảnh} other {# cảnh}}",
       "scenesTotalDuration": "Tổng {duration}",
       "scenesCharacterCount": "{count, plural, one {# nhân vật} other {# nhân vật}}",
-      "characterRosterTitle": "Nhân vật xuyên suốt video",
-      "characterRosterHint": "Ngoại hình đã chốt — dùng lại nguyên văn khi tạo ảnh ở mọi cảnh để giữ đúng một người.",
+      "scenesObjectCount": "{count, plural, one {# vật phẩm} other {# vật phẩm}}",
+      "characterRosterTitle": "Hồ sơ nhân vật & vật phẩm",
+      "characterRosterSection": "Nhân vật",
+      "characterRosterHint": "Mỗi nhân vật đều có hồ sơ ngoại hình cố định — kể cả người chỉ xuất hiện 1 cảnh — dùng lại nguyên văn mỗi khi tạo ảnh để không ai bị vẽ sai khác đi.",
+      "characterRosterEmpty": "Kịch bản chưa phát hiện nhân vật hay vật phẩm nào cần giữ nhận diện.",
+      "objectRosterSection": "Vật phẩm",
+      "objectRosterHint": "Vật phẩm/đồ vật lặp lại hoặc được nhân vật cầm/tương tác, cũng có hình dáng cố định để dùng lại khi tạo ảnh.",
       "heroMoment": "Khoảnh khắc nổi bật",
       "sceneContent": "Nội dung",
       "sceneVisual": "Hướng hình ảnh",
@@ -1321,7 +1347,8 @@
         "cancel": "Huỷ",
         "hint": "Bản phân tích đã duyệt có thể thêm vào skill làm ví dụ, để AI học cách bạn muốn chia cảnh và mô tả.",
         "assetPlaceholder": "Mô tả tài nguyên",
-        "addAsset": "Thêm tài nguyên"
+        "addAsset": "Thêm tài nguyên",
+        "attachImage": "Gắn ảnh"
       },
       "assetTypes": {
         "video": "Video",
@@ -1394,7 +1421,7 @@
       "pageDescription": "Mỗi skill gồm phong cách, hướng dẫn và các bản phân tích mẫu đã duyệt. Chọn skill khi phân tích kịch bản, AI sẽ làm theo.",
       "createButton": "Tạo skill",
       "importButton": "Nhập skill",
-      "importHint": "Nhập file .sunbee-skill.json, SKILL.md hoặc file .zip của Agent Skill.",
+      "importHint": "Nhập file .sunbee-skill.zip (đã xuất từ đây), SKILL.md, hoặc file .zip của Agent Skill.",
       "importDone": "Đã nhập \"{name}\" với {examples} ví dụ và {documents} tài liệu.",
       "importSkipped": "Bỏ qua (không phải văn bản): {files}.",
       "empty": "Chưa có skill nào. Hãy tạo mới, lưu từ một bản phân tích, hoặc nhập file.",
@@ -1426,8 +1453,9 @@
         "descriptionPlaceholder": "Khi nào dùng skill này",
         "type": "Loại skill",
         "typeScript": "Kịch bản",
+        "typeEditing": "Phân cảnh",
         "typeImage": "Đồ hoạ",
-        "typeHint": "Skill kịch bản áp dụng khi viết kịch bản; skill đồ hoạ áp dụng khi tạo ảnh ở bước Tài sản.",
+        "typeHint": "Skill kịch bản áp dụng khi viết kịch bản; skill phân cảnh áp dụng khi chia kịch bản thành cảnh; skill đồ hoạ áp dụng khi tạo ảnh ở bước Tài sản.",
         "styleSection": "Phong cách",
         "genre": "Thể loại",
         "genrePlaceholder": "VD: vlog, review, hướng dẫn",
@@ -1444,10 +1472,13 @@
         "graphicsStyle": "Phong cách đồ hoạ",
         "graphicsStyleHint": "Mô tả phong cách tạo hình AI luôn tuân theo khi tạo ảnh ở bước Tài sản (màu sắc, nét vẽ, tỉ lệ nhân vật, quy tắc nhận diện...).",
         "graphicsStylePlaceholder": "VD: Phong cách chibi nét giấy, viền nâu đậm, màu pastel ấm...",
-        "referenceImage": "Ảnh minh hoạ (tuỳ chọn)",
-        "referenceImageHint": "AI chỉ lấy PHONG CÁCH thị giác từ ảnh này (màu sắc, nét vẽ, chất liệu...), không copy lại nội dung/chủ thể của ảnh. Áp dụng cùng với phong cách đồ hoạ ở trên cho mọi ảnh tạo ra ở bước Tài sản.",
-        "referenceImageUpload": "Tải ảnh lên",
-        "referenceImageRemove": "Xoá ảnh"
+        "editingStyle": "Phong cách dựng",
+        "editingStyleHint": "Phương pháp chọn cảnh/cắt dựng AI luôn tuân theo khi chia kịch bản thành cảnh (cỡ cảnh, chuyển động máy, nhịp cắt, kiểu chuyển cảnh...). Được tự sinh khi train skill này từ video mẫu — không nhập tay.",
+        "editingStyleEmpty": "Chưa train — vào Thư viện → Đào tạo để tạo phong cách này từ video mẫu.",
+        "referenceImages": "Ảnh minh hoạ (tuỳ chọn, tối đa 10)",
+        "referenceImagesHint": "AI chỉ lấy PHONG CÁCH thị giác từ các ảnh này (màu sắc, nét vẽ, chất liệu...), không copy lại nội dung/chủ thể của ảnh. Áp dụng cùng với phong cách đồ hoạ ở trên cho mọi ảnh tạo ra ở bước Tài sản.",
+        "referenceImagesUpload": "Tải ảnh lên",
+        "referenceImagesCount": "{count}/{max} ảnh"
       },
       "examples": {
         "title": "Ví dụ",
@@ -1530,6 +1561,30 @@
       "graphicsSkillPlaceholder": "Giữ theo một phong cách đã lưu",
       "graphicsSkillNone": "Không dùng",
       "graphicsSkillHint": "Áp dụng cho mọi ảnh AI tạo ra trong bước này (OpenAI/Cloudflare). Chọn skill có nền trong suốt cần dùng nguồn OpenAI (gpt-image-1.5) — Cloudflare không xuất được nền trong suốt thật.",
+      "batchPrompt": {
+        "openButton": "Xuất prompt hàng loạt",
+        "title": "Prompt hàng loạt cho ChatGPT",
+        "description": "Danh sách prompt cho một khoảng cảnh, đã gộp trùng — dùng khi bạn tự tạo ảnh bên ChatGPT (đính kèm skill riêng), không qua AI trong studio.",
+        "rangeHint": "Chọn khoảng cảnh cần xuất prompt — kịch bản dài nên chia nhỏ từng lần (vd. mỗi lần 10–20 cảnh) để không bị quá nhiều prompt cùng lúc.",
+        "rangeFrom": "Từ cảnh",
+        "rangeTo": "đến cảnh",
+        "applyRange": "Áp dụng",
+        "rangeAll": "Chọn tất cả",
+        "rangeSummary": "{scenes} cảnh trong khoảng đã chọn → {groups} mục (sau khi gộp trùng)",
+        "characterGroup": "Nhân vật & vật phẩm",
+        "backgroundGroup": "Bối cảnh",
+        "descriptionLabel": "Mô tả",
+        "promptLabel": "Prompt",
+        "notGeneratedYet": "— chưa tạo prompt —",
+        "generateAll": "Tạo prompt",
+        "copyAll": "Copy tất cả",
+        "copyItem": "Copy mục này",
+        "empty": "Kịch bản này chưa có tài nguyên dạng ảnh nào.",
+        "importTitle": "Nhập ảnh đã tạo",
+        "importHint": "Tải lên file .zip ChatGPT gửi lại — mỗi ảnh đặt tên đúng theo mã (p1.png, p2.png...) sẽ tự động gán vào đúng cảnh.",
+        "importButton": "Nhập ảnh từ ZIP",
+        "importDone": "Đã gán {matched} ảnh. Bỏ qua {skipped} file không khớp mã nào."
+      },
       "assetSources": {
         "stock": "Stock",
         "generate": "Tạo mới",
@@ -1786,7 +1841,8 @@
     "themeLabel": "Chủ đề",
     "themeAuto": "Theo hệ thống",
     "themeLight": "Sáng",
-    "themeDark": "Tối",
+    "themeNavy": "Tối (Navy)",
+    "themeBlack": "Tối (Đen)",
     "scaleLabel": "Tỉ lệ",
     "scaleMedium": "Vừa",
     "scaleAuto": "Lớn (vừa chiều rộng)",
@@ -1814,22 +1870,26 @@
       "refineHint": "Huấn luyện tích luỹ: AI đọc lại mọi nguồn skill đã học trước đây cùng những gì bạn thêm bên dưới, rồi tổng hợp vào bộ hướng dẫn hiện tại — nguồn mới giúp tinh chỉnh skill chứ không thay thế nó. Kết quả lưu thành phiên bản mới.",
       "type": "Loại skill",
       "typeScript": "Kịch bản",
+      "typeEditing": "Phân cảnh",
       "typeImage": "Đồ hoạ",
-      "typeHint": "Skill kịch bản học từ video/tài liệu để viết kịch bản. Skill đồ hoạ học từ nhiều ảnh mẫu để tạo ảnh đồng nhất phong cách ở bước Tài sản."
+      "typeHint": "Skill kịch bản học từ video/tài liệu để viết kịch bản. Skill phân cảnh học nhịp cắt/cỡ cảnh từ cùng những video đó để áp dụng khi chia kịch bản thành cảnh. Skill đồ hoạ học từ nhiều ảnh mẫu để tạo ảnh đồng nhất phong cách ở bước Tài sản."
     },
     "sources": {
       "title": "2. Nguồn để học",
       "hint": "Giống ba cách lấy kịch bản ở bước Kịch bản. Để giọng văn chính xác, hãy dùng 3–5 video của cùng tác giả hoặc kênh; thêm tài liệu nếu có quy tắc viết, văn bản mẫu hoặc kiến thức.",
       "selected": "Đã chọn {count}/{max}",
       "manage": "Quản lý",
-      "existing": "Đã lấy trước đây — chọn để dùng lại:",
+      "pickExisting": "Chọn từ nguồn đã có ({count})",
+      "remove": "Bỏ chọn",
+      "done": "Xong",
       "searchPlaceholder": "Tìm kiếm",
       "noMatch": "Không có mục nào khớp.",
       "chars": "{count} ký tự",
       "link": {
         "title": "Từ link video",
         "hint": "Dán link (YouTube, TikTok…); kịch bản của từng video được lấy bằng AI chọn ở bên dưới.",
-        "empty": "Chưa lấy kịch bản từ link nào."
+        "hintEditing": "Dán link (YouTube, TikTok…). Hệ thống tải video và trích khung hình thật của từng video (phần kịch bản/giọng đọc không quan trọng ở đây) để AI học cách dựng.",
+        "empty": "Chưa lấy video nào từ link."
       },
       "upload": {
         "title": "Tải video lên",
@@ -1862,7 +1922,8 @@
       "analyzed": "Đã phân tích",
       "linked": "Đã gắn vào skill",
       "new": "Mới",
-      "learned": "Đã học"
+      "learned": "Đã học",
+      "noFrames": "Chưa có khung hình"
     },
     "run": {
       "title": "3. Huấn luyện",
@@ -1917,6 +1978,7 @@
       "link": {
         "placeholder": "Dán một hoặc nhiều link video, mỗi dòng một link",
         "fetch": "Lấy {count} kịch bản",
+        "fetchVideo": "Lấy {count} video",
         "fetching": "Đang lấy…",
         "hint": "Có dùng credit AI, giống bước Kịch bản.",
         "tooShort": "Kịch bản quá ngắn để học."

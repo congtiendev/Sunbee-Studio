@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { readFileSync } from "node:fs";
 import { posix } from "node:path";
 import type {
   SkillImportResult,
@@ -8,8 +9,18 @@ import type {
 import { saveScriptVersion } from "../../modules/script/repo.js";
 import { getDb } from "../db/client.js";
 import { createDocument, linkDocument, listLinkedDocuments } from "../db/documents-repo.js";
-import { getTemplateById, saveTemplate, setSkillExamples } from "../db/style-templates-repo.js";
+import {
+  addReferenceImage,
+  getTemplateById,
+  saveTemplate,
+  setSkillExamples,
+} from "../db/style-templates-repo.js";
+import { getFileForUser, saveFile } from "../storage/files.js";
 import { getSkillExamples, withSkillDefaults, type Caller } from "./skills.js";
+
+/** The manifest entry name inside an exported `.sunbee-skill.zip`. */
+const MANIFEST_NAME = "sunbee-skill.json";
+const IMAGES_DIR = "images";
 
 const TEXT_EXTENSIONS = new Set([
   ".md", ".markdown", ".txt", ".json", ".yaml", ".yml", ".csv", ".tsv",
@@ -28,6 +39,9 @@ export function exportSkill(caller: Caller, skillId: string): SunbeeSkillPackage
     updatedAt: _updatedAt,
     userId: _userId,
     ownerEmail: _ownerEmail,
+    // Internal file ids, meaningless outside this install — the zip export
+    // carries the actual image bytes under `images/` instead.
+    referenceImageFileIds: _referenceImageFileIds,
     ...input
   } = skill;
   return {
@@ -48,6 +62,27 @@ export function exportSkill(caller: Caller, skillId: string): SunbeeSkillPackage
       textContent: doc.textContent,
     })),
   };
+}
+
+/**
+ * The portable form of a skill: a `.zip` with `sunbee-skill.json` (the same
+ * manifest `exportSkill` returns) plus the actual bytes of every reference
+ * image under `images/`, so an "image" skill's style sample travels with it
+ * instead of exporting dangling internal file ids.
+ */
+export async function exportSkillZip(caller: Caller, skillId: string): Promise<Buffer | null> {
+  const pkg = exportSkill(caller, skillId);
+  if (!pkg) return null;
+  const skill = getTemplateById(caller.id, caller.role === "admin", skillId)!;
+  const zip = new JSZip();
+  zip.file(MANIFEST_NAME, JSON.stringify(pkg, null, 2));
+  for (const [index, fileId] of skill.referenceImageFileIds.entries()) {
+    const file = getFileForUser(caller.id, caller.role === "admin", fileId);
+    if (!file) continue;
+    const buffer = readFileSync(file.absolutePath);
+    zip.file(`${IMAGES_DIR}/${index}-${file.originalName}`, buffer);
+  }
+  return zip.generateAsync({ type: "nodebuffer" });
 }
 
 // ---------- import ----------
@@ -96,6 +131,36 @@ function importPackage(caller: Caller, pkg: SunbeeSkillPackage): SkillImportResu
   })();
 }
 
+/** A `.sunbee-skill.zip`: the manifest plus actual reference-image bytes under `images/`. */
+async function importSunbeeSkillZip(caller: Caller, zip: JSZip): Promise<SkillImportResult> {
+  const manifestEntry = zip.file(MANIFEST_NAME);
+  if (!manifestEntry) throw new Error(`Không tìm thấy ${MANIFEST_NAME} trong file .zip.`);
+  let pkg: SunbeeSkillPackage;
+  try {
+    pkg = JSON.parse(await manifestEntry.async("string")) as SunbeeSkillPackage;
+  } catch {
+    throw new Error("File JSON không đọc được.");
+  }
+  const result = importPackage(caller, pkg);
+
+  const imageEntries = Object.values(zip.files).filter(
+    (f) => !f.dir && f.name.startsWith(`${IMAGES_DIR}/`),
+  );
+  const admin = caller.role === "admin";
+  for (const entry of imageEntries) {
+    const buffer = await entry.async("nodebuffer");
+    const originalName = posix.basename(entry.name).replace(/^\d+-/, "");
+    const mime = originalName.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg";
+    const stored = await saveFile(caller.id, "skill-attachment", buffer, originalName, mime);
+    try {
+      addReferenceImage(caller.id, admin, result.skill.id, stored.id);
+    } catch {
+      // Already at the 10-image cap — the rest of the skill still imported fine.
+    }
+  }
+  return result;
+}
+
 /** Splits YAML frontmatter (`---` block) from a SKILL.md. Only flat `key: value` pairs are read. */
 export function parseSkillMd(text: string): { meta: Record<string, string>; body: string } {
   const match = /^﻿?---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
@@ -141,8 +206,10 @@ function importAgentSkill(
   })();
 }
 
-async function importAgentSkillZip(caller: Caller, buffer: Buffer, filename: string) {
+/** A `.zip`: a native `.sunbee-skill.zip` (has `sunbee-skill.json` at its root) or an Agent Skill `.zip` (has `SKILL.md`). */
+async function importZip(caller: Caller, buffer: Buffer, filename: string) {
   const zip = await JSZip.loadAsync(buffer);
+  if (zip.file(MANIFEST_NAME)) return importSunbeeSkillZip(caller, zip);
   const entries = Object.values(zip.files).filter((f) => !f.dir);
   // The skill root is the folder holding the shallowest SKILL.md.
   const skillMdEntry = entries
@@ -170,14 +237,14 @@ async function importAgentSkillZip(caller: Caller, buffer: Buffer, filename: str
   return importAgentSkill(caller, skillMd, fallbackName, files, skippedFiles);
 }
 
-/** Imports a `.sunbee-skill.json`, an Agent Skill `SKILL.md`, or an Agent Skill `.zip`. */
+/** Imports a `.sunbee-skill.zip`/legacy `.sunbee-skill.json`, an Agent Skill `SKILL.md`, or an Agent Skill `.zip`. */
 export async function importSkillFile(
   caller: Caller,
   filename: string,
   buffer: Buffer,
 ): Promise<SkillImportResult> {
   const lower = filename.toLowerCase();
-  if (lower.endsWith(".zip")) return importAgentSkillZip(caller, buffer, filename);
+  if (lower.endsWith(".zip")) return importZip(caller, buffer, filename);
   const text = buffer.toString("utf-8");
   if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
     return importAgentSkill(caller, text, filename.replace(/\.(md|markdown)$/i, ""), [], []);

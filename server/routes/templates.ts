@@ -2,14 +2,15 @@ import { Router } from "express";
 import multer from "multer";
 import { requireAuth } from "../middleware/require-auth.js";
 import {
+  addReferenceImage,
   deleteTemplate,
   getTemplateById,
   listTemplates,
+  removeReferenceImage,
   saveTemplate,
-  setReferenceImage,
 } from "../services/db/style-templates-repo.js";
 import { deleteFile, saveFile } from "../services/storage/files.js";
-import { exportSkill, importSkillFile } from "../services/skills/package.js";
+import { exportSkillZip, importSkillFile } from "../services/skills/package.js";
 import { getSkillDetail, updateSkill, withSkillDefaults } from "../services/skills/skills.js";
 import type { SkillInput, SkillUpdateRequest } from "../../shared/types.js";
 
@@ -94,20 +95,27 @@ router.put("/:id", requireAuth, (req, res) => {
   res.json(detail);
 });
 
-router.get("/:id/export", requireAuth, (req, res) => {
-  const pkg = exportSkill(req.user!, req.params.id as string);
-  if (!pkg) {
+router.get("/:id/export", requireAuth, async (req, res) => {
+  const admin = isAdmin(req.user!);
+  const skill = getTemplateById(req.user!.id, admin, req.params.id as string);
+  if (!skill) {
     res.status(404).json({ error: "Không tìm thấy skill." });
     return;
   }
-  const filename = `${pkg.skill.name.replace(/[^\p{L}\p{N}_-]+/gu, "-")}.sunbee-skill.json`;
+  const zip = await exportSkillZip(req.user!, req.params.id as string);
+  if (!zip) {
+    res.status(404).json({ error: "Không tìm thấy skill." });
+    return;
+  }
+  const filename = `${skill.name.replace(/[^\p{L}\p{N}_-]+/gu, "-")}.sunbee-skill.zip`;
   res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
-  res.json(pkg);
+  res.setHeader("Content-Type", "application/zip");
+  res.send(zip);
 });
 
-/** type "image" skills: an optional reference illustration — its *style* only, described into every image-gen prompt alongside graphicsStyle. */
+/** type "image" skills: up to 10 reference illustrations — their *style* only, described into every image-gen prompt alongside graphicsStyle. */
 router.post(
-  "/:id/reference-image",
+  "/:id/reference-images",
   requireAuth,
   (req, res, next) => {
     uploadImage.single("file")(req, res, (err: unknown) => {
@@ -140,24 +148,28 @@ router.post(
       req.file.originalname,
       req.file.mimetype,
     );
-    setReferenceImage(req.user!.id, admin, existing.id, stored.id);
-    if (existing.referenceImageFileId) {
-      await deleteFile(req.user!.id, admin, existing.referenceImageFileId);
+    try {
+      addReferenceImage(req.user!.id, admin, existing.id, stored.id);
+    } catch (err) {
+      await deleteFile(req.user!.id, admin, stored.id);
+      res.status(400).json({ error: errorMessage(err) });
+      return;
     }
     res.json(getSkillDetail(req.user!, existing.id));
   },
 );
 
-router.delete("/:id/reference-image", requireAuth, async (req, res) => {
+router.delete("/:id/reference-images/:fileId", requireAuth, async (req, res) => {
   const admin = isAdmin(req.user!);
   const existing = getTemplateById(req.user!.id, admin, req.params.id as string);
   if (!existing) {
     res.status(404).json({ error: "Không tìm thấy skill." });
     return;
   }
-  setReferenceImage(req.user!.id, admin, existing.id, null);
-  if (existing.referenceImageFileId) {
-    await deleteFile(req.user!.id, admin, existing.referenceImageFileId);
+  const fileId = req.params.fileId as string;
+  removeReferenceImage(req.user!.id, admin, existing.id, fileId);
+  if (existing.referenceImageFileIds.includes(fileId)) {
+    await deleteFile(req.user!.id, admin, fileId);
   }
   res.json(getSkillDetail(req.user!, existing.id));
 });
@@ -166,8 +178,8 @@ router.delete("/:id", requireAuth, async (req, res) => {
   const admin = isAdmin(req.user!);
   const existing = getTemplateById(req.user!.id, admin, req.params.id as string);
   deleteTemplate(req.user!.id, admin, req.params.id as string);
-  if (existing?.referenceImageFileId) {
-    await deleteFile(req.user!.id, admin, existing.referenceImageFileId);
+  for (const fileId of existing?.referenceImageFileIds ?? []) {
+    await deleteFile(req.user!.id, admin, fileId);
   }
   res.json({ ok: true });
 });

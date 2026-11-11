@@ -20,7 +20,8 @@ interface StyleTemplateRow {
   description: string;
   instructions: string;
   graphics_style: string | null;
-  reference_image_file_id: string | null;
+  editing_style: string | null;
+  reference_image_files_json: string | null;
   origin: SkillOrigin;
   skill_md: string | null;
   user_id: string | null;
@@ -42,7 +43,8 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
     description: row.description,
     instructions: row.instructions,
     graphicsStyle: row.graphics_style ?? undefined,
-    referenceImageFileId: row.reference_image_file_id ?? undefined,
+    editingStyle: row.editing_style ?? undefined,
+    referenceImageFileIds: row.reference_image_files_json ? JSON.parse(row.reference_image_files_json) : [],
     origin: row.origin,
     skillMd: row.skill_md ?? undefined,
     userId: row.user_id ?? undefined,
@@ -53,7 +55,7 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
 const SELECT_BASE = `
   SELECT st.id, st.name, st.created_at, st.updated_at, st.type, st.genre, st.style_tags_json,
          st.pacing_json, st.tone_description, st.resource_inventory_json, st.description,
-         st.instructions, st.graphics_style, st.reference_image_file_id, st.origin, st.skill_md,
+         st.instructions, st.graphics_style, st.editing_style, st.reference_image_files_json, st.origin, st.skill_md,
          st.user_id, u.email AS owner_email
   FROM style_templates st
   LEFT JOIN users u ON u.id = st.user_id
@@ -87,10 +89,10 @@ export function saveTemplate(userId: string, template: SkillInput): StyleTemplat
   getDb()
     .prepare(
       `INSERT INTO style_templates (id, name, created_at, updated_at, type, genre, style_tags_json, pacing_json,
-         tone_description, resource_inventory_json, description, instructions, graphics_style,
-         reference_image_file_id, origin, skill_md, user_id)
+         tone_description, resource_inventory_json, description, instructions, graphics_style, editing_style,
+         reference_image_files_json, origin, skill_md, user_id)
        VALUES (@id, @name, @now, @now, @type, @genre, @styleTagsJson, @pacingJson, @toneDescription,
-         @resourceInventoryJson, @description, @instructions, @graphicsStyle, NULL, @origin, @skillMd, @userId)`,
+         @resourceInventoryJson, @description, @instructions, @graphicsStyle, @editingStyle, NULL, @origin, @skillMd, @userId)`,
     )
     .run({
       id,
@@ -105,6 +107,7 @@ export function saveTemplate(userId: string, template: SkillInput): StyleTemplat
       description: template.description ?? "",
       instructions: template.instructions ?? "",
       graphicsStyle: template.graphicsStyle ?? null,
+      editingStyle: template.editingStyle ?? null,
       origin: template.origin ?? "app",
       skillMd: template.skillMd ?? null,
       userId,
@@ -126,7 +129,8 @@ export function updateTemplate(
       `UPDATE style_templates SET name = @name, updated_at = @now, type = @type, genre = @genre,
          style_tags_json = @styleTagsJson, pacing_json = @pacingJson, tone_description = @toneDescription,
          resource_inventory_json = @resourceInventoryJson, description = @description,
-         instructions = @instructions, graphics_style = @graphicsStyle, origin = @origin, skill_md = @skillMd
+         instructions = @instructions, graphics_style = @graphicsStyle, editing_style = @editingStyle,
+         origin = @origin, skill_md = @skillMd
        WHERE id = @id`,
     )
     .run({
@@ -142,23 +146,51 @@ export function updateTemplate(
       description: next.description ?? "",
       instructions: next.instructions ?? "",
       graphicsStyle: next.graphicsStyle ?? null,
+      editingStyle: next.editingStyle ?? null,
       origin: next.origin ?? "app",
       skillMd: next.skillMd ?? null,
     });
   return getTemplateById(userId, isAdmin, id);
 }
 
-/** Sets or clears the skill's reference image. Kept separate from `updateTemplate`'s field patch so the generic save/update flow never touches it by accident. */
-export function setReferenceImage(
+/** Up to 10 reference images per skill. */
+export const MAX_REFERENCE_IMAGES = 10;
+
+function writeReferenceImages(id: string, fileIds: string[]): void {
+  getDb()
+    .prepare(`UPDATE style_templates SET reference_image_files_json = ? WHERE id = ?`)
+    .run(JSON.stringify(fileIds), id);
+}
+
+/** Appends a reference image. Kept separate from `updateTemplate`'s field patch so the generic save/update flow never touches it by accident. */
+export function addReferenceImage(
   userId: string,
   isAdmin: boolean,
   id: string,
-  fileId: string | null,
+  fileId: string,
 ): StyleTemplate | null {
-  if (!getTemplateById(userId, isAdmin, id)) return null;
-  getDb()
-    .prepare(`UPDATE style_templates SET reference_image_file_id = ? WHERE id = ?`)
-    .run(fileId, id);
+  const current = getTemplateById(userId, isAdmin, id);
+  if (!current) return null;
+  if (current.referenceImageFileIds.length >= MAX_REFERENCE_IMAGES) {
+    throw new Error(`Tối đa ${MAX_REFERENCE_IMAGES} ảnh minh hoạ mỗi skill.`);
+  }
+  writeReferenceImages(id, [...current.referenceImageFileIds, fileId]);
+  return getTemplateById(userId, isAdmin, id);
+}
+
+/** Removes one reference image by its file id. */
+export function removeReferenceImage(
+  userId: string,
+  isAdmin: boolean,
+  id: string,
+  fileId: string,
+): StyleTemplate | null {
+  const current = getTemplateById(userId, isAdmin, id);
+  if (!current) return null;
+  writeReferenceImages(
+    id,
+    current.referenceImageFileIds.filter((existing) => existing !== fileId),
+  );
   return getTemplateById(userId, isAdmin, id);
 }
 

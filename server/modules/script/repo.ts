@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type {
   RecurringCharacter,
+  RecurringObject,
   ScriptAnalysisListItem,
   ScriptAnalysisRecord,
   ScriptAnalysisSummary,
@@ -21,10 +22,16 @@ interface ScriptAnalysisRow {
   style_json: string | null;
   frames_json: string | null;
   character_roster_json: string | null;
+  object_roster_json: string | null;
   kind: "draft" | "analyzed";
   video_id: string | null;
   approved: number;
   template_source_id: string | null;
+  style_template_id: string | null;
+  editing_style_template_id: string | null;
+  provider: string | null;
+  model: string | null;
+  language: string | null;
   user_id: string | null;
   owner_email: string | null;
 }
@@ -52,9 +59,17 @@ function rowToRecord(row: ScriptAnalysisRow): ScriptAnalysisRecord {
     characterRoster: row.character_roster_json
       ? JSON.parse(row.character_roster_json)
       : undefined,
+    objectRoster: row.object_roster_json
+      ? JSON.parse(row.object_roster_json)
+      : undefined,
     videoId: row.video_id ?? undefined,
     approved: row.approved === 1,
     templateSourceId: row.template_source_id ?? undefined,
+    styleTemplateId: row.style_template_id ?? undefined,
+    editingStyleTemplateId: row.editing_style_template_id ?? undefined,
+    provider: (row.provider as "openai" | "claude" | null) ?? undefined,
+    model: row.model ?? undefined,
+    language: (row.language as "vi" | "en" | null) ?? undefined,
     userId: row.user_id ?? undefined,
     ownerEmail: row.owner_email ?? undefined,
   };
@@ -73,6 +88,12 @@ export function saveScriptVersion(
     approved?: boolean;
     templateSourceId?: string;
     characterRoster?: RecurringCharacter[];
+    objectRoster?: RecurringObject[];
+    styleTemplateId?: string;
+    editingStyleTemplateId?: string;
+    provider?: "openai" | "claude";
+    model?: string;
+    language?: "vi" | "en";
   } = {},
 ): ScriptAnalysisRecord {
   const record = {
@@ -87,15 +108,21 @@ export function saveScriptVersion(
     resources: result?.resources ?? EMPTY_RESOURCES,
     style: result?.style,
     characterRoster: options.characterRoster,
+    objectRoster: options.objectRoster,
     videoId,
     approved: Boolean(options.approved),
     templateSourceId: options.templateSourceId,
+    styleTemplateId: options.styleTemplateId,
+    editingStyleTemplateId: options.editingStyleTemplateId,
+    provider: options.provider,
+    model: options.model,
+    language: options.language,
   };
 
   getDb()
     .prepare(
-      `INSERT INTO script_analyses (id, created_at, source_type, source_url, script_text, scenes_json, resources_json, style_json, frames_json, character_roster_json, kind, video_id, approved, template_source_id, user_id)
-       VALUES (@id, @createdAt, @sourceType, @sourceUrl, @scriptText, @scenesJson, @resourcesJson, @styleJson, @framesJson, @characterRosterJson, @kind, @videoId, @approved, @templateSourceId, @userId)`,
+      `INSERT INTO script_analyses (id, created_at, source_type, source_url, script_text, scenes_json, resources_json, style_json, frames_json, character_roster_json, object_roster_json, kind, video_id, approved, template_source_id, style_template_id, editing_style_template_id, provider, model, language, user_id)
+       VALUES (@id, @createdAt, @sourceType, @sourceUrl, @scriptText, @scenesJson, @resourcesJson, @styleJson, @framesJson, @characterRosterJson, @objectRosterJson, @kind, @videoId, @approved, @templateSourceId, @styleTemplateId, @editingStyleTemplateId, @provider, @model, @language, @userId)`,
     )
     .run({
       id: record.id,
@@ -110,16 +137,51 @@ export function saveScriptVersion(
       characterRosterJson: record.characterRoster
         ? JSON.stringify(record.characterRoster)
         : null,
+      objectRosterJson: record.objectRoster
+        ? JSON.stringify(record.objectRoster)
+        : null,
       kind: record.kind,
       videoId: record.videoId ?? null,
       approved: record.approved ? 1 : 0,
       templateSourceId: record.templateSourceId ?? null,
+      styleTemplateId: record.styleTemplateId ?? null,
+      editingStyleTemplateId: record.editingStyleTemplateId ?? null,
+      provider: record.provider ?? null,
+      model: record.model ?? null,
+      language: record.language ?? null,
       userId,
     });
 
   if (videoId) touchVideo(videoId);
 
   return { ...record, userId };
+}
+
+/**
+ * Overwrites the script text of an existing version in place — only when it's
+ * still a "draft" (an "analyzed" version's scenes are tied to its original
+ * text, so that one is never rewritten under them). Null means "fork a new
+ * draft instead": not found, not owned, or already "analyzed".
+ */
+export function updateDraftScriptText(
+  userId: string,
+  isAdmin: boolean,
+  id: string,
+  scriptText: string,
+): ScriptAnalysisRecord | null {
+  const existing = getScriptAnalysisById(userId, isAdmin, id);
+  if (!existing || existing.kind !== "draft") return null;
+  const result = isAdmin
+    ? getDb()
+        .prepare(`UPDATE script_analyses SET script_text = ? WHERE id = ?`)
+        .run(scriptText, id)
+    : getDb()
+        .prepare(
+          `UPDATE script_analyses SET script_text = ? WHERE id = ? AND user_id = ?`,
+        )
+        .run(scriptText, id, userId);
+  if (result.changes === 0) return null;
+  return getScriptAnalysisById(userId, isAdmin, id);
 }
 
 export function deleteScriptAnalysis(
@@ -139,8 +201,10 @@ export function deleteScriptAnalysis(
 const SELECT_BASE = `
   SELECT sa.id, sa.created_at, sa.source_type, sa.source_url, sa.script_text,
          sa.scenes_json, sa.resources_json, sa.style_json, sa.frames_json,
-         sa.character_roster_json, sa.kind,
-         sa.video_id, sa.approved, sa.template_source_id, sa.user_id, u.email AS owner_email
+         sa.character_roster_json, sa.object_roster_json, sa.kind,
+         sa.video_id, sa.approved, sa.template_source_id, sa.style_template_id,
+         sa.editing_style_template_id, sa.provider, sa.model, sa.language,
+         sa.user_id, u.email AS owner_email
   FROM script_analyses sa
   LEFT JOIN users u ON u.id = sa.user_id
 `;

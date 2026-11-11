@@ -13,7 +13,7 @@ import { useTranslations } from "@/i18n";
 import { TrashBinIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
 import { cn } from "@/utils";
-import type { ScriptAnalysisRecord } from "@shared/types";
+import type { ScriptAnalysisRecord, StyleTemplate } from "@shared/types";
 import { useEffect, useState } from "react";
 
 interface VersionSheetProps {
@@ -34,6 +34,7 @@ export default function VersionSheet({
   const t = useTranslations("videoStudio.script");
 
   const [rows, setRows] = useState<ScriptAnalysisRecord[]>([]);
+  const [templates, setTemplates] = useState<StyleTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -43,10 +44,11 @@ export default function VersionSheet({
     let active = true;
     setLoading(true);
     setError(null);
-    apiClient.script
-      .history(videoId)
-      .then((data) => {
-        if (active) setRows(data);
+    Promise.all([apiClient.script.history(videoId), apiClient.templates.list()])
+      .then(([data, allTemplates]) => {
+        if (!active) return;
+        setRows(data);
+        setTemplates(allTemplates);
       })
       .catch((err) => {
         if (active) setError(err instanceof Error ? err.message : String(err));
@@ -58,6 +60,8 @@ export default function VersionSheet({
       active = false;
     };
   }, [open, videoId]);
+
+  const templateName = (id: string) => templates.find((t) => t.id === id)?.name;
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -156,6 +160,32 @@ export default function VersionSheet({
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {t("history.sceneCount", { count: row.scenes.length })}
                     </p>
+                    {(row.provider || row.language || row.styleTemplateId || row.editingStyleTemplateId) && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {row.provider && (
+                          <Badge variant="light" color="gray" size="sm">
+                            {row.provider}
+                            {row.model ? ` · ${row.model}` : ""}
+                          </Badge>
+                        )}
+                        {row.language && (
+                          <Badge variant="light" color="gray" size="sm">
+                            {t(`history.language.${row.language}`)}
+                          </Badge>
+                        )}
+                        {row.styleTemplateId && templateName(row.styleTemplateId) && (
+                          <Badge variant="light" color="primary" size="sm">
+                            {templateName(row.styleTemplateId)}
+                          </Badge>
+                        )}
+                        {row.editingStyleTemplateId &&
+                          templateName(row.editingStyleTemplateId) && (
+                            <Badge variant="light" color="primary" size="sm">
+                              {templateName(row.editingStyleTemplateId)}
+                            </Badge>
+                          )}
+                      </div>
+                    )}
                   </div>
                 </button>
                 <Button

@@ -1,3 +1,4 @@
+import MarkdownTextarea from "@/components/shared/markdown-textarea";
 import { SkeletonFieldRow } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +17,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/i18n";
-import { TrashBinIcon, UploadIcon } from "@/icons";
+import { UploadIcon, XIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { DocumentSummary, ScriptAnalysisSummary, SkillDetail } from "@shared/types";
@@ -46,6 +46,7 @@ function toForm(skill: SkillDetail): SkillFormData {
     cutsPerMinute: Number(skill.pacing.cutsPerMinute.toFixed(1)),
     instructions: skill.instructions ?? "",
     graphicsStyle: skill.graphicsStyle ?? "",
+    editingStyle: skill.editingStyle ?? "",
   };
 }
 
@@ -62,7 +63,7 @@ export default function SkillEditorSheet({ open, onOpenChange, skillId, onSaved 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-2xl">
+      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-4xl">
         <DialogHeader className="pe-10">
           <DialogTitle>{skillId ? t("editor.editTitle") : t("editor.createTitle")}</DialogTitle>
           <DialogDescription>{t("editor.description")}</DialogDescription>
@@ -103,9 +104,10 @@ function SkillEditorBody({
   const [loadingDocuments, setLoadingDocuments] = useState(true);
   const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  // A new skill has no id yet, so a picked file waits here and uploads right after creation.
-  const [pendingReferenceImage, setPendingReferenceImage] = useState<File | null>(null);
-  const [pendingReferenceImagePreview, setPendingReferenceImagePreview] = useState<string | null>(null);
+  // A new skill has no id yet, so picked files wait here and upload right after creation.
+  const [pendingReferenceImages, setPendingReferenceImages] = useState<
+    { file: File; previewUrl: string }[]
+  >([]);
   const [referenceImageBusy, setReferenceImageBusy] = useState(false);
   const referenceImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -171,7 +173,7 @@ function SkillEditorBody({
 
   useEffect(() => {
     return () => {
-      if (pendingReferenceImagePreview) URL.revokeObjectURL(pendingReferenceImagePreview);
+      for (const { previewUrl } of pendingReferenceImages) URL.revokeObjectURL(previewUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup-only, revokes whatever was last set
   }, []);
@@ -188,14 +190,15 @@ function SkillEditorBody({
       pacing: { avgShotLengthSec: data.avgShotLengthSec, cutsPerMinute: data.cutsPerMinute },
       instructions: data.instructions,
       graphicsStyle: data.graphicsStyle,
+      editingStyle: data.editingStyle,
     };
     try {
       const id =
         skillId ??
         (await apiClient.templates.save({ ...fields, resourceInventory: {} })).id;
       let saved = await apiClient.templates.update(id, { ...fields, exampleIds, documentIds });
-      if (pendingReferenceImage) {
-        saved = await apiClient.templates.setReferenceImage(id, pendingReferenceImage);
+      for (const { file } of pendingReferenceImages) {
+        saved = await apiClient.templates.addReferenceImage(id, file);
       }
       onSaved(saved);
     } catch (err) {
@@ -203,48 +206,49 @@ function SkillEditorBody({
     }
   };
 
-  const pickReferenceImage = (file: File) => {
-    setPendingReferenceImagePreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return URL.createObjectURL(file);
-    });
+  const addReferenceImageFiles = (files: File[]) => {
     if (skillId) {
       setReferenceImageBusy(true);
-      apiClient.templates
-        .setReferenceImage(skillId, file)
-        .then((skill) => {
-          setDetail(skill);
-          setPendingReferenceImagePreview((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return null;
-          });
-        })
-        .catch((err) => setError(errorMessage(err)))
-        .finally(() => setReferenceImageBusy(false));
+      void (async () => {
+        for (const file of files) {
+          try {
+            setDetail(await apiClient.templates.addReferenceImage(skillId, file));
+          } catch (err) {
+            setError(errorMessage(err));
+            break;
+          }
+        }
+        setReferenceImageBusy(false);
+      })();
     } else {
-      setPendingReferenceImage(file);
+      setPendingReferenceImages((prev) => [
+        ...prev,
+        ...files.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })),
+      ]);
     }
   };
 
-  const removeReferenceImage = () => {
-    setPendingReferenceImagePreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
+  const removePendingReferenceImage = (index: number) => {
+    setPendingReferenceImages((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
     });
-    setPendingReferenceImage(null);
-    if (skillId && detail?.referenceImageFileId) {
-      setReferenceImageBusy(true);
-      apiClient.templates
-        .deleteReferenceImage(skillId)
-        .then(setDetail)
-        .catch((err) => setError(errorMessage(err)))
-        .finally(() => setReferenceImageBusy(false));
-    }
   };
 
-  const referenceImagePreviewUrl =
-    pendingReferenceImagePreview ??
-    (detail?.referenceImageFileId ? apiClient.documents.fileUrl(detail.referenceImageFileId) : null);
+  const removeSavedReferenceImage = (fileId: string) => {
+    if (!skillId) return;
+    setReferenceImageBusy(true);
+    apiClient.templates
+      .removeReferenceImage(skillId, fileId)
+      .then(setDetail)
+      .catch((err) => setError(errorMessage(err)))
+      .finally(() => setReferenceImageBusy(false));
+  };
+
+  const savedReferenceImageIds = detail?.referenceImageFileIds ?? [];
+  const totalReferenceImages = savedReferenceImageIds.length + pendingReferenceImages.length;
+  const referenceImagesAtMax = totalReferenceImages >= 10;
 
   // Examples the skill already has but that aren't in the picker list (e.g. imported, video-less).
   const pickerOptions = [
@@ -328,6 +332,12 @@ function SkillEditorBody({
                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
+                    <RadioGroupItem id="skill-type-editing" value="editing" />
+                    <Label htmlFor="skill-type-editing" className="cursor-pointer">
+                      {t("form.typeEditing")}
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <RadioGroupItem id="skill-type-image" value="image" />
                     <Label htmlFor="skill-type-image" className="cursor-pointer">
                       {t("form.typeImage")}
@@ -340,7 +350,28 @@ function SkillEditorBody({
           </Field>
         </section>
 
-        {skillType === "script" ? (
+        {skillId && (skillType === "editing" ? (
+          <section className="space-y-2">
+            <Field>
+              <FieldLabel className={SECTION_TITLE}>{t("form.editingStyle")}</FieldLabel>
+              <FieldDescription>{t("form.editingStyleHint")}</FieldDescription>
+              <Controller
+                control={control}
+                name="editingStyle"
+                render={({ field }) => (
+                  <MarkdownTextarea
+                    value={field.value}
+                    onChange={field.onChange}
+                    rows={10}
+                    className="font-mono text-xs"
+                    placeholder={t("form.editingStyleEmpty")}
+                    readOnly
+                  />
+                )}
+              />
+            </Field>
+          </section>
+        ) : skillType === "script" ? (
           <>
             <section className="space-y-4">
               <h3 className={SECTION_TITLE}>{t("form.styleSection")}</h3>
@@ -387,11 +418,18 @@ function SkillEditorBody({
               <Field>
                 <FieldLabel className={SECTION_TITLE}>{t("form.instructions")}</FieldLabel>
                 <FieldDescription>{t("form.instructionsHint")}</FieldDescription>
-                <Textarea
-                  {...register("instructions")}
-                  rows={10}
-                  className="font-mono text-xs"
-                  placeholder={t("form.instructionsPlaceholder")}
+                <Controller
+                  control={control}
+                  name="instructions"
+                  render={({ field }) => (
+                    <MarkdownTextarea
+                      value={field.value}
+                      onChange={field.onChange}
+                      rows={10}
+                      className="font-mono text-xs"
+                      placeholder={t("form.instructionsPlaceholder")}
+                    />
+                  )}
                 />
               </Field>
             </section>
@@ -401,81 +439,126 @@ function SkillEditorBody({
             <Field>
               <FieldLabel className={SECTION_TITLE}>{t("form.graphicsStyle")}</FieldLabel>
               <FieldDescription>{t("form.graphicsStyleHint")}</FieldDescription>
-              <Textarea
-                {...register("graphicsStyle")}
-                rows={10}
-                className="font-mono text-xs"
-                placeholder={t("form.graphicsStylePlaceholder")}
+              <Controller
+                control={control}
+                name="graphicsStyle"
+                render={({ field }) => (
+                  <MarkdownTextarea
+                    value={field.value}
+                    onChange={field.onChange}
+                    rows={10}
+                    className="font-mono text-xs"
+                    placeholder={t("form.graphicsStylePlaceholder")}
+                  />
+                )}
               />
             </Field>
 
             <Field>
-              <FieldLabel className={SECTION_TITLE}>{t("form.referenceImage")}</FieldLabel>
-              <FieldDescription>{t("form.referenceImageHint")}</FieldDescription>
+              <FieldLabel className={SECTION_TITLE}>{t("form.referenceImages")}</FieldLabel>
+              <FieldDescription>{t("form.referenceImagesHint")}</FieldDescription>
               <input
                 ref={referenceImageInputRef}
                 type="file"
                 accept="image/*"
+                multiple
                 className="hidden"
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
+                  const files = [...(e.target.files ?? [])];
                   e.target.value = "";
-                  if (file) pickReferenceImage(file);
+                  if (files.length > 0) addReferenceImageFiles(files);
                 }}
               />
-              {referenceImagePreviewUrl ? (
-                <div className="flex items-center gap-3">
-                  <img
-                    src={referenceImagePreviewUrl}
-                    alt=""
-                    className="size-20 rounded-lg border border-gray-200 object-cover dark:border-gray-800"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5"
-                    disabled={referenceImageBusy}
-                    onClick={removeReferenceImage}
-                  >
-                    {referenceImageBusy ? <Spinner /> : <TrashBinIcon className="size-4" />}
-                    {t("form.referenceImageRemove")}
-                  </Button>
+              <div className="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+                <div className="flex flex-wrap gap-3">
+                  {savedReferenceImageIds.map((fileId) => (
+                    <div
+                      key={fileId}
+                      className="group relative size-24 shrink-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800"
+                    >
+                      <img
+                        src={apiClient.documents.fileUrl(fileId)}
+                        alt=""
+                        className="size-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="outline"
+                        className="absolute end-1.5 top-1.5 rounded-full bg-white/90 shadow-theme-sm backdrop-blur-sm dark:bg-gray-900/80"
+                        disabled={referenceImageBusy}
+                        onClick={() => removeSavedReferenceImage(fileId)}
+                      >
+                        <XIcon className="size-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                  {pendingReferenceImages.map((item, index) => (
+                    <div
+                      key={item.previewUrl}
+                      className="group relative size-24 shrink-0 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800"
+                    >
+                      <img
+                        src={item.previewUrl}
+                        alt=""
+                        className="size-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="outline"
+                        className="absolute end-1.5 top-1.5 rounded-full bg-white/90 shadow-theme-sm backdrop-blur-sm dark:bg-gray-900/80"
+                        onClick={() => removePendingReferenceImage(index)}
+                      >
+                        <XIcon className="size-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                  {!referenceImagesAtMax && (
+                    <button
+                      type="button"
+                      className="flex size-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-gray-300 text-gray-400 transition-colors hover:border-brand-500 hover:text-brand-500 dark:border-gray-700 dark:text-gray-500 dark:hover:border-brand-400 dark:hover:text-brand-400"
+                      disabled={referenceImageBusy}
+                      onClick={() => referenceImageInputRef.current?.click()}
+                    >
+                      {referenceImageBusy ? (
+                        <Spinner />
+                      ) : (
+                        <>
+                          <UploadIcon className="size-5" />
+                          <span className="text-[11px] font-medium">{t("form.referenceImagesUpload")}</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="w-fit gap-1.5"
-                  disabled={referenceImageBusy}
-                  onClick={() => referenceImageInputRef.current?.click()}
-                >
-                  {referenceImageBusy ? <Spinner /> : <UploadIcon className="size-4" />}
-                  {t("form.referenceImageUpload")}
-                </Button>
-              )}
+                <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+                  {t("form.referenceImagesCount", { count: totalReferenceImages, max: 10 })}
+                </p>
+              </div>
             </Field>
           </section>
-        )}
+        ))}
 
-        {skillType === "script" && (
+        {skillId && (
           <>
-            <section className="space-y-3 pb-2">
-              <div className="flex items-center gap-2">
-                <h3 className={SECTION_TITLE}>{t("examples.title")}</h3>
-                <Badge variant="light" color="gray" size="sm">
-                  {exampleIds.length}
-                </Badge>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("examples.hint")}</p>
-              <ExamplesPicker
-                options={pickerOptions}
-                loading={loadingAnalyzed}
-                selected={exampleIds}
-                onChange={setExampleIds}
-              />
-            </section>
+            {skillType === "script" && (
+              <section className="space-y-3 pb-2">
+                <div className="flex items-center gap-2">
+                  <h3 className={SECTION_TITLE}>{t("examples.title")}</h3>
+                  <Badge variant="light" color="gray" size="sm">
+                    {exampleIds.length}
+                  </Badge>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("examples.hint")}</p>
+                <ExamplesPicker
+                  options={pickerOptions}
+                  loading={loadingAnalyzed}
+                  selected={exampleIds}
+                  onChange={setExampleIds}
+                />
+              </section>
+            )}
 
             <section className="space-y-3 pb-2">
               <div className="flex items-center gap-2">

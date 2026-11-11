@@ -25,6 +25,13 @@ export interface TrainingMaterial {
   /** A video's analyzed scenes: adds the visual/editing style. */
   scenes?: ScriptScene[];
   /**
+   * Real frames extracted from this video's source (time-sampled stills),
+   * when any were kept — lets editing-style training look at actual footage
+   * instead of only trusting the shot/camera labels an earlier AI pass
+   * already guessed onto `scenes`.
+   */
+  frames?: string[];
+  /**
    * Added in this run, as opposed to learned in an earlier one (set by the
    * training service). Tells the AI what is new evidence vs. what the current
    * guide already summarizes.

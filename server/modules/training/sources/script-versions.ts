@@ -15,11 +15,16 @@ interface VersionRow {
   source_url: string | null;
   script_text: string;
   scenes_json: string;
+  frames_json: string | null;
   approved: number;
   video_id: string | null;
   video_name: string | null;
   category_name: string | null;
   project_name: string | null;
+}
+
+function hasFrames(row: Pick<VersionRow, "frames_json">): boolean {
+  return Boolean(row.frames_json) && row.frames_json !== "[]";
 }
 
 /** Approved beats analyzed beats draft; among equals, the newest wins. */
@@ -52,7 +57,7 @@ function scriptVersionSource(options: {
   untitled: string;
 }): TrainingSource {
   const select = `
-    SELECT sa.id, sa.created_at, sa.source_url, sa.script_text, sa.scenes_json, sa.approved,
+    SELECT sa.id, sa.created_at, sa.source_url, sa.script_text, sa.scenes_json, sa.frames_json, sa.approved,
            sa.video_id, v.name AS video_name, c.name AS category_name, p.name AS project_name
     FROM script_analyses sa
     LEFT JOIN videos v ON v.id = sa.video_id
@@ -92,6 +97,7 @@ function scriptVersionSource(options: {
         charCount: row.script_text.trim().length,
         badges: [
           rank(row) === 2 ? "approved" : rank(row) === 1 ? "analyzed" : "",
+          hasFrames(row) ? "" : "noFrames",
         ].filter(Boolean),
         videoId: row.video_id ?? undefined,
       }));
@@ -115,6 +121,7 @@ function scriptVersionSource(options: {
             text: version.scriptText.trim(),
             role: "sample" as const,
             scenes: version.scenes,
+            frames: version.frames,
           },
         ];
       });

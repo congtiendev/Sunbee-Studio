@@ -10,6 +10,12 @@ export interface UiPreferences {
   glassOpacity?: number;
   glassRadius?: number;
   scaleMode?: "auto" | "medium" | "off";
+  /** Target length (seconds) last used writing a script from an idea/documents — a page setting, not tied to any video. */
+  scriptIdeaDurationSec?: number | null;
+  scriptDocumentDurationSec?: number | null;
+  /** The in-progress idea/brief text itself — same reasoning: not tied to any video, so it needs its own persistence to survive a reload. */
+  scriptIdeaText?: string;
+  scriptDocumentBrief?: string;
 }
 
 export interface AppSettings extends UiPreferences {
@@ -25,14 +31,14 @@ export interface AppSettings extends UiPreferences {
   researchApiKeys?: Record<string, string>;
 }
 
-/** "script": voice/style for writing (instructions, examples, pacing). "image": graphics methodology for the Assets step (graphicsStyle). Each skill is exactly one. */
-export type SkillType = "script" | "image";
+/** "script": voice/style for writing (instructions, examples, pacing). "image": graphics methodology for the Assets step (graphicsStyle). "editing": shot/cut/pacing methodology for the scene-breakdown step (editingStyle). Each skill is exactly one. */
+export type SkillType = "script" | "image" | "editing";
 
 export interface StyleTemplate {
   id: string;
   name: string;
   createdAt: string;
-  /** Which step this skill applies to; governs which of instructions/graphicsStyle is used. */
+  /** Which step this skill applies to; governs which of instructions/graphicsStyle/editingStyle is used. */
   type: SkillType;
   genre: string;
   styleTags: string[];
@@ -45,8 +51,10 @@ export interface StyleTemplate {
   instructions?: string;
   /** type "image": graphics/art-style methodology, folded into every image-gen prompt in the Assets step so a video's generated art stays visually consistent. */
   graphicsStyle?: string;
-  /** type "image": an optional reference illustration (its *style* only, never copied content) described into every image-gen prompt alongside graphicsStyle. Set only via the dedicated upload endpoint. */
-  referenceImageFileId?: string;
+  /** type "editing": shot size, camera movement, cut rhythm and scene-transition methodology, folded into the scene-breakdown (analyze) step so a video's editing stays consistent regardless of who wrote the script. */
+  editingStyle?: string;
+  /** type "image": up to 10 reference illustrations (their *style* only, never copied content) described into every image-gen prompt alongside graphicsStyle. Set only via the dedicated upload/remove endpoints. */
+  referenceImageFileIds: string[];
   /** "anthropic" when imported from an Agent Skill (SKILL.md). */
   origin?: SkillOrigin;
   /** The original SKILL.md, kept for Agent Skills so they can be re-exported. */
@@ -66,7 +74,7 @@ export interface SkillDetail extends StyleTemplate {
 
 export type SkillInput = Omit<
   StyleTemplate,
-  "id" | "createdAt" | "updatedAt" | "userId" | "ownerEmail" | "referenceImageFileId"
+  "id" | "createdAt" | "updatedAt" | "userId" | "ownerEmail" | "referenceImageFileIds"
 >;
 
 export interface SkillUpdateRequest extends Partial<SkillInput> {
@@ -207,16 +215,33 @@ export interface ScriptResources {
 /** Where a script version came from. */
 export type ScriptSourceType = "youtube" | "import" | "document" | "template" | "idea";
 
+/**
+ * Saves hand-edited script text outside of fetch/write/analyze (auto-save, or
+ * the manual save). Updates `versionId` in place if it's still a "draft";
+ * otherwise (no id, or the version is already "analyzed") a new draft is
+ * created instead, so an edit never rewrites an analyzed version's text out
+ * from under its scenes.
+ */
+export interface ScriptSaveTextRequest {
+  videoId: string;
+  scriptText: string;
+  versionId?: string;
+}
+
 export interface ScriptAnalyzeRequest {
   scriptText: string;
   sourceType?: ScriptSourceType;
   sourceUrl?: string;
   styleTemplateId?: string;
+  /** A type "editing" skill applied to this analysis, independent of styleTemplateId. */
+  editingStyleTemplateId?: string;
   frames?: string[];
   provider?: "openai" | "claude";
   model?: string;
   effort?: "low" | "medium" | "high";
   videoId?: string;
+  /** Recorded on the saved version for comparison; analyze itself infers output language from scriptText. */
+  language?: "vi" | "en";
 }
 
 export interface ScriptStyle {
@@ -225,10 +250,20 @@ export interface ScriptStyle {
   toneDescription: string;
 }
 
-/** A character appearing in 2+ scenes, with a locked appearance reused in every scene's image-gen prompt. */
+/** A character of the script, with a locked appearance reused in every scene's image-gen prompt where they appear — even one that only appears once, so its one image still gets a specific, consistent look instead of an unguided guess. */
 export interface RecurringCharacter {
   name: string;
   appearance: string;
+  /** A user-uploaded reference photo/drawing of this character (own file, kind "character-reference"); its look is described into that character's image prompts, taking priority over `appearance` text. */
+  appearanceImageFileId?: string;
+}
+
+/** A recurring object/prop (weapon, brand logo, vehicle, signature item...) with a locked look, same idea as `RecurringCharacter` but for things instead of people. */
+export interface RecurringObject {
+  name: string;
+  appearance: string;
+  /** A user-uploaded reference photo/drawing of this object (own file, kind "character-reference"); its look is described into that object's image prompts, taking priority over `appearance` text. */
+  appearanceImageFileId?: string;
 }
 
 export interface ScriptAnalyzeResult {
@@ -241,6 +276,7 @@ export interface ScriptAnalyzeResponse extends ScriptAnalyzeResult {
   versionId: string;
   /** Absent for responses that don't compute a roster (e.g. "write from template"). */
   characterRoster?: RecurringCharacter[];
+  objectRoster?: RecurringObject[];
 }
 
 export interface ScriptAnalysisRecord {
@@ -256,11 +292,21 @@ export interface ScriptAnalysisRecord {
   style?: ScriptStyle;
   /** Absent on versions saved before this field existed. */
   characterRoster?: RecurringCharacter[];
+  /** Absent on versions saved before this field existed. */
+  objectRoster?: RecurringObject[];
   videoId?: string;
   /** Reviewed (and possibly edited) by the user; usable as a few-shot example. */
   approved?: boolean;
   /** Source "template": the analyzed version this script was modelled on. */
   templateSourceId?: string;
+  /** The skill selected when writing/analyzing this version, if any — restored on reload. */
+  styleTemplateId?: string;
+  /** The type "editing" skill selected when analyzing this version, if any — restored on reload. */
+  editingStyleTemplateId?: string;
+  /** The AI provider/model/script language used to produce this version — recorded for comparing versions, not read back into any form. */
+  provider?: "openai" | "claude";
+  model?: string;
+  language?: "vi" | "en";
   userId?: string;
   ownerEmail?: string;
 }
@@ -297,6 +343,9 @@ export interface ScriptApproveRequest {
   scenes: ScriptScene[];
   resources: ScriptResources;
   style: ScriptStyle;
+  /** Hand-edited roster (e.g. filled-in appearance detail); omitted keeps the base version's roster as-is. */
+  characterRoster?: RecurringCharacter[];
+  objectRoster?: RecurringObject[];
 }
 
 export type DocumentTargetType = "skill" | "project";
@@ -446,6 +495,7 @@ export interface SkillSnapshot {
   toneDescription: string;
   instructions: string;
   graphicsStyle: string;
+  editingStyle: string;
   pacing: { avgShotLengthSec: number; cutsPerMinute: number };
   resourceInventory: Record<string, unknown>;
 }
@@ -587,7 +637,7 @@ export interface PromptTaskInfo {
   prompts: PromptSlotInfo[];
 }
 
-export type StoredFileKind = "document" | "asset" | "skill-attachment";
+export type StoredFileKind = "document" | "asset" | "skill-attachment" | "character-reference";
 
 export interface StoredFile {
   id: string;
@@ -688,8 +738,8 @@ export interface AssetResearchRequest {
   mediaType?: ResearchMediaType;
   description?: string;
   sceneContext?: string;
-  /** AI image sources: a style reference (data URL) to describe into the prompt. */
-  referenceImage?: string;
+  /** AI image sources: style references (data URLs, up to 10) to describe into the prompt. */
+  referenceImages?: string[];
   /** AI image sources: output frame shape. Omitted: square. */
   aspectRatio?: ImageAspectRatio;
   /** AI image sources: a type "image" skill's locked graphics methodology, applied to every scene's generation this session. */
@@ -711,6 +761,27 @@ export interface AssetQuerySuggestResponse {
   queries: string[];
   /** False when no AI key is set and the description was used as-is. */
   aiUsed: boolean;
+}
+
+/**
+ * Prepares ready-to-paste image prompts for many required assets at once —
+ * deliberately without graphicsStyle/referenceImages, for a skill attached
+ * directly in an external AI chat (so style doesn't need restating per item).
+ * Dry-run: never generates an image, only rewrites the prompt text.
+ */
+export interface AssetPromptBatchRequest {
+  items: {
+    key: string;
+    description: string;
+    sceneContext?: string;
+    /** Reference photos (data URLs) of the characters in this request, named so the prompt keeps their actual look. */
+    characterImages?: { name: string; image: string }[];
+  }[];
+  provider: "openai" | "claude";
+}
+
+export interface AssetPromptBatchResponse {
+  results: { key: string; prompt: string; count: number }[];
 }
 
 /** Portable skill file (`.sunbee-skill.json`). */

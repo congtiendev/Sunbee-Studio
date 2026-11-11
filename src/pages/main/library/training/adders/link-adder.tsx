@@ -13,7 +13,12 @@ import {
 } from "./types";
 
 /** Paste video links (one per line); each one's script is fetched like in the Script step. */
-export default function LinkAdder({ ai, onAdded, disabled }: SourceAdderProps) {
+export default function LinkAdder({
+  ai,
+  onAdded,
+  disabled,
+  targetType,
+}: SourceAdderProps) {
   const t = useTranslations("training.adders.link");
   const [text, setText] = useState("");
   const [items, setItems] = useState<{ label: string; status: AddStatus }[]>(
@@ -92,7 +97,11 @@ export default function LinkAdder({ ai, onAdded, disabled }: SourceAdderProps) {
           disabled={busy || disabled || urls.length === 0}
         >
           <LinkIcon className="size-4" />
-          {busy ? t("fetching") : t("fetch", { count: urls.length })}
+          {busy
+            ? t("fetching")
+            : t(targetType === "editing" ? "fetchVideo" : "fetch", {
+                count: urls.length,
+              })}
         </Button>
         <span className="text-xs text-gray-500 dark:text-gray-400">
           {t("hint")}

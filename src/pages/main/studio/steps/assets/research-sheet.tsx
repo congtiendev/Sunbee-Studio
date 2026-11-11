@@ -28,6 +28,7 @@ import { cn } from "@/utils";
 import type {
   AssetCandidate,
   RecurringCharacter,
+  RecurringObject,
   RequiredAsset,
   ResearchMediaType,
   ResearchSourceInfo,
@@ -36,6 +37,7 @@ import type {
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import CandidatePreview from "./candidate-preview";
+import { sceneContextOf } from "./scene-context";
 
 export interface ResearchTarget {
   scene: ScriptScene;
@@ -78,20 +80,29 @@ function defaultMediaType(
 }
 
 /**
- * Content/visual description for the research prompt, plus the locked
- * appearance of any recurring character present in this scene — so every
- * asset generated for them (in any scene) starts from the same wording
- * instead of each generation improvising a different look.
+ * Which tab opens first — the scene analysis already decided whether this
+ * asset needs a fresh AI image, a real stock photo/video, or the user's own
+ * upload (`asset.source`); default to that instead of always the same tab,
+ * so the right call is visible instead of the user re-deciding it by hand.
  */
-function sceneContextOf(scene: ScriptScene, characterRoster: RecurringCharacter[]): string {
-  const names = new Set((scene.characters ?? []).map((c) => c.name));
-  const locked = characterRoster
-    .filter((c) => names.has(c.name))
-    .map((c) => `${c.name}: ${c.appearance}`)
-    .join(" | ");
-  return [`${scene.content} | ${scene.visualDescription}`, locked && `Nhân vật: ${locked}`]
-    .filter(Boolean)
-    .join(" | ");
+function defaultSourceKey(asset: RequiredAsset, sources: ResearchSourceInfo[]): string {
+  const firstAvailable = (test: (s: ResearchSourceInfo) => boolean) =>
+    sources.find((s) => s.available && test(s))?.key;
+
+  const preferred =
+    asset.source === "generate"
+      ? firstAvailable((s) => s.kind === "ai" && Boolean(s.generates))
+      : asset.source === "provided"
+        ? firstAvailable((s) => s.kind === "library")
+        : firstAvailable((s) => s.kind === "stock");
+
+  return (
+    preferred ??
+    sources.find((s) => s.key === "claude-image-search" && s.available)?.key ??
+    sources.find((s) => s.available)?.key ??
+    sources[0]?.key ??
+    ""
+  );
 }
 
 interface ResearchSheetProps {
@@ -99,10 +110,11 @@ interface ResearchSheetProps {
   sources: ResearchSourceInfo[];
   selected?: AssetCandidate;
   characterRoster: RecurringCharacter[];
+  objectRoster: RecurringObject[];
   /** A type "image" skill's locked graphics methodology, applied to every AI image generation this session. */
   graphicsStyle?: string;
-  /** That same skill's reference illustration (data URL) — style only, described into the prompt like graphicsStyle. */
-  referenceImage?: string;
+  /** That same skill's reference illustrations (data URLs) — style only, described into the prompt like graphicsStyle. */
+  referenceImages?: string[];
   onOpenChange: (open: boolean) => void;
   onSelect: (candidate: AssetCandidate) => Promise<void>;
 }
@@ -112,8 +124,9 @@ export default function ResearchSheet({
   sources,
   selected,
   characterRoster,
+  objectRoster,
   graphicsStyle,
-  referenceImage,
+  referenceImages,
   onOpenChange,
   onSelect,
 }: ResearchSheetProps) {
@@ -137,8 +150,9 @@ export default function ResearchSheet({
             sources={sources}
             selected={selected}
             characterRoster={characterRoster}
+            objectRoster={objectRoster}
             graphicsStyle={graphicsStyle}
-            referenceImage={referenceImage}
+            referenceImages={referenceImages}
             onSelect={onSelect}
           />
         )}
@@ -152,8 +166,9 @@ function ResearchBody({
   sources,
   selected,
   characterRoster,
+  objectRoster,
   graphicsStyle,
-  referenceImage,
+  referenceImages,
   onSelect,
 }: Omit<ResearchSheetProps, "onOpenChange" | "target"> & {
   target: ResearchTarget;
@@ -161,12 +176,7 @@ function ResearchBody({
   const t = useTranslations("videoStudio.assets");
   const tCommon = useTranslations("common");
   const { asset, scene } = target;
-  const [active, setActive] = useState<string>(
-    sources.find((s) => s.key === "claude-image-search" && s.available)?.key ??
-      sources.find((s) => s.available)?.key ??
-      sources[0]?.key ??
-      "",
-  );
+  const [active, setActive] = useState<string>(() => defaultSourceKey(asset, sources));
   const [suggestions, setSuggestions] = useState<{
     queries: string[];
     aiUsed: boolean;
@@ -197,7 +207,7 @@ function ResearchBody({
     apiClient.assets
       .suggestQueries({
         description: asset.description,
-        sceneContext: sceneContextOf(scene, characterRoster),
+        sceneContext: sceneContextOf(scene, characterRoster, objectRoster),
         mediaType:
           asset.type === "video"
             ? "video"
@@ -260,7 +270,7 @@ function ResearchBody({
     return () => {
       alive = false;
     };
-  }, [asset, scene, sources, characterRoster]);
+  }, [asset, scene, sources, characterRoster, objectRoster]);
 
   const search = async (source: ResearchSourceInfo) => {
     const tab = tabs[source.key]!;
@@ -272,9 +282,9 @@ function ResearchBody({
         query: tab.query.trim(),
         mediaType: tab.mediaType === "any" ? undefined : tab.mediaType,
         description: asset.description,
-        sceneContext: sceneContextOf(scene, characterRoster),
+        sceneContext: sceneContextOf(scene, characterRoster, objectRoster),
         graphicsStyle,
-        referenceImage,
+        referenceImages,
       });
       patchTab(source.key, {
         loading: false,

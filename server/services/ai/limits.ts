@@ -23,5 +23,11 @@ export const SKILL_GUIDE_OUTPUT_TOKENS = 32_000;
 /** Notes on one part of a training source. */
 export const SOURCE_NOTES_OUTPUT_TOKENS = 8_000;
 
-/** A short list of character names + one-line descriptions. */
-export const CHARACTER_ROSTER_OUTPUT_TOKENS = 2_000;
+/**
+ * A list of character names, each with a full, specific appearance description
+ * (age, face, hair, body, outfit, style). Providers require a numeric cap —
+ * there's no "unlimited" — so this is set to the same ceiling as the largest
+ * budget in this file, high enough that a cast of any realistic size won't
+ * hit it.
+ */
+export const CHARACTER_ROSTER_OUTPUT_TOKENS = SCRIPT_WITH_SCENES_OUTPUT_TOKENS;

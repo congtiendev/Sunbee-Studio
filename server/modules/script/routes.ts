@@ -3,6 +3,7 @@ import multer from "multer";
 import { requireVideoAccess } from "../../middleware/require-access.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { taskContextFor } from "../../services/ai/task.js";
+import { saveFile } from "../../services/storage/files.js";
 import type {
   FetchTranscriptRequest,
   ScriptAnalyzeRequest,
@@ -10,13 +11,16 @@ import type {
   ScriptFromDocumentRequest,
   ScriptFromIdeaRequest,
   ScriptFromTemplateRequest,
+  ScriptSaveTextRequest,
 } from "../../../shared/types.js";
 import {
   deleteScriptAnalysis,
+  getScriptAnalysisById,
   listAnalyzedSummaries,
   listScriptAnalysesLight,
   listVersionsForVideo,
   saveScriptVersion,
+  updateDraftScriptText,
 } from "./repo.js";
 import { analyzeScriptForUser, approveScriptVersion } from "./service.js";
 import { writeScriptFromDocuments } from "./sources/document.js";
@@ -31,6 +35,45 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: MAX_UPLOAD_BYTES },
 });
+
+const MAX_ROSTER_IMAGE_BYTES = 10 * 1024 * 1024;
+const uploadRosterImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_ROSTER_IMAGE_BYTES },
+});
+
+/** A character or object roster entry's reference photo — just a file store write; the fileId is saved into `characterRoster`/`objectRoster` via /approve or /save-text like any other hand edit. */
+router.post(
+  "/reference-image",
+  requireAuth,
+  (req, res, next) => {
+    uploadRosterImage.single("file")(req, res, (err: unknown) => {
+      if (err) {
+        res.status(400).json({ error: errorMessage(err) });
+        return;
+      }
+      next();
+    });
+  },
+  async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: "Chưa chọn ảnh." });
+      return;
+    }
+    if (!req.file.mimetype.startsWith("image/")) {
+      res.status(400).json({ error: "Chỉ nhận file ảnh." });
+      return;
+    }
+    const stored = await saveFile(
+      req.user!.id,
+      "character-reference",
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+    );
+    res.json({ fileId: stored.id });
+  },
+);
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -55,6 +98,10 @@ router.post("/fetch-transcript", requireAuth, requireVideoAccess, async (req, re
       "draft",
       undefined,
       body.videoId,
+      // "captions" means the raw captions were kept as-is — no AI call made.
+      origin === "captions"
+        ? {}
+        : { provider: body.provider, model: body.model, language: body.language },
     );
     res.json({
       scriptText,
@@ -124,6 +171,7 @@ router.post(
         "draft",
         undefined,
         body.videoId,
+        { provider: body.provider, model: body.model, language: body.language },
       );
       res.json({
         scriptText,
@@ -155,6 +203,12 @@ router.post("/from-document", requireAuth, requireVideoAccess, async (req, res) 
       "draft",
       undefined,
       body.videoId,
+      {
+        styleTemplateId: body.styleTemplateId,
+        provider: body.provider ?? "openai",
+        model: body.model,
+        language: body.language ?? "vi",
+      },
     );
     res.json({ scriptText, frames: [], versionId: version.id });
   } catch (err) {
@@ -176,6 +230,12 @@ router.post("/from-idea", requireAuth, requireVideoAccess, async (req, res) => {
       "draft",
       undefined,
       body.videoId,
+      {
+        styleTemplateId: body.styleTemplateId,
+        provider: body.provider ?? "openai",
+        model: body.model,
+        language: body.language ?? "vi",
+      },
     );
     res.json({ scriptText, frames: [], versionId: version.id });
   } catch (err) {
@@ -205,6 +265,33 @@ router.post("/analyze", requireAuth, requireVideoAccess, async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: errorMessage(err) });
   }
+});
+
+/** Auto-save / manual save of hand-edited script text, outside analyze/approve. */
+router.post("/save-text", requireAuth, (req, res) => {
+  const body = req.body as ScriptSaveTextRequest;
+  const isAdmin = req.user!.role === "admin";
+  const updated = body.versionId
+    ? updateDraftScriptText(req.user!.id, isAdmin, body.versionId, body.scriptText)
+    : null;
+  if (updated) {
+    res.json(updated);
+    return;
+  }
+  const base = body.versionId
+    ? getScriptAnalysisById(req.user!.id, isAdmin, body.versionId)
+    : null;
+  const version = saveScriptVersion(
+    req.user!.id,
+    base?.sourceType ?? "import",
+    base?.sourceUrl,
+    body.scriptText,
+    base?.frames ?? [],
+    "draft",
+    undefined,
+    body.videoId,
+  );
+  res.json(version);
 });
 
 router.post("/approve", requireAuth, (req, res) => {

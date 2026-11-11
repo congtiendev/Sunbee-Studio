@@ -13,7 +13,12 @@
     "moreTabs": "More",
     "rename": "Rename",
     "create": "Create",
-    "open": "Open"
+    "open": "Open",
+    "markdownEditor": {
+      "edit": "Edit",
+      "preview": "Preview",
+      "empty": "Nothing to preview yet."
+    }
   },
   "sidebar": {
     "groups": {
@@ -1174,12 +1179,23 @@
         "draft": "draft",
         "analyzed": "analyzed"
       },
+      "saveStatus": {
+        "saving": "Saving…",
+        "saved": "Saved at {time}",
+        "unsavedJustNow": "Unsaved",
+        "unsavedMinutes": "Unsaved for {minutes, plural, one {# minute} other {# minutes}}",
+        "saveNow": "Save now"
+      },
       "history": {
         "openButton": "History",
         "title": "Script history",
         "description": "Versions saved for this project, most recent first.",
         "empty": "No versions saved for this project yet.",
         "sceneCount": "{count, plural, one {# scene} other {# scenes}}",
+        "language": {
+          "vi": "Vietnamese",
+          "en": "English"
+        },
         "sources": {
           "youtube": "Video link",
           "import": "Imported",
@@ -1219,6 +1235,7 @@
       "scriptLanguageVi": "Vietnamese",
       "scriptLanguageEn": "English",
       "analyzeButton": "Analyze script",
+      "cancelAnalyze": "Cancel",
       "analyzingHint": "Analyzing the script and visuals — this can take a little while.",
       "doNotLeaveHint": "Please don't close or leave this page while it's running — progress is lost if you do.",
       "leaveConfirm": "AI is still working on your script. If you leave now, this run's progress will be lost. Leave anyway?",
@@ -1240,6 +1257,10 @@
       "styleTemplateLabel": "Skill (optional)",
       "styleTemplatePlaceholder": "Keep a saved style",
       "styleTemplateNone": "None",
+      "editingStyleTemplateLabel": "Editing skill (optional)",
+      "editingStyleTemplateHint": "Applied when breaking the script into scenes (shot sizes, camera movement, cuts) — independent of the writing skill above.",
+      "editingStyleTemplatePlaceholder": "Keep a saved editing style",
+      "editingStyleTemplateNone": "None",
       "checklistTitle": "Readiness checklist",
       "checklist": {
         "hasScenes": "Has at least one scene",
@@ -1251,8 +1272,13 @@
       "scenesCount": "{count, plural, one {# scene} other {# scenes}}",
       "scenesTotalDuration": "{duration} total",
       "scenesCharacterCount": "{count, plural, one {# character} other {# characters}}",
-      "characterRosterTitle": "Characters throughout this video",
-      "characterRosterHint": "Locked appearance — reused verbatim when generating images in every scene to keep them the same person.",
+      "scenesObjectCount": "{count, plural, one {# object} other {# objects}}",
+      "characterRosterTitle": "Character & object profiles",
+      "characterRosterSection": "Characters",
+      "characterRosterHint": "Every character has a locked appearance profile — even one appearing in just one scene — reused verbatim whenever an image is generated so no one gets drawn differently.",
+      "characterRosterEmpty": "No character or object worth keeping consistent was detected in this script.",
+      "objectRosterSection": "Objects",
+      "objectRosterHint": "Recurring objects/props, or ones a character holds or interacts with, also get a locked look reused whenever an image is generated.",
       "heroMoment": "Hero moment",
       "sceneContent": "Content",
       "sceneVisual": "Visual direction",
@@ -1300,7 +1326,8 @@
         "cancel": "Cancel",
         "hint": "Approved analyses can be added to a skill as examples, so the AI learns how you want scenes split and described.",
         "assetPlaceholder": "Describe the asset",
-        "addAsset": "Add asset"
+        "addAsset": "Add asset",
+        "attachImage": "Attach image"
       },
       "assetTypes": {
         "video": "Video",
@@ -1373,7 +1400,7 @@
       "pageDescription": "A skill bundles a style, written instructions and approved example analyses. Pick it when analyzing a script and the AI follows it.",
       "createButton": "New skill",
       "importButton": "Import skill",
-      "importHint": "Import a .sunbee-skill.json, an Agent Skill SKILL.md, or an Agent Skill .zip.",
+      "importHint": "Import a .sunbee-skill.zip (exported from here), an Agent Skill SKILL.md, or an Agent Skill .zip.",
       "importDone": "Imported \"{name}\" with {examples} examples and {documents} documents.",
       "importSkipped": "Skipped (not text): {files}.",
       "empty": "No skills yet. Create one, save one from an analysis, or import one.",
@@ -1405,8 +1432,9 @@
         "descriptionPlaceholder": "When to use this skill",
         "type": "Skill type",
         "typeScript": "Script",
+        "typeEditing": "Editing",
         "typeImage": "Graphics",
-        "typeHint": "A script skill applies when writing the script; a graphics skill applies when generating images in the Assets step.",
+        "typeHint": "A script skill applies when writing the script; an editing skill applies when breaking the script into scenes; a graphics skill applies when generating images in the Assets step.",
         "styleSection": "Style",
         "genre": "Genre",
         "genrePlaceholder": "e.g. vlog, review, tutorial",
@@ -1423,10 +1451,13 @@
         "graphicsStyle": "Graphics style",
         "graphicsStyleHint": "The art style the AI always follows when generating images in the Assets step (colors, line work, character proportions, identity rules...).",
         "graphicsStylePlaceholder": "e.g. Chibi paper-cut style, thick brown outlines, warm pastel colors...",
-        "referenceImage": "Reference illustration (optional)",
-        "referenceImageHint": "The AI only takes the visual STYLE from this image (colors, line work, texture...), never its subject or content. Applied together with the graphics style above to every image generated in the Assets step.",
-        "referenceImageUpload": "Upload image",
-        "referenceImageRemove": "Remove image"
+        "editingStyle": "Editing style",
+        "editingStyleHint": "The shot/cut methodology the AI always follows when breaking a script into scenes (shot sizes, camera movement, cut rhythm, scene transitions...). Generated automatically by training this skill from videos — not typed by hand.",
+        "editingStyleEmpty": "Not trained yet — go to Library → Training to generate this from sample videos.",
+        "referenceImages": "Reference illustrations (optional, up to 10)",
+        "referenceImagesHint": "The AI only takes the visual STYLE from these images (colors, line work, texture...), never their subject or content. Applied together with the graphics style above to every image generated in the Assets step.",
+        "referenceImagesUpload": "Upload image",
+        "referenceImagesCount": "{count}/{max} images"
       },
       "examples": {
         "title": "Examples",
@@ -1509,6 +1540,30 @@
       "graphicsSkillPlaceholder": "Keep a saved style",
       "graphicsSkillNone": "None",
       "graphicsSkillHint": "Applied to every AI-generated image in this step (OpenAI/Cloudflare). A style that needs a transparent background requires the OpenAI source (gpt-image-1.5) — Cloudflare can't output a real transparent background.",
+      "batchPrompt": {
+        "openButton": "Export batch prompts",
+        "title": "Batch prompts for ChatGPT",
+        "description": "Deduped prompts for a chosen range of scenes — for generating images yourself in ChatGPT (with the skill attached there) instead of the studio's built-in AI.",
+        "rangeHint": "Pick the scene range to export prompts for — split a long script into smaller batches (e.g. 10–20 scenes at a time) so you don't end up with too many prompts at once.",
+        "rangeFrom": "From scene",
+        "rangeTo": "to scene",
+        "applyRange": "Apply",
+        "rangeAll": "Select all",
+        "rangeSummary": "{scenes} scenes in range → {groups} items (after dedup)",
+        "characterGroup": "Characters & objects",
+        "backgroundGroup": "Backgrounds",
+        "descriptionLabel": "Description",
+        "promptLabel": "Prompt",
+        "notGeneratedYet": "— prompt not generated yet —",
+        "generateAll": "Generate prompts",
+        "copyAll": "Copy all",
+        "copyItem": "Copy this item",
+        "empty": "This script has no image-type assets.",
+        "importTitle": "Import generated images",
+        "importHint": "Upload the .zip ChatGPT sends back — each image named exactly after its key (p1.png, p2.png...) is assigned to the right scene automatically.",
+        "importButton": "Import images from ZIP",
+        "importDone": "Assigned {matched} images. Skipped {skipped} files that matched no key."
+      },
       "assetSources": {
         "stock": "Stock",
         "generate": "Generate",
@@ -1661,7 +1716,8 @@
     "themeLabel": "Theme",
     "themeAuto": "System",
     "themeLight": "Light",
-    "themeDark": "Dark",
+    "themeNavy": "Dark (Navy)",
+    "themeBlack": "Dark (Black)",
     "scaleLabel": "Scale",
     "scaleMedium": "Medium",
     "scaleAuto": "Large (fit width)",
@@ -1740,21 +1796,25 @@
       "refineHint": "Cumulative training: the AI re-reads everything this skill learned before, plus what you add below, and merges it into the current guide — new material refines the skill, it doesn't replace it. Saved as a new version.",
       "type": "Skill type",
       "typeScript": "Script",
+      "typeEditing": "Editing",
       "typeImage": "Graphics",
-      "typeHint": "A script skill learns from videos/documents to write scripts. A graphics skill learns from many example images to keep generated images visually consistent in the Assets step."
+      "typeHint": "A script skill learns from videos/documents to write scripts. An editing skill learns the shot/cut rhythm from the same videos to apply when breaking scripts into scenes. A graphics skill learns from many example images to keep generated images visually consistent in the Assets step."
     },
     "sources": {
       "title": "2. What to learn from",
       "hint": "The same three ways the Script step gets a script. For an accurate voice, use 3–5 videos by the same author or channel; add documents for explicit rules, sample texts or knowledge.",
       "selected": "{count}/{max} selected",
       "manage": "Manage",
-      "existing": "Already fetched — pick to reuse:",
+      "pickExisting": "Pick from existing ({count})",
+      "remove": "Remove",
+      "done": "Done",
       "searchPlaceholder": "Search",
       "noMatch": "Nothing matches.",
       "chars": "{count} chars",
       "link": {
         "title": "From a video link",
         "hint": "Paste links (YouTube, TikTok…); each video's script is fetched with the AI chosen below.",
+        "hintEditing": "Paste links (YouTube, TikTok…). The system downloads each video and samples its real frames (the script/narration doesn't matter here) for the AI to learn the cutting style from.",
         "empty": "Nothing fetched from a link yet."
       },
       "upload": {
@@ -1788,7 +1848,8 @@
       "analyzed": "Analyzed",
       "linked": "Attached to a skill",
       "new": "New",
-      "learned": "Learned"
+      "learned": "Learned",
+      "noFrames": "No frames yet"
     },
     "run": {
       "title": "3. Train",
@@ -1843,6 +1904,7 @@
       "link": {
         "placeholder": "Paste one or more video links, one per line",
         "fetch": "{count, plural, =0 {Fetch scripts} one {Fetch # script} other {Fetch # scripts}}",
+        "fetchVideo": "{count, plural, =0 {Fetch videos} one {Fetch # video} other {Fetch # videos}}",
         "fetching": "Fetching…",
         "hint": "Uses AI credit, like the Script step.",
         "tooShort": "The script is too short to learn from."

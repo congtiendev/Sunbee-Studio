@@ -1,6 +1,8 @@
 import type {
   AppSettings,
   AssetCandidate,
+  AssetPromptBatchRequest,
+  AssetPromptBatchResponse,
   AssetQuerySuggestRequest,
   AssetQuerySuggestResponse,
   AssetResearchRequest,
@@ -43,6 +45,7 @@ import type {
   ScriptFromIdeaRequest,
   ScriptFromTemplateRequest,
   ScriptFromTemplateResponse,
+  ScriptSaveTextRequest,
   SceneResource,
   SceneResourceSelectRequest,
   StyleTemplate,
@@ -201,14 +204,14 @@ export const apiClient = {
     exportUrl: (id: string): string => `/api/templates/${id}/export`,
     delete: (id: string): Promise<void> =>
       request(`/api/templates/${id}`, { method: "DELETE" }),
-    /** type "image" skills: an optional reference illustration (style only). */
-    setReferenceImage: (id: string, file: File): Promise<SkillDetail> => {
+    /** type "image" skills: up to 10 reference illustrations (style only). */
+    addReferenceImage: (id: string, file: File): Promise<SkillDetail> => {
       const formData = new FormData();
       formData.set("file", file);
-      return requestUpload(`/api/templates/${id}/reference-image`, formData);
+      return requestUpload(`/api/templates/${id}/reference-images`, formData);
     },
-    deleteReferenceImage: (id: string): Promise<SkillDetail> =>
-      request(`/api/templates/${id}/reference-image`, { method: "DELETE" }),
+    removeReferenceImage: (id: string, fileId: string): Promise<SkillDetail> =>
+      request(`/api/templates/${id}/reference-images/${fileId}`, { method: "DELETE" }),
   },
   script: {
     fetchTranscript: (
@@ -251,10 +254,14 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(req),
       }),
-    analyze: (req: ScriptAnalyzeRequest): Promise<ScriptAnalyzeResponse> =>
+    analyze: (
+      req: ScriptAnalyzeRequest,
+      signal?: AbortSignal,
+    ): Promise<ScriptAnalyzeResponse> =>
       request("/api/script/analyze", {
         method: "POST",
         body: JSON.stringify(req),
+        signal,
       }),
     /** Full versions of one video — the body (script text, frames, scenes) included. */
     history: (videoId: string): Promise<ScriptAnalysisRecord[]> =>
@@ -272,6 +279,18 @@ export const apiClient = {
       }),
     analyzed: (approvedOnly = false): Promise<ScriptAnalysisSummary[]> =>
       request(`/api/script/analyzed${approvedOnly ? "?approved=1" : ""}`),
+    /** Auto-save / manual save of hand-edited text, outside analyze/approve. */
+    saveText: (req: ScriptSaveTextRequest): Promise<ScriptAnalysisRecord> =>
+      request("/api/script/save-text", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
+    /** A character/object roster entry's reference photo; returns its file id to save into `characterRoster`/`objectRoster` via approve/saveText. */
+    uploadRosterImage: (file: File): Promise<{ fileId: string }> => {
+      const formData = new FormData();
+      formData.set("file", file);
+      return requestUpload("/api/script/reference-image", formData);
+    },
   },
   documents: {
     list: (): Promise<DocumentSummary[]> => request("/api/documents"),
@@ -321,6 +340,12 @@ export const apiClient = {
       }),
     research: (req: AssetResearchRequest): Promise<AssetResearchResponse> =>
       request("/api/assets/research", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
+    /** Ready-to-paste prompts for many required assets at once — no image generated, no graphicsStyle/referenceImages. */
+    imagePrompts: (req: AssetPromptBatchRequest): Promise<AssetPromptBatchResponse> =>
+      request("/api/assets/image-prompts", {
         method: "POST",
         body: JSON.stringify(req),
       }),

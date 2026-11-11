@@ -9,7 +9,7 @@ import {
 import { useTranslations } from "@/i18n";
 import { NO_TEMPLATE, type ScriptStepState } from "./use-script-step";
 
-/** Picks the skill (voice/style guide) applied when writing or analyzing the script. */
+/** Picks the skill (voice/style guide) applied when writing the script. */
 export default function SkillSelectField({
   step,
   className,

@@ -64,6 +64,7 @@ export function snapshotOf(skill: StyleTemplate): SkillSnapshot {
     toneDescription: skill.toneDescription,
     instructions: skill.instructions ?? "",
     graphicsStyle: skill.graphicsStyle ?? "",
+    editingStyle: skill.editingStyle ?? "",
     pacing: skill.pacing,
     resourceInventory: skill.resourceInventory,
   };

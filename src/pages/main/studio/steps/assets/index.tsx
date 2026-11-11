@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress-bar";
 import { useTranslations } from "@/i18n";
-import { SearchIcon, StarFilledIcon, TrashBinIcon } from "@/icons";
+import { ListIcon, SearchIcon, StarFilledIcon, TrashBinIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
 import type {
   AssetCandidate,
@@ -16,21 +16,14 @@ import type {
 } from "@shared/types";
 import { useEffect, useMemo, useState } from "react";
 import type { StepComponentProps } from "../registry";
+import BatchPromptDialog from "./batch-prompt-dialog";
 import CandidatePreview from "./candidate-preview";
 import GraphicsSkillSelect, { NO_GRAPHICS_SKILL } from "./graphics-skill-select";
 import ResearchSheet, { type ResearchTarget } from "./research-sheet";
+import { blobToDataUrl } from "./scene-context";
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
 }
 
 const slotKey = (sceneIndex: number, assetIndex: number) => `${sceneIndex}:${assetIndex}`;
@@ -49,7 +42,8 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
   const [clearing, setClearing] = useState<string | null>(null);
   const [imageSkills, setImageSkills] = useState<StyleTemplate[]>([]);
   const [graphicsSkillId, setGraphicsSkillId] = useState(NO_GRAPHICS_SKILL);
-  const [referenceImage, setReferenceImage] = useState<string | undefined>(undefined);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const [batchPromptOpen, setBatchPromptOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -87,34 +81,40 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
   // Stable reference across re-renders (not a fresh `?? []` every render) so
   // ResearchSheet's effects keyed on it don't re-fire unless it actually changed.
   const characterRoster = useMemo(() => version?.characterRoster ?? [], [version]);
+  const objectRoster = useMemo(() => version?.objectRoster ?? [], [version]);
   const graphicsSkill = useMemo(
     () => imageSkills.find((skill) => skill.id === graphicsSkillId),
     [imageSkills, graphicsSkillId],
   );
   const graphicsStyle = graphicsSkill?.graphicsStyle;
 
-  // The skill's reference illustration (style only) — fetched once per skill
+  // The skill's reference illustrations (style only) — fetched once per skill
   // selection and described into every generation alongside graphicsStyle.
+  const referenceImageFileIds = graphicsSkill?.referenceImageFileIds ?? [];
   useEffect(() => {
     let active = true;
-    const fileId = graphicsSkill?.referenceImageFileId;
-    if (!fileId) {
-      setReferenceImage(undefined);
+    if (referenceImageFileIds.length === 0) {
+      setReferenceImages([]);
       return;
     }
-    fetch(apiClient.documents.fileUrl(fileId))
-      .then((res) => res.blob())
-      .then(blobToDataUrl)
-      .then((dataUrl) => {
-        if (active) setReferenceImage(dataUrl);
+    Promise.all(
+      referenceImageFileIds.map((fileId) =>
+        fetch(apiClient.documents.fileUrl(fileId))
+          .then((res) => res.blob())
+          .then(blobToDataUrl),
+      ),
+    )
+      .then((dataUrls) => {
+        if (active) setReferenceImages(dataUrls);
       })
       .catch(() => {
-        if (active) setReferenceImage(undefined);
+        if (active) setReferenceImages([]);
       });
     return () => {
       active = false;
     };
-  }, [graphicsSkill?.referenceImageFileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the ids, not the array identity
+  }, [referenceImageFileIds.join(",")]);
   const totalSlots = version?.scenes.reduce((sum, scene) => sum + scene.requiredAssets.length, 0) ?? 0;
   const filledSlots =
     version?.scenes.reduce(
@@ -147,6 +147,15 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
       setError(errorMessage(err));
     }
   };
+
+  const reloadSelections = () =>
+    apiClient.assets
+      .selections(videoId)
+      .then((picks) => {
+        setSelections(picks);
+        if (picks.length >= totalSlots) onComplete();
+      })
+      .catch((err) => setError(errorMessage(err)));
 
   const clear = async (sceneIndex: number, assetIndex: number) => {
     const key = slotKey(sceneIndex, assetIndex);
@@ -196,12 +205,24 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400">{t("description")}</p>
 
-      <GraphicsSkillSelect
-        skills={imageSkills}
-        value={graphicsSkillId}
-        onChange={setGraphicsSkillId}
-        className="max-w-md"
-      />
+      <div className="flex flex-wrap items-end gap-3">
+        <GraphicsSkillSelect
+          skills={imageSkills}
+          value={graphicsSkillId}
+          onChange={setGraphicsSkillId}
+          className="max-w-md"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => setBatchPromptOpen(true)}
+        >
+          <ListIcon className="size-4" />
+          {t("batchPrompt.openButton")}
+        </Button>
+      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -306,10 +327,21 @@ export default function AssetsStep({ videoId, onComplete }: StepComponentProps) 
         sources={sources}
         selected={target ? bySlot.get(slotKey(target.scene.index, target.assetIndex))?.candidate : undefined}
         characterRoster={characterRoster}
+        objectRoster={objectRoster}
         graphicsStyle={graphicsStyle}
-        referenceImage={referenceImage}
+        referenceImages={referenceImages}
         onOpenChange={(open) => !open && setTarget(null)}
         onSelect={select}
+      />
+
+      <BatchPromptDialog
+        open={batchPromptOpen}
+        onOpenChange={setBatchPromptOpen}
+        videoId={videoId}
+        scenes={version.scenes}
+        characterRoster={characterRoster}
+        objectRoster={objectRoster}
+        onImported={reloadSelections}
       />
     </div>
   );

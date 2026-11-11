@@ -89,6 +89,13 @@
   --color-white: #ffffff;
   --color-black: #101828;
 
+  /* Elevated dark-mode surfaces (dropdowns, dialogs, sheets, avatar
+     placeholders) that need a solid color instead of card-surface's
+     translucent glass. One token each so the "black" theme variant below
+     can retint them without touching every component. */
+  --color-surface-popover: #1e2635;
+  --color-surface-avatar: #192130;
+
   --color-brand-50: #ebfaff;
   --color-brand-100: #d1f4ff;
   --color-brand-200: #a5e8fe;
@@ -178,6 +185,20 @@
       background-position: 150% 0;
     }
   }
+}
+
+/*
+  Dark-mode variants. "Navy" is the default dark look above (nothing to
+  override). "Black" deepens the same surfaces to near-true black; set by
+  ThemeProvider as `data-theme-variant="black"` on <html>, always alongside
+  the `.dark` class. Only surface colors move — text, borders' contrast step,
+  brand and status colors stay the same as navy.
+*/
+:root[data-theme-variant="black"] {
+  --color-gray-900: #000000;
+  --color-gray-800: #171717;
+  --color-surface-popover: #000000;
+  --color-surface-avatar: #0d0d0d;
 }
 
 /*
@@ -1236,7 +1257,7 @@ pre[class*="language-"].line-numbers {
    recipe to card-surface, but classic mode keeps the existing solid dark
    background these need for legibility over arbitrary page content. */
 @utility popover-surface {
-  @apply rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-[#1E2635];
+  @apply rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-surface-popover;
 
   &:where(.liquid *) {
     position: relative;

@@ -91,7 +91,13 @@ export async function writeScriptFromTemplate(
     "analyzed",
     { scenes, resources: analysis.resources, style: analysis.style },
     req.videoId,
-    { templateSourceId: template.id },
+    {
+      templateSourceId: template.id,
+      styleTemplateId: req.styleTemplateId,
+      provider,
+      model: req.model,
+      language: req.language ?? "vi",
+    },
   );
   return {
     scriptText,

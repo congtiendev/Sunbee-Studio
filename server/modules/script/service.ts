@@ -1,5 +1,6 @@
 import type {
   RecurringCharacter,
+  RecurringObject,
   ScriptAnalysisRecord,
   ScriptAnalyzeRequest,
   ScriptAnalyzeResponse,
@@ -23,20 +24,6 @@ import { analyzeScriptTask } from "./tasks/analyze.js";
 import { extractCharactersTask } from "./tasks/extract-characters.js";
 
 type Caller = Pick<User, "id" | "role">;
-
-/** Characters whose name shows up in 2+ scenes — worth locking an appearance for; a single appearance is just an illustrative figure, not worth reusing. */
-function recurringCharacters(
-  scenes: { characters?: { name: string }[] }[],
-  roster: { name: string; appearance: string }[],
-): RecurringCharacter[] {
-  const sceneCounts = new Map<string, number>();
-  for (const scene of scenes) {
-    for (const name of new Set((scene.characters ?? []).map((c) => c.name))) {
-      sceneCounts.set(name, (sceneCounts.get(name) ?? 0) + 1);
-    }
-  }
-  return roster.filter((c) => (sceneCounts.get(c.name) ?? 0) >= 2);
-}
 
 /**
  * Analyze a script and persist it as a new "analyzed" version. Shared by
@@ -65,16 +52,22 @@ export async function analyzeScriptForUser(
     frames,
     Math.max(scriptChunks.length, chunkCountForFrames(frames.length)),
   );
+  // Analysis doesn't write new prose, so the voice skill (genre/tone/
+  // instructions, picked for the writing step) has nothing to add here —
+  // only the editing skill's own approved examples/documents (if any) are
+  // relevant context, and its cutting methodology is a hard constraint below.
   const context = loadScriptContext(caller, {
-    skillId: req.styleTemplateId,
+    skillId: req.editingStyleTemplateId,
     videoId: req.videoId,
   });
+  const editingStyle = context.skill?.editingStyle;
 
   // Read the whole script once first to lock in a character roster (name +
-  // appearance): a long script analyzed as several independent chunks (below)
-  // has no way to keep names/appearance consistent across them on its own,
-  // and the roster is also persisted (see recurringCharacters() below) so
-  // later image generation reuses the same appearance in every scene.
+  // appearance) for EVERY character, even one scene's worth: a long script
+  // analyzed as several independent chunks (below) has no way to keep
+  // names/appearance consistent across them on its own, and the roster is
+  // also persisted as-is so later image generation reuses the same
+  // appearance everywhere that character appears.
   const rosterResult = await runTask(
     extractCharactersTask,
     { scriptText: req.scriptText, provider, model: req.model },
@@ -85,6 +78,10 @@ export async function analyzeScriptForUser(
       ? rosterResult.characters
           .map((c) => `${c.name} — ${c.appearance}`)
           .join("\n")
+      : undefined;
+  const knownObjects =
+    rosterResult.objects.length > 0
+      ? rosterResult.objects.map((o) => `${o.name} — ${o.appearance}`).join("\n")
       : undefined;
 
   const chunkResults = await Promise.all(
@@ -99,16 +96,16 @@ export async function analyzeScriptForUser(
           effort: req.effort,
           context,
           knownCharacters,
+          knownObjects,
+          editingStyle,
         },
         ctx,
       ),
     ),
   );
   const result = mergeAnalyzeResults(chunkResults);
-  const characterRoster = recurringCharacters(
-    result.scenes,
-    rosterResult.characters,
-  );
+  const characterRoster: RecurringCharacter[] = rosterResult.characters;
+  const objectRoster: RecurringObject[] = rosterResult.objects;
 
   const version = saveScriptVersion(
     caller.id,
@@ -119,9 +116,17 @@ export async function analyzeScriptForUser(
     "analyzed",
     result,
     req.videoId,
-    { characterRoster },
+    {
+      characterRoster,
+      objectRoster,
+      styleTemplateId: req.styleTemplateId,
+      editingStyleTemplateId: req.editingStyleTemplateId,
+      provider,
+      model: req.model,
+      language: req.language,
+    },
   );
-  return { ...result, characterRoster, versionId: version.id };
+  return { ...result, characterRoster, objectRoster, versionId: version.id };
 }
 
 /**
@@ -152,6 +157,15 @@ export function approveScriptVersion(
     "analyzed",
     { scenes, resources: req.resources, style: req.style },
     base.videoId,
-    { approved: true, characterRoster: base.characterRoster },
+    {
+      approved: true,
+      characterRoster: req.characterRoster ?? base.characterRoster,
+      objectRoster: req.objectRoster ?? base.objectRoster,
+      styleTemplateId: base.styleTemplateId,
+      editingStyleTemplateId: base.editingStyleTemplateId,
+      provider: base.provider,
+      model: base.model,
+      language: base.language,
+    },
   );
 }

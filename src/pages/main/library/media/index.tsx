@@ -363,7 +363,7 @@ function GenerateImageDialog({
       const result = await apiClient.assets.research({
         sourceKey: source.key,
         query: prompt.trim(),
-        referenceImage: referenceImage ?? undefined,
+        referenceImages: referenceImage ? [referenceImage] : undefined,
         aspectRatio,
       });
       setCandidates(result.candidates);

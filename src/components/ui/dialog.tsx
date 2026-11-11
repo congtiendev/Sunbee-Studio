@@ -53,7 +53,7 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           fullScreen
-            ? "glass-chrome fixed inset-0 z-101 flex h-dvh w-screen max-w-none flex-col justify-between overflow-y-auto rounded-none border-none bg-white p-6 text-sm text-gray-700 shadow-none duration-100 outline-none data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0 sm:p-10 dark:bg-[#1E2635] dark:text-gray-300"
+            ? "glass-chrome fixed inset-0 z-101 flex h-dvh w-screen max-w-none flex-col justify-between overflow-y-auto rounded-none border-none bg-white p-6 text-sm text-gray-700 shadow-none duration-100 outline-none data-closed:animate-out data-closed:fade-out-0 data-open:animate-in data-open:fade-in-0 sm:p-10 dark:bg-surface-popover dark:text-gray-300"
             : "popover-surface fixed inset-s-1/2 top-1/2 z-101 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 p-6 text-sm text-gray-700 shadow-theme-lg duration-100 outline-none data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 sm:max-w-lg rtl:translate-x-1/2 dark:text-gray-300",
           className,
         )}

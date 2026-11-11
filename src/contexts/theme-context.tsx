@@ -6,21 +6,28 @@ import {
   type ReactNode,
 } from "react";
 
-export type ThemeMode = "light" | "dark" | "auto";
+/** "light" and "auto" resolve `theme`; "navy"/"black" both resolve dark, differing only in `themeVariant`. */
+export type ThemeMode = "light" | "navy" | "black" | "auto";
+export type ThemeVariant = "navy" | "black";
 type ResolvedTheme = "light" | "dark";
 
 type ThemeContextType = {
   theme: ResolvedTheme; // Resolved theme actually active ("light" or "dark")
-  themeMode: ThemeMode; // The configured preference ("light", "dark", or "auto")
+  themeVariant: ThemeVariant; // Which dark look is active; meaningless when theme is "light"
+  themeMode: ThemeMode; // The configured preference
   setThemeMode: (mode: ThemeMode) => void;
+  /** Cycles Light → Navy → Black → Light. */
   toggleTheme: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+const CYCLE: Exclude<ThemeMode, "auto">[] = ["light", "navy", "black"];
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>("light");
   const [theme, setTheme] = useState<ResolvedTheme>("light");
+  const [themeVariant, setThemeVariant] = useState<ThemeVariant>("navy");
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -28,7 +35,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const legacySavedTheme = localStorage.getItem(
       "theme",
     ) as ResolvedTheme | null;
-    const initialMode = savedMode || (legacySavedTheme as ThemeMode) || "light";
+    let initialMode: ThemeMode =
+      savedMode || (legacySavedTheme as ThemeMode) || "light";
+    // Pre-variant saved value: the only dark look back then is now "navy".
+    if ((initialMode as string) === "dark") initialMode = "navy";
 
     setThemeModeState(initialMode);
     setIsInitialized(true);
@@ -43,8 +53,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
       const handleChange = () => {
-        const resolved = mediaQuery.matches ? "dark" : "light";
-        setTheme(resolved);
+        setTheme(mediaQuery.matches ? "dark" : "light");
+        setThemeVariant("navy");
       };
 
       handleChange();
@@ -53,38 +63,48 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       return () => {
         mediaQuery.removeEventListener("change", handleChange);
       };
+    } else if (themeMode === "light") {
+      setTheme("light");
     } else {
-      setTheme(themeMode as ResolvedTheme);
+      setTheme("dark");
+      setThemeVariant(themeMode);
     }
   }, [themeMode, isInitialized]);
 
   useEffect(() => {
     if (isInitialized) {
       localStorage.setItem("theme", theme);
+      document.documentElement.classList.toggle("dark", theme === "dark");
+      document.documentElement.setAttribute("data-color-scheme", theme);
       if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-        document.documentElement.setAttribute("data-color-scheme", "dark");
+        document.documentElement.setAttribute(
+          "data-theme-variant",
+          themeVariant,
+        );
       } else {
-        document.documentElement.classList.remove("dark");
-        document.documentElement.setAttribute("data-color-scheme", "light");
+        document.documentElement.removeAttribute("data-theme-variant");
       }
     }
-  }, [theme, isInitialized]);
+  }, [theme, themeVariant, isInitialized]);
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
   };
 
   const toggleTheme = () => {
-    setThemeModeState(() => {
-      const currentResolved = theme;
-      return currentResolved === "light" ? "dark" : "light";
-    });
+    const current =
+      themeMode === "auto"
+        ? theme === "dark"
+          ? themeVariant
+          : "light"
+        : themeMode;
+    const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length]!;
+    setThemeModeState(next);
   };
 
   return (
     <ThemeContext.Provider
-      value={{ theme, themeMode, setThemeMode, toggleTheme }}
+      value={{ theme, themeVariant, themeMode, setThemeMode, toggleTheme }}
     >
       {children}
     </ThemeContext.Provider>

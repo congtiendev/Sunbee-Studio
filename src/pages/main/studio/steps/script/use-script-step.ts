@@ -7,13 +7,14 @@ import {
 import type {
   LinkScriptOrigin,
   RecurringCharacter,
+  RecurringObject,
   ScriptAnalysisRecord,
   ScriptAnalyzeResult,
   ScriptScene,
   ScriptSourceType,
   StyleTemplate,
 } from "@shared/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ScriptSourceKey } from "./sources/registry";
 
 export const NO_TEMPLATE = "__none__";
@@ -66,6 +67,51 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   // Source "idea": the idea itself and its target length.
   const [idea, setIdea] = useState("");
   const [ideaDurationSec, setIdeaDurationSec] = useState<number | null>(60);
+
+  // The idea/brief text and target length are page settings, not tied to any
+  // saved version — kept in the user's account settings so they don't
+  // quietly reset on reload (or on another device).
+  const [draftSettingsLoaded, setDraftSettingsLoaded] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void apiClient.settings.get().then((settings) => {
+      if (!active) return;
+      if (settings.scriptDocumentDurationSec) setTargetDurationSec(settings.scriptDocumentDurationSec);
+      if (settings.scriptIdeaDurationSec) setIdeaDurationSec(settings.scriptIdeaDurationSec);
+      if (settings.scriptDocumentBrief) setBrief(settings.scriptDocumentBrief);
+      if (settings.scriptIdeaText) setIdea(settings.scriptIdeaText);
+      setDraftSettingsLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!draftSettingsLoaded) return;
+    const id = setTimeout(
+      () => void apiClient.settings.set({ scriptDocumentDurationSec: targetDurationSec }),
+      800,
+    );
+    return () => clearTimeout(id);
+  }, [targetDurationSec, draftSettingsLoaded]);
+  useEffect(() => {
+    if (!draftSettingsLoaded) return;
+    const id = setTimeout(
+      () => void apiClient.settings.set({ scriptIdeaDurationSec: ideaDurationSec }),
+      800,
+    );
+    return () => clearTimeout(id);
+  }, [ideaDurationSec, draftSettingsLoaded]);
+  useEffect(() => {
+    if (!draftSettingsLoaded) return;
+    const id = setTimeout(() => void apiClient.settings.set({ scriptDocumentBrief: brief }), 800);
+    return () => clearTimeout(id);
+  }, [brief, draftSettingsLoaded]);
+  useEffect(() => {
+    if (!draftSettingsLoaded) return;
+    const id = setTimeout(() => void apiClient.settings.set({ scriptIdeaText: idea }), 800);
+    return () => clearTimeout(id);
+  }, [idea, draftSettingsLoaded]);
   // Source "template": the analyzed version to model, the new topic, optional facts.
   const [templateVersionId, setTemplateVersionId] = useState<string | null>(null);
   const [topic, setTopic] = useState("");
@@ -74,10 +120,18 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   const [templateDurationSec, setTemplateDurationSec] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<
-    (ScriptAnalyzeResult & { characterRoster?: RecurringCharacter[] }) | null
+    | (ScriptAnalyzeResult & {
+        characterRoster?: RecurringCharacter[];
+        objectRoster?: RecurringObject[];
+      })
+    | null
   >(null);
   const [styleTemplates, setStyleTemplates] = useState<StyleTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState(NO_TEMPLATE);
+  // Type "editing" skills: shot/cut/pacing methodology applied to the
+  // scene-breakdown (analyze) step, independent of the writing skill above.
+  const [editingStyleTemplates, setEditingStyleTemplates] = useState<StyleTemplate[]>([]);
+  const [selectedEditingStyleId, setSelectedEditingStyleId] = useState(NO_TEMPLATE);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [frames, setFrames] = useState<string[]>([]);
   const [provider, setProvider] = useState<AnalyzeProvider>("claude");
@@ -87,6 +141,12 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     Record<AnalyzeProvider, boolean>
   >({ openai: true, claude: true });
   const [currentVersionId, setCurrentVersionId] = useState<string | null>(null);
+  // Tracks whether `scriptText` has hand-edits beyond the last save, and when
+  // that last save happened — shown next to the history button so the user
+  // always knows which version is in use and whether anything would be lost.
+  const [savedScriptText, setSavedScriptText] = useState("");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [savingText, setSavingText] = useState(false);
   const [noSpeechHint, setNoSpeechHint] = useState(false);
   const [aiDescribed, setAiDescribed] = useState(false);
   const [describeProvider, setDescribeProvider] = useState<AnalyzeProvider>("claude");
@@ -131,10 +191,13 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   const refreshTemplates = () =>
     apiClient.templates
       .list()
-      // Image-type skills apply to the Assets step, not script writing.
-      .then((templates) => setStyleTemplates(templates.filter((t) => (t.type ?? "script") === "script")))
+      .then((templates) => {
+        // Image-type skills apply to the Assets step, not script writing.
+        setStyleTemplates(templates.filter((t) => (t.type ?? "script") === "script"));
+        setEditingStyleTemplates(templates.filter((t) => t.type === "editing"));
+      })
       .catch(() => {
-        // Non-critical: the style-template picker just stays empty.
+        // Non-critical: the style-template pickers just stay empty.
       });
 
   useEffect(() => {
@@ -164,16 +227,50 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     };
   }, []);
 
-  const loadVersion = (record: ScriptAnalysisRecord) => {
+  /**
+   * Persists hand-edited `scriptText` outside of fetch/write/analyze — auto-save
+   * (debounced below) or a manual "Save" action. Updates the current version in
+   * place while it's still a draft; forks a new draft instead once it's
+   * "analyzed", so an edit never rewrites an analyzed version's text out from
+   * under its scenes.
+   */
+  const saveScriptTextNow = async () => {
+    if (scriptText === savedScriptText) return;
+    setSavingText(true);
+    try {
+      const record = await apiClient.script.saveText({
+        videoId,
+        scriptText,
+        versionId: currentVersionId ?? undefined,
+      });
+      setCurrentVersionId(record.id);
+      setSavedScriptText(record.scriptText);
+      setLastSavedAt(new Date());
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSavingText(false);
+    }
+  };
+
+  // Saves any pending hand-edits before switching away, so picking a
+  // different version from history never silently discards them.
+  const loadVersion = async (record: ScriptAnalysisRecord) => {
+    if (scriptText !== savedScriptText) await saveScriptTextNow();
     setError(null);
     setCurrentVersionId(record.id);
     setScriptTextRaw(record.scriptText);
+    setSavedScriptText(record.scriptText);
+    setLastSavedAt(new Date(record.createdAt));
     setLinkOrigin(null);
     setFrames(record.frames);
     setUploadFile(null);
     setMode(modeForSource(record.sourceType));
     setUrl(record.sourceType === "youtube" ? (record.sourceUrl ?? "") : "");
+    setIdea(record.sourceType === "idea" ? (record.sourceUrl ?? "") : "");
     if (record.templateSourceId) setTemplateVersionId(record.templateSourceId);
+    setSelectedTemplateId(record.styleTemplateId ?? NO_TEMPLATE);
+    setSelectedEditingStyleId(record.editingStyleTemplateId ?? NO_TEMPLATE);
     setResult(
       record.kind === "analyzed" && record.style
         ? {
@@ -181,6 +278,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
             resources: record.resources,
             style: record.style,
             characterRoster: record.characterRoster,
+            objectRoster: record.objectRoster,
           }
         : null,
     );
@@ -198,10 +296,12 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
       .history(videoId)
       .then((data) => {
         if (!active) return;
-        if (data.length > 0) loadVersion(data[0]!);
+        if (data.length > 0) void loadVersion(data[0]!);
         else {
           setCurrentVersionId(null);
           setScriptTextRaw("");
+          setSavedScriptText("");
+          setLastSavedAt(null);
           setFrames([]);
           setResult(null);
         }
@@ -213,6 +313,17 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
       active = false;
     };
   }, [videoId]);
+
+  const scriptTextDirty = scriptText !== savedScriptText;
+
+  // Auto-save hand-edits a short while after typing stops, so the "Save"
+  // button is a fallback rather than the only way to persist them.
+  useEffect(() => {
+    if (!scriptTextDirty || busy) return;
+    const id = setTimeout(() => void saveScriptTextNow(), 2500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- debounced on text change alone; saveScriptTextNow closes over the latest state of this same render
+  }, [scriptText, scriptTextDirty, busy]);
 
   const costEstimate = useMemo(
     () =>
@@ -239,6 +350,8 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         language: scriptLanguage,
       });
       setScriptTextRaw(res.scriptText);
+      setSavedScriptText(res.scriptText);
+      setLastSavedAt(new Date());
       setFrames(res.frames ?? []);
       setCurrentVersionId(res.versionId ?? null);
       // The link panel explains how the script was obtained; the generic
@@ -269,6 +382,8 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         scriptLanguage,
       );
       setScriptTextRaw(res.scriptText);
+      setSavedScriptText(res.scriptText);
+      setLastSavedAt(new Date());
       setFrames(res.frames ?? []);
       setCurrentVersionId(res.versionId ?? null);
       setNoSpeechHint(Boolean(res.noSpeechDetected));
@@ -299,6 +414,8 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         videoId,
       });
       setScriptTextRaw(res.scriptText);
+      setSavedScriptText(res.scriptText);
+      setLastSavedAt(new Date());
       setCurrentVersionId(res.versionId ?? null);
     } catch (err) {
       setError(errorMessage(err));
@@ -325,6 +442,8 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         videoId,
       });
       setScriptTextRaw(res.scriptText);
+      setSavedScriptText(res.scriptText);
+      setLastSavedAt(new Date());
       setCurrentVersionId(res.versionId ?? null);
     } catch (err) {
       setError(errorMessage(err));
@@ -356,11 +475,14 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         videoId,
       });
       setScriptTextRaw(res.scriptText);
+      setSavedScriptText(res.scriptText);
+      setLastSavedAt(new Date());
       setResult({
         scenes: res.scenes,
         resources: res.resources,
         style: res.style,
         characterRoster: res.characterRoster,
+        objectRoster: res.objectRoster,
       });
       setResultKey((key) => key + 1);
       setCurrentVersionId(res.versionId);
@@ -372,36 +494,57 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     }
   };
 
+  const analyzeAbortRef = useRef<AbortController | null>(null);
+
   const analyze = async () => {
     setError(null);
     setAnalyzing(true);
     setResult(null);
     setApproved(false);
+    const controller = new AbortController();
+    analyzeAbortRef.current = controller;
     try {
-      const res = await apiClient.script.analyze({
-        scriptText,
-        sourceType: sourceTypeForMode(mode),
-        sourceUrl: mode === "link" ? url : undefined,
-        styleTemplateId: selectedTemplateId === NO_TEMPLATE ? undefined : selectedTemplateId,
-        frames,
-        provider,
-        model,
-        effort,
-        videoId,
-      });
+      const res = await apiClient.script.analyze(
+        {
+          scriptText,
+          sourceType: sourceTypeForMode(mode),
+          sourceUrl: mode === "link" ? url : undefined,
+          styleTemplateId: selectedTemplateId === NO_TEMPLATE ? undefined : selectedTemplateId,
+          editingStyleTemplateId:
+            selectedEditingStyleId === NO_TEMPLATE ? undefined : selectedEditingStyleId,
+          frames,
+          provider,
+          model,
+          effort,
+          videoId,
+          language: scriptLanguage,
+        },
+        controller.signal,
+      );
       setResult(res);
       setResultKey((key) => key + 1);
       setCurrentVersionId(res.versionId);
+      // The script text sent is now exactly what the saved "analyzed" version holds.
+      setSavedScriptText(scriptText);
+      setLastSavedAt(new Date());
       onAnalyzed?.();
     } catch (err) {
-      setError(errorMessage(err));
+      if ((err as { name?: string }).name !== "AbortError") setError(errorMessage(err));
     } finally {
       setAnalyzing(false);
+      analyzeAbortRef.current = null;
     }
   };
 
-  /** Saves the (edited) scenes as a new approved version. */
-  const approve = async (scenes: ScriptScene[]) => {
+  /** The request keeps running server-side (and may still save a version) — this only stops waiting for it client-side. */
+  const cancelAnalyze = () => analyzeAbortRef.current?.abort();
+
+  /** Saves the (edited) scenes — and optionally hand-edited character/object rosters — as a new approved version. */
+  const approve = async (
+    scenes: ScriptScene[],
+    characterRoster?: RecurringCharacter[],
+    objectRoster?: RecurringObject[],
+  ) => {
     if (!result || !currentVersionId) return false;
     setError(null);
     setApproving(true);
@@ -411,12 +554,15 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         scenes,
         resources: result.resources,
         style: result.style,
+        characterRoster,
+        objectRoster,
       });
       setResult({
         scenes: record.scenes,
         resources: record.resources,
         style: result.style,
         characterRoster: record.characterRoster,
+        objectRoster: record.objectRoster,
       });
       setResultKey((key) => key + 1);
       setCurrentVersionId(record.id);
@@ -448,6 +594,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     transcribing,
     writing,
     analyzing,
+    cancelAnalyze,
     busy,
     elapsedSec,
     sourceDocumentIds,
@@ -482,6 +629,9 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     refreshTemplates,
     selectedTemplateId,
     setSelectedTemplateId,
+    editingStyleTemplates,
+    selectedEditingStyleId,
+    setSelectedEditingStyleId,
     provider,
     changeProvider,
     model,
@@ -503,6 +653,10 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     fetchFromLink,
     transcribeUpload,
     analyze,
+    scriptTextDirty,
+    savingText,
+    lastSavedAt,
+    saveScriptTextNow,
   };
 }
 

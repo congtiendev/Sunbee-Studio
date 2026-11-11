@@ -1,3 +1,4 @@
+import MarkdownTextarea from "@/components/shared/markdown-textarea";
 import { SkeletonPanel } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,6 @@ import {
 import { OverflowTabsList } from "@/components/ui/overflow-tabs";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts";
 import { useLocale, useTranslations } from "@/i18n";
 import { apiClient } from "@/lib/api-client";
@@ -139,11 +139,11 @@ function PromptSlotEditor({
         </p>
       )}
 
-      <Textarea
+      <MarkdownTextarea
         rows={10}
         value={draft}
-        onChange={(e) => {
-          setDraft(e.target.value);
+        onChange={(value) => {
+          setDraft(value);
           setSavedNotice(false);
         }}
         className="resize-y font-jetbrains-mono text-xs leading-relaxed"

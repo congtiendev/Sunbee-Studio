@@ -83,7 +83,7 @@ export const aiImageCloudflareSource: ResearchSource = {
     }
   },
 
-  async search({ query, perPage }, { apiKey, userId, ai, sceneContext, referenceImage, aspectRatio, graphicsStyle }) {
+  async search({ query, perPage }, { apiKey, userId, ai, sceneContext, referenceImages, aspectRatio, graphicsStyle }) {
     if (!apiKey) throw new Error("Chưa thiết lập Cloudflare API key.");
     const { accountId, token } = parseKey(apiKey);
     const description = query.trim();
@@ -96,7 +96,7 @@ export const aiImageCloudflareSource: ResearchSource = {
     // one (e.g. "tạo 3 ảnh...") — without AI to read that, just one image.
     const provider = firstAvailableProvider(ai);
     const { prompt, count: requestedCount } = provider
-      ? await runTask(imagePromptTask, { description, sceneContext, referenceImage, graphicsStyle, provider }, ai)
+      ? await runTask(imagePromptTask, { description, sceneContext, referenceImages, graphicsStyle, provider }, ai)
       : { prompt: description, count: 1 };
     const count = Math.max(1, Math.min(perPage ?? requestedCount, MAX_VARIATIONS));
 
