@@ -12,6 +12,7 @@ import EditPlanStep from "./edit-plan";
 import RenderStep from "./render";
 import ScriptStep from "./script";
 import { SCRIPT_SOURCES } from "./script/sources/registry";
+import type { StepSaveHandle } from "./step-save";
 
 export interface StepComponentProps {
   videoId: string;
@@ -19,6 +20,8 @@ export interface StepComponentProps {
   onComplete: () => void;
   /** Report a long-running AI call in progress, so step switching is blocked until it finishes. */
   onBusyChange?: (busy: boolean) => void;
+  /** Report unsaved work and how to save it (via `useStepSave`); steps that never call it show as saved. */
+  onSaveChange?: (handle: StepSaveHandle | null) => void;
 }
 
 /**

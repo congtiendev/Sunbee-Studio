@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
+import { isFrameRatio } from "../../../shared/frame-ratio.js";
 import type {
   AssetCandidate,
+  AssetPromptRecord,
+  FrameRatio,
+  ImageLayer,
   LibraryAsset,
   LibraryMediaType,
   SceneResource,
@@ -147,6 +151,75 @@ export function searchLibrary(
     .map((hit) => hit.asset);
 }
 
+// ---------- AI-written image prompts per required asset ----------
+
+/** The key a required asset's prompt is stored under — the same normalization the batch dialog dedupes on. */
+export function assetPromptKey(description: string): string {
+  return description.trim().toLowerCase();
+}
+
+/** Prompts saved for a video — only those written under `rulesVersion` (older ones are stale). */
+export function listAssetPrompts(videoId: string, rulesVersion: number): AssetPromptRecord[] {
+  return (
+    getDb()
+      .prepare(
+        `SELECT description, prompt, frame_ratio, layer, updated_at FROM asset_prompts
+         WHERE video_id = ? AND rules_version = ? ORDER BY updated_at`,
+      )
+      .all(videoId, rulesVersion) as {
+        description: string;
+        prompt: string;
+        frame_ratio: string | null;
+        layer: string | null;
+        updated_at: string;
+      }[]
+  ).map((row) => ({
+    description: row.description,
+    prompt: row.prompt,
+    frameRatio: isFrameRatio(row.frame_ratio) ? row.frame_ratio : undefined,
+    layer: row.layer === "scene" || row.layer === "cutout" ? row.layer : undefined,
+    updatedAt: row.updated_at,
+  }));
+}
+
+export function saveAssetPrompt(
+  userId: string,
+  input: {
+    videoId: string;
+    description: string;
+    prompt: string;
+    frameRatio?: FrameRatio;
+    layer?: ImageLayer;
+    rulesVersion: number;
+  },
+): void {
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(
+      `INSERT INTO asset_prompts (video_id, description_key, user_id, description, prompt, frame_ratio, layer, rules_version, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (video_id, description_key) DO UPDATE SET
+         description = excluded.description,
+         prompt = excluded.prompt,
+         frame_ratio = excluded.frame_ratio,
+         layer = excluded.layer,
+         rules_version = excluded.rules_version,
+         updated_at = excluded.updated_at`,
+    )
+    .run(
+      input.videoId,
+      assetPromptKey(input.description),
+      userId,
+      input.description,
+      input.prompt,
+      input.frameRatio ?? null,
+      input.layer ?? null,
+      input.rulesVersion,
+      now,
+      now,
+    );
+}
+
 // ---------- scene resources (the pick for each required asset) ----------
 
 interface SceneResourceRow {
@@ -180,6 +253,12 @@ export function listSceneResources(videoId: string): SceneResource[] {
       )
       .all(videoId) as SceneResourceRow[]
   ).map(rowToSceneResource);
+}
+
+/** Drops every pick of the given scenes — after their asset lists were rewritten, the old positions mean other assets. */
+export function clearSceneResources(videoId: string, sceneIndexes: number[]): void {
+  const remove = getDb().prepare("DELETE FROM scene_resources WHERE video_id = ? AND scene_index = ?");
+  for (const index of sceneIndexes) remove.run(videoId, index);
 }
 
 /** Sets (or, with a null candidate, clears) the pick for one required asset. */

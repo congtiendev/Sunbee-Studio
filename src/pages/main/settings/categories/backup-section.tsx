@@ -84,6 +84,15 @@ export default function BackupSection() {
                 anthropicKeys: result.anthropicKeys,
               })}
               {result.openaiKeyImported && ` ${t("importOpenaiKey")}`}
+              {(result.recoveredCategories ?? 0) + (result.recoveredVideos ?? 0) > 0 &&
+                ` ${t("importRecovered", {
+                  categories: result.recoveredCategories ?? 0,
+                  videos: result.recoveredVideos ?? 0,
+                })}`}
+              {(result.missingReferenceImages ?? 0) > 0 &&
+                ` ${t("importMissingImages", {
+                  count: result.missingReferenceImages ?? 0,
+                })}`}
             </AlertDescription>
           </Alert>
         )}

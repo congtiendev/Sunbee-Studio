@@ -9,9 +9,10 @@ import { BrainIcon, ClockIcon } from "@/icons";
 import { trainingUrl } from "@/lib/paths";
 import { Link } from "react-router";
 import { useTranslations } from "@/i18n";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import VersionSheet from "@/pages/main/studio/version-sheet";
 import type { StepComponentProps } from "../registry";
+import { useStepSave } from "../step-save";
 import AnalysisSettings from "./analysis-settings";
 import { passageForFrame } from "./frame-passage";
 import FramePreviewPanel from "./frame-preview";
@@ -34,10 +35,31 @@ export default function ScriptStep({
   videoId,
   onComplete,
   onBusyChange,
+  onSaveChange,
 }: StepComponentProps) {
   const t = useTranslations("videoStudio.script");
   const step = useScriptStep(videoId, onComplete);
   const [versionSheetOpen, setVersionSheetOpen] = useState(false);
+
+  // Studio Save: the hand-edited script text, plus scene edits if the scene
+  // editor is open (saved the way its own "save & approve" does).
+  const [saveSceneDraft, setSaveSceneDraft] = useState<(() => Promise<boolean>) | null>(null);
+  const handleDraftChange = useCallback(
+    (save: (() => Promise<boolean>) | null) => setSaveSceneDraft(() => save),
+    [],
+  );
+  useStepSave(
+    onSaveChange,
+    {
+      dirty: step.scriptTextDirty || saveSceneDraft !== null,
+      saving: step.savingText || step.approving,
+      savedAt: step.lastSavedAt,
+    },
+    async () => {
+      await step.saveScriptTextNow();
+      if (saveSceneDraft) await saveSceneDraft();
+    },
+  );
 
   useEffect(() => {
     onBusyChange?.(step.busy);
@@ -262,6 +284,7 @@ export default function ScriptStep({
               approving={step.approving}
               canApprove={Boolean(step.currentVersionId)}
               onApprove={step.approve}
+              onDraftChange={handleDraftChange}
             />
           </div>
 

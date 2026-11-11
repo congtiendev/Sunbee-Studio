@@ -359,6 +359,62 @@ const MIGRATIONS: Migration[] = [
       db.exec(`ALTER TABLE script_analyses ADD COLUMN object_roster_json TEXT;`);
     },
   },
+  {
+    id: 20,
+    name: "asset_prompts",
+    up: (db) => {
+      // AI-written image prompts for a video's required assets (the batch
+      // "generate via ChatGPT" dialog), saved as soon as each is written so
+      // they survive closing the dialog, a reload, or picking another scene
+      // range. Keyed by the asset's normalized description — the same key the
+      // dialog dedupes on — so they follow the asset, not a p1/p2 code.
+      db.exec(`
+        CREATE TABLE asset_prompts (
+          video_id TEXT NOT NULL,
+          description_key TEXT NOT NULL,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          description TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          PRIMARY KEY (video_id, description_key)
+        );
+      `);
+    },
+  },
+  {
+    id: 21,
+    name: "video_frame_ratio",
+    up: (db) => {
+      // One frame shape per video ("16:9", "9:16", "1:1", "4:3"; NULL = never
+      // picked, treated as 16:9) that every image made for it composes for —
+      // and the one each saved prompt was written for, so a prompt for
+      // another shape isn't reused.
+      db.exec(`
+        ALTER TABLE videos ADD COLUMN frame_ratio TEXT;
+        ALTER TABLE asset_prompts ADD COLUMN frame_ratio TEXT;
+      `);
+    },
+  },
+  {
+    id: 22,
+    name: "asset_prompt_layer",
+    up: (db) => {
+      // Whether a saved prompt draws a whole frame of the scene ("scene") or
+      // just its subject for a transparent PNG to composite and animate
+      // ("cutout") — see `ImageLayer`.
+      db.exec(`ALTER TABLE asset_prompts ADD COLUMN layer TEXT;`);
+    },
+  },
+  {
+    id: 23,
+    name: "asset_prompt_rules_version",
+    up: (db) => {
+      // Which version of the prompt-writing rules wrote each saved prompt
+      // (IMAGE_PROMPT_RULES_VERSION) — prompts from older rules aren't reused.
+      db.exec(`ALTER TABLE asset_prompts ADD COLUMN rules_version INTEGER;`);
+    },
+  },
 ];
 
 export function runNumberedMigrations(db: Database.Database): void {

@@ -1,5 +1,6 @@
 import type {
   AssetCandidate,
+  FrameRatio,
   ImageAspectRatio,
   ResearchMediaType,
   ResearchSourceKind,
@@ -28,6 +29,8 @@ export interface ResearchContext {
   referenceImages?: string[];
   /** AI image sources: output frame shape. Omitted: square. */
   aspectRatio?: ImageAspectRatio;
+  /** AI image sources: the video's frame ratio — takes precedence over `aspectRatio`. */
+  frameRatio?: FrameRatio;
   /** AI image sources: a type "image" skill's locked graphics methodology, applied to every scene's generation this session. */
   graphicsStyle?: string;
 }

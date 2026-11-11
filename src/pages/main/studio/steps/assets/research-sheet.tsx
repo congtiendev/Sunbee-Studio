@@ -27,6 +27,7 @@ import { apiClient } from "@/lib/api-client";
 import { cn } from "@/utils";
 import type {
   AssetCandidate,
+  FrameRatio,
   RecurringCharacter,
   RecurringObject,
   RequiredAsset,
@@ -37,6 +38,7 @@ import type {
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import CandidatePreview from "./candidate-preview";
+import { describeShotForAi, shotOf } from "@shared/shots";
 import { sceneContextOf } from "./scene-context";
 
 export interface ResearchTarget {
@@ -115,6 +117,8 @@ interface ResearchSheetProps {
   graphicsStyle?: string;
   /** That same skill's reference illustrations (data URLs) — style only, described into the prompt like graphicsStyle. */
   referenceImages?: string[];
+  /** The video's frame — AI images are made in it. */
+  frameRatio?: FrameRatio;
   onOpenChange: (open: boolean) => void;
   onSelect: (candidate: AssetCandidate) => Promise<void>;
 }
@@ -127,6 +131,7 @@ export default function ResearchSheet({
   objectRoster,
   graphicsStyle,
   referenceImages,
+  frameRatio,
   onOpenChange,
   onSelect,
 }: ResearchSheetProps) {
@@ -153,6 +158,7 @@ export default function ResearchSheet({
             objectRoster={objectRoster}
             graphicsStyle={graphicsStyle}
             referenceImages={referenceImages}
+            frameRatio={frameRatio}
             onSelect={onSelect}
           />
         )}
@@ -169,6 +175,7 @@ function ResearchBody({
   objectRoster,
   graphicsStyle,
   referenceImages,
+  frameRatio,
   onSelect,
 }: Omit<ResearchSheetProps, "onOpenChange" | "target"> & {
   target: ResearchTarget;
@@ -282,9 +289,17 @@ function ResearchBody({
         query: tab.query.trim(),
         mediaType: tab.mediaType === "any" ? undefined : tab.mediaType,
         description: asset.description,
-        sceneContext: sceneContextOf(scene, characterRoster, objectRoster),
+        sceneContext: [
+          sceneContextOf(scene, characterRoster, objectRoster),
+          shotOf(scene, asset.shot) &&
+            `Shot của ảnh này: ${describeShotForAi(shotOf(scene, asset.shot)!, scene.shots?.length)}`,
+          asset.placement && `Vị trí & góc của ảnh này trong cảnh: ${asset.placement}`,
+        ]
+          .filter(Boolean)
+          .join(" | "),
         graphicsStyle,
         referenceImages,
+        frameRatio,
       });
       patchTab(source.key, {
         loading: false,

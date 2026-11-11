@@ -1172,7 +1172,9 @@
       "importButton": "Nhập dữ liệu",
       "importSummary": "Đã nhập {projects} dự án, {categories} danh mục, {videos} video, {scriptAnalyses} bản phân tích, {styleTemplates} skill, {anthropicKeys} key Claude.",
       "warning": "File xuất ra chứa API key ở dạng văn bản thường. Hãy cất giữ riêng tư và không chia sẻ.",
-      "importOpenaiKey": "Đã nhập cả OpenAI key."
+      "importOpenaiKey": "Đã nhập cả OpenAI key.",
+      "importRecovered": "{categories} danh mục và {videos} video không còn dự án/danh mục gốc trong file đã được đưa vào dự án “Khôi phục từ sao lưu”.",
+      "importMissingImages": "{count} ảnh mẫu của skill không có trong file sao lưu — hãy tải lại ảnh cho các skill đó."
     }
   },
   "videoStudio": {
@@ -1193,7 +1195,16 @@
     "navigation": {
       "back": "Quay lại",
       "next": "Tiếp theo",
-      "busyHint": "AI đang xử lý bước này — vui lòng chờ xử lý xong."
+      "busyHint": "AI đang xử lý bước này — vui lòng chờ xử lý xong.",
+      "scrollTop": "Lên đầu trang",
+      "scrollBottom": "Xuống cuối trang",
+      "save": "Lưu",
+      "saving": "Đang lưu…",
+      "saved": "Đã lưu",
+      "unsaved": "Có thay đổi chưa lưu",
+      "savedAt": "Đã lưu lúc {time}",
+      "autoSaved": "Bước này tự lưu",
+      "saveShortcut": "Lưu (Ctrl+S)"
     },
     "script": {
       "version": {
@@ -1204,8 +1215,7 @@
         "saving": "Đang lưu…",
         "saved": "Đã lưu lúc {time}",
         "unsavedJustNow": "Chưa lưu",
-        "unsavedMinutes": "Chưa lưu được {minutes} phút",
-        "saveNow": "Lưu ngay"
+        "unsavedMinutes": "Chưa lưu được {minutes} phút"
       },
       "history": {
         "openButton": "Lịch sử",
@@ -1550,6 +1560,7 @@
       "title": "Tài nguyên cho từng cảnh",
       "description": "Research và chọn tư liệu mỗi cảnh cần — từ thư viện của bạn, kho stock miễn phí, hoặc research web bằng AI. Lựa chọn được lưu theo video.",
       "progress": "Đã chọn {done}/{total}",
+      "progressLabel": "Đã chọn tư liệu",
       "noAnalysis": "Hãy phân tích kịch bản trước (bước 1): danh sách tài nguyên của từng cảnh lấy từ bản phân tích.",
       "scene": "Cảnh {index}",
       "noAssets": "Cảnh này không có tài nguyên nào.",
@@ -1560,30 +1571,88 @@
       "graphicsSkillLabel": "Phong cách đồ hoạ (tuỳ chọn)",
       "graphicsSkillPlaceholder": "Giữ theo một phong cách đã lưu",
       "graphicsSkillNone": "Không dùng",
-      "graphicsSkillHint": "Áp dụng cho mọi ảnh AI tạo ra trong bước này (OpenAI/Cloudflare). Chọn skill có nền trong suốt cần dùng nguồn OpenAI (gpt-image-1.5) — Cloudflare không xuất được nền trong suốt thật.",
+      "graphicsSkillHint": "Áp dụng cho mọi ảnh AI tạo trong bước này. Skill cần nền trong suốt → dùng nguồn OpenAI (Cloudflare không hỗ trợ).",
       "batchPrompt": {
-        "openButton": "Xuất prompt hàng loạt",
-        "title": "Prompt hàng loạt cho ChatGPT",
-        "description": "Danh sách prompt cho một khoảng cảnh, đã gộp trùng — dùng khi bạn tự tạo ảnh bên ChatGPT (đính kèm skill riêng), không qua AI trong studio.",
-        "rangeHint": "Chọn khoảng cảnh cần xuất prompt — kịch bản dài nên chia nhỏ từng lần (vd. mỗi lần 10–20 cảnh) để không bị quá nhiều prompt cùng lúc.",
-        "rangeFrom": "Từ cảnh",
-        "rangeTo": "đến cảnh",
+        "openButton": "Tạo ảnh qua ChatGPT",
+        "title": "Tạo ảnh hàng loạt qua ChatGPT",
+        "description": "Tải gói (prompt + phong cách + ảnh mẫu) cho một khoảng cảnh để ChatGPT tạo lần lượt từng ảnh, rồi thả ảnh về đây để tự gán vào cảnh.",
         "applyRange": "Áp dụng",
-        "rangeAll": "Chọn tất cả",
-        "rangeSummary": "{scenes} cảnh trong khoảng đã chọn → {groups} mục (sau khi gộp trùng)",
+        "rangeAll": "Tất cả",
         "characterGroup": "Nhân vật & vật phẩm",
         "backgroundGroup": "Bối cảnh",
-        "descriptionLabel": "Mô tả",
-        "promptLabel": "Prompt",
-        "notGeneratedYet": "— chưa tạo prompt —",
-        "generateAll": "Tạo prompt",
         "copyAll": "Copy tất cả",
         "copyItem": "Copy mục này",
         "empty": "Kịch bản này chưa có tài nguyên dạng ảnh nào.",
         "importTitle": "Nhập ảnh đã tạo",
-        "importHint": "Tải lên file .zip ChatGPT gửi lại — mỗi ảnh đặt tên đúng theo mã (p1.png, p2.png...) sẽ tự động gán vào đúng cảnh.",
-        "importButton": "Nhập ảnh từ ZIP",
-        "importDone": "Đã gán {matched} ảnh. Bỏ qua {skipped} file không khớp mã nào."
+        "importHint": "Ảnh đặt tên theo mã (p1.png…) tự gán; ảnh tải từ ChatGPT giữ nguyên tên thì gán theo thứ tự hoặc chọn mã. Ảnh PNG nền trong được tự cắt sát viền.",
+        "importButton": "Thả ảnh hoặc file .zip vào đây",
+        "importDone": "Đã gán {assigned} ảnh · {unmatched} ảnh chờ gán.",
+        "stepRange": "Chọn khoảng cảnh",
+        "stepGenerate": "Tạo & copy prompt",
+        "rangeScenes": "Cảnh",
+        "rangeFromLabel": "Từ cảnh",
+        "rangeToLabel": "Đến cảnh",
+        "scenesList": "Cảnh {list}",
+        "statusReady": "Đã có prompt",
+        "statusPending": "Chưa có prompt",
+        "emptyTab": "Không có mục nào trong khoảng cảnh này.",
+        "generateHint": "AI viết prompt chi tiết cho từng mục — gộp bối cảnh cảnh và ngoại hình nhân vật cố định. Mỗi prompt được lưu ngay khi viết xong, đóng hộp thoại hay F5 không mất.",
+        "showInstructions": "Xem hướng dẫn gửi ChatGPT",
+        "hideInstructions": "Ẩn hướng dẫn",
+        "statScenes": "cảnh trong khoảng",
+        "statItems": "mục cần ảnh (đã gộp trùng)",
+        "stepPack": "Tải gói cho ChatGPT",
+        "packSkill": "Phong cách: {name}",
+        "packSkillImages": "{count} ảnh mẫu",
+        "packNoSkill": "Chưa chọn phong cách đồ hoạ ở thanh công cụ — gói sẽ không kèm phong cách (dùng khi skill đã có sẵn trong Project ChatGPT).",
+        "downloadPack": "Tải gói (.zip)",
+        "packHint": "Giải nén, kéo tất cả file vào ChatGPT rồi gửi. ChatGPT làm từng cảnh — mỗi lượt tạo đủ ảnh của một cảnh, nhắn “tiếp” để sang cảnh sau. Mẹo: đưa file skill-….md và ảnh mẫu vào một Project ChatGPT để mọi đợt giữ cùng phong cách.",
+        "importedCount": "{done}/{total} ảnh",
+        "unmatchedTitle": "Ảnh chờ gán ({count})",
+        "assignInOrder": "Gán theo thứ tự",
+        "assignInOrderHint": "Gán {count} ảnh (theo thứ tự tải về) vào các mục chưa có ảnh, bắt đầu từ {first}.",
+        "nothingMissing": "Mọi mục đã có ảnh — chọn mã nếu muốn thay ảnh.",
+        "pickCode": "Chọn mã",
+        "assign": "Gán",
+        "discard": "Bỏ ảnh này",
+        "statusImage": "Đã có ảnh",
+        "stepPrompts": "Tạo prompt",
+        "generateMissing": "Tạo prompt ({count} mục còn thiếu)",
+        "promptsReady": "Đã đủ prompt",
+        "stopGenerating": "Dừng (xong lượt đang chạy)",
+        "packNeedsPrompts": "Cần tạo đủ prompt trước khi tải gói (còn {count} mục).",
+        "downloadWithoutPrompts": "Vẫn tải — mục chưa có prompt dùng mô tả cảnh",
+        "packContents": "Trong gói (.zip) sẽ có:",
+        "packSkillNoImages": "Skill này chưa có ảnh mẫu — thêm ở Thư viện → Skills để ChatGPT bắt nét chuẩn hơn (ảnh mẫu không có trong file sao lưu lúc nhập).",
+        "layer": {
+          "scene": "Khung hình {ratio}",
+          "cutout": "PNG nền trong"
+        },
+        "layerHint": {
+          "scene": "Một khung hình hoàn chỉnh của cảnh — chủ thể đứng yên, vẽ chung với bối cảnh.",
+          "cutout": "Chỉ chủ thể, nền trong suốt — để ghép vào khung và làm chuyển động khi dựng (vd. điện thoại sáng lên, nhân vật vẫy tay). Khi nhập về, ảnh được tự cắt sát viền."
+        },
+        "layerAuto": "AI sẽ tự chọn khi tạo prompt",
+        "packFrame": "Khung hình {ratio} · {cutouts} ảnh PNG nền trong",
+        "useOriginal": "Dùng ảnh gốc",
+        "restoring": "Đang thay…",
+        "useOriginalHint": "Ảnh này đã được tự cắt sát viền. Nếu bị lẹm vào chủ thể, bấm để dùng lại ảnh gốc không cắt.",
+        "rewriteAll": "Viết lại tất cả {count} prompt",
+        "rewriteAllTitle": "Viết lại toàn bộ prompt?",
+        "rewriteAllDescription": "AI sẽ viết lại {count} prompt trong khoảng cảnh này theo quy tắc mới nhất (thay prompt cũ) — tốn {count} lượt gọi Claude. Loại ảnh bạn đã chọn tay được giữ nguyên.",
+        "rewriteAllConfirm": "Viết lại",
+        "stepLayers": "Phân shot & tách lớp",
+        "layersHint": "AI làm như đạo diễn: chia mỗi cảnh thành các shot (toàn cảnh, insert, cận phản ứng, qua vai, nhìn thẳng camera…) theo skill phân cảnh, rồi liệt kê ảnh cho từng shot — nền, PNG, sprite sheet cho mỗi nhịp hành động — vẽ đúng góc máy của shot. Số shot và số ảnh tuỳ kịch bản từng cảnh.",
+        "splitLayers": "Phân shot & tách lớp cảnh {from}–{to}",
+        "splitAgain": "Phân shot lại cảnh {from}–{to}",
+        "splitting": "Đang phân shot…",
+        "splitDone": "Đã tách lại {count} cảnh: {scenes}. Danh sách tư liệu bên phải đã cập nhật.",
+        "splitNoChange": "Không có cảnh nào cần tách thêm.",
+        "splitConfirmTitle": "Phân shot & tách lớp cho khoảng cảnh này?",
+        "splitConfirmDescription": "AI lên lại kế hoạch quay cho cảnh {from}–{to}: chia shot như đạo diễn và liệt kê ảnh cho từng shot (nền, PNG, sprite sheet — số lượng tuỳ cảnh). Kết quả lưu thành phiên bản kịch bản mới (đã duyệt). Tư liệu đã chọn của các cảnh bị thay đổi sẽ được bỏ chọn.",
+        "splitConfirm": "Phân shot",
+        "placementLabel": "Vị trí & góc",
+        "promptsNeedLayers": "Các cảnh này chưa được phân shot & tách lớp (②) — ảnh chưa gắn với shot, lớp và vị trí/góc, nên prompt viết ra sẽ thiếu thông tin và phải viết lại. Nên làm bước ② trước."
       },
       "assetSources": {
         "stock": "Stock",
@@ -1636,7 +1705,31 @@
           "findImage": "AI tìm ảnh thật đã có sẵn trên web — nếu không tìm được ảnh phù hợp, nó sẽ báo không có chứ không bịa ra."
         },
         "showingRecent": "Không có tài nguyên khớp mô tả — đang hiện các tài nguyên mới nhất."
-      }
+      },
+      "frameRatioLabel": "Khung hình",
+      "frameRatios": {
+        "16x9": "16:9 — ngang (YouTube)",
+        "9x16": "9:16 — dọc (TikTok, Shorts, Reels)",
+        "1x1": "1:1 — vuông",
+        "4x3": "4:3 — ngang cổ điển"
+      },
+      "layerBadge": {
+        "scene": "Khung hình",
+        "cutout": "PNG nền trong"
+      },
+      "placementLabel": "Vị trí & góc",
+      "shotHeader": "Shot {order}/{total}",
+      "otherAssets": "Âm thanh & tư liệu khác",
+      "shotAngles": {
+        "eyeLevel": "Ngang tầm mắt",
+        "highAngle": "Góc cao",
+        "lowAngle": "Góc thấp",
+        "topDown": "Từ trên xuống",
+        "overShoulder": "Qua vai",
+        "pov": "Góc nhìn thứ nhất",
+        "dutch": "Nghiêng khung"
+      },
+      "techniqueLabel": "Kỹ thuật quay & chuyển cảnh"
     },
     "library": {
       "pageTitle": "Kho media",

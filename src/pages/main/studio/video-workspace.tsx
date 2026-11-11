@@ -2,9 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useTranslations } from "@/i18n";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons";
-import { useState } from "react";
+import { pathParams } from "@/lib/paths";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
+import SaveButton from "@/pages/main/studio/save-button";
+import ScrollButtons from "@/pages/main/studio/scroll-buttons";
 import Stepper from "@/pages/main/studio/stepper";
 import { VIDEO_STUDIO_STEPS } from "@/pages/main/studio/steps/registry";
+import type { StepSaveHandle } from "@/pages/main/studio/steps/step-save";
 import type { VideoStudioStepKey } from "@/pages/main/studio/types";
 
 /**
@@ -14,13 +19,32 @@ import type { VideoStudioStepKey } from "@/pages/main/studio/types";
 export default function VideoWorkspace({ videoId }: { videoId: string }) {
   const t = useTranslations("videoStudio");
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [furthestIndex, setFurthestIndex] = useState(0);
+  // The open step lives in the URL (`&step=assets`), so a reload or the
+  // browser's back/forward keeps it; an unknown or missing step means the first.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const stepFromUrl = VIDEO_STUDIO_STEPS.findIndex(
+    (step) => step.key === searchParams.get(pathParams.step),
+  );
+  const activeIndex = Math.max(stepFromUrl, 0);
+  const setActiveIndex = (index: number) =>
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set(pathParams.step, VIDEO_STUDIO_STEPS[index]!.key);
+        return next;
+      },
+      { replace: true },
+    );
+  // Reopening on a later step counts the ones before it as passed.
+  const [furthestIndex, setFurthestIndex] = useState(activeIndex);
   const [completedSteps, setCompletedSteps] = useState<
     ReadonlySet<VideoStudioStepKey>
   >(() => new Set());
   // The active step's own AI call in progress — switching away would abandon it.
   const [stepBusy, setStepBusy] = useState(false);
+  // The active step's unsaved work, reported through `useStepSave`.
+  const [saveHandle, setSaveHandle] = useState<StepSaveHandle | null>(null);
+  const dirty = Boolean(saveHandle?.dirty);
 
   const steps = VIDEO_STUDIO_STEPS.map((step) => ({
     key: step.key,
@@ -39,21 +63,48 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
       prev.has(key) ? prev : new Set(prev).add(key),
     );
 
-  const goToStep = (index: number) => {
-    if (stepBusy) return;
-    if (index <= furthestIndex) setActiveIndex(index);
+  const save = async () => {
+    if (saveHandle?.dirty && !saveHandle.saving) await saveHandle.save();
   };
 
+  // Ctrl/⌘+S saves the open step instead of the browser's "save page".
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (saveHandle?.dirty && !saveHandle.saving) void saveHandle.save();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [saveHandle]);
+
+  // Reloading or closing the tab with unsaved work asks first.
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  /** Leaving a step saves its pending work first, so switching never drops edits. */
+  const switchTo = async (index: number) => {
+    if (stepBusy || index === activeIndex) return;
+    await save();
+    setActiveIndex(index);
+    setFurthestIndex((prev) => Math.max(prev, index));
+  };
+
+  // Any step can be opened straight from the stepper; a step without what it
+  // needs (e.g. no analysis yet) says so itself. "Next" still waits for completion.
   const handleNext = () => {
-    if (stepBusy || !canGoNext || isLastStep) return;
-    const nextIndex = activeIndex + 1;
-    setActiveIndex(nextIndex);
-    setFurthestIndex((prev) => Math.max(prev, nextIndex));
+    if (!canGoNext || isLastStep) return;
+    void switchTo(activeIndex + 1);
   };
 
   const handleBack = () => {
-    if (stepBusy || activeIndex === 0) return;
-    setActiveIndex(activeIndex - 1);
+    if (activeIndex === 0) return;
+    void switchTo(activeIndex - 1);
   };
 
   const ActiveStepComponent = activeStep.Component;
@@ -66,7 +117,7 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
             steps={steps}
             activeIndex={activeIndex}
             furthestIndex={furthestIndex}
-            onStepClick={goToStep}
+            onStepClick={(index) => void switchTo(index)}
             disabled={stepBusy}
           />
         </div>
@@ -77,11 +128,12 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
             videoId={videoId}
             onComplete={() => markStepComplete(activeStep.key)}
             onBusyChange={setStepBusy}
+            onSaveChange={setSaveHandle}
           />
         </div>
       </Card>
 
-      <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-5 dark:border-gray-800">
+      <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-5 dark:border-gray-800">
         <Button
           type="button"
           variant="outline"
@@ -94,7 +146,11 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
           {t("navigation.back")}
         </Button>
 
-        {!isLastStep && (
+        <SaveButton handle={saveHandle} disabled={stepBusy} onSave={() => void save()} />
+
+        {isLastStep ? (
+          <span />
+        ) : (
           <Button
             type="button"
             onClick={handleNext}
@@ -107,6 +163,10 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
           </Button>
         )}
       </div>
+
+      <ScrollButtons
+        save={dirty || saveHandle?.saving ? { saving: Boolean(saveHandle?.saving), onSave: () => void save() } : undefined}
+      />
     </>
   );
 }

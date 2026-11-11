@@ -21,7 +21,7 @@ import type {
   RequiredAssetType,
   ScriptScene,
 } from "@shared/types";
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import ScenesList from "./scenes-list";
 
 const ASSET_TYPES: RequiredAssetType[] = ["video", "image", "audio", "graphic"];
@@ -41,6 +41,11 @@ interface SceneEditorProps {
     characterRoster: RecurringCharacter[],
     objectRoster: RecurringObject[],
   ) => Promise<boolean>;
+  /**
+   * For the studio's Save button: true while scene edits are open, and the
+   * call that saves them (the same "save & approve" as the button here).
+   */
+  onDraftChange?: (save: (() => Promise<boolean>) | null) => void;
 }
 
 /** One roster entry, editable in place: a reference-photo slot (upload/remove) beside its appearance text. */
@@ -124,6 +129,7 @@ export default function SceneEditor({
   approving,
   canApprove,
   onApprove,
+  onDraftChange,
 }: SceneEditorProps) {
   const t = useTranslations("videoStudio.script");
   const [draft, setDraft] = useState<ScriptScene[] | null>(null);
@@ -230,8 +236,21 @@ export default function SceneEditor({
       setDraft(null);
       setCharacterRosterDraft(null);
       setObjectRosterDraft(null);
+      return true;
     }
+    return false;
   };
+
+  // Hand the latest save-the-draft call to the studio's Save button while editing.
+  const approveRef = useRef(handleApprove);
+  useEffect(() => {
+    approveRef.current = handleApprove;
+  });
+  const editing = draft !== null;
+  useEffect(() => {
+    onDraftChange?.(editing ? () => approveRef.current() : null);
+  }, [editing, onDraftChange]);
+  useEffect(() => () => onDraftChange?.(null), [onDraftChange]);
 
   return (
     <div className="space-y-4">

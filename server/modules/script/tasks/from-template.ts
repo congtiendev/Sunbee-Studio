@@ -19,7 +19,7 @@ import {
   promptOf,
   providerFor,
 } from "../../../services/ai/task.js";
-import { SCRIPT_ANALYSIS_SCHEMA } from "../schema.js";
+import { SCRIPT_ANALYSIS_SCHEMA, withAssetLayers } from "../schema.js";
 
 export interface ScriptFromTemplateInput {
   template: ScriptAnalysisRecord;
@@ -158,6 +158,6 @@ export const scriptFromTemplateTask = defineTask<
     if (!result?.scriptText?.trim() || !result.scenes?.length) {
       throw new Error("AI không trả về kịch bản theo mẫu hợp lệ.");
     }
-    return result;
+    return withAssetLayers(result);
   },
 });

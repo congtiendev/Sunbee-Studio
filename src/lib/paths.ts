@@ -25,14 +25,19 @@ export const pathParams = {
   projectId: "id",
   videoId: "video",
   skillId: "skill",
+  /** The studio's open step (`VideoStudioStepKey`), so a reload stays on it. */
+  step: "step",
 } as const;
 
 export function projectUrl(projectId: string): string {
   return `${paths.projectDetail}?${pathParams.projectId}=${encodeURIComponent(projectId)}`;
 }
 
-export function studioUrl(videoId: string): string {
-  return `${paths.studio}?${pathParams.videoId}=${encodeURIComponent(videoId)}`;
+/** The studio on one video, optionally opened at a given step (a `VideoStudioStepKey`). */
+export function studioUrl(videoId: string, step?: string): string {
+  const query = new URLSearchParams({ [pathParams.videoId]: videoId });
+  if (step) query.set(pathParams.step, step);
+  return `${paths.studio}?${query.toString()}`;
 }
 
 /** The AI-training page, optionally on an existing skill and/or with a video pre-picked. */

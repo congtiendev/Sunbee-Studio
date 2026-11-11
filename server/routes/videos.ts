@@ -2,14 +2,17 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/require-auth.js";
 import { getCategory } from "../services/db/categories-repo.js";
 import {
+  canAccessVideo,
   createVideo,
   getVideo,
   listProjectVideos,
   listRecentVideos,
   listVideos,
   renameVideo,
+  setVideoFrameRatio,
   softDeleteVideo,
 } from "../services/db/videos-repo.js";
+import { isFrameRatio } from "../../shared/frame-ratio.js";
 
 const router = Router();
 
@@ -69,18 +72,30 @@ router.post("/", requireAuth, (req, res) => {
   res.json(createVideo(req.user!.id, body.categoryId, name));
 });
 
+/** PATCH /api/videos/:id — `name` and/or `frameRatio`. */
 router.patch("/:id", requireAuth, (req, res) => {
-  const name = (req.body as { name?: string }).name?.trim();
-  if (!name) {
+  const body = req.body as { name?: string; frameRatio?: unknown };
+  const isAdmin = req.user!.role === "admin";
+  const id = req.params.id as string;
+  if (!canAccessVideo(req.user!.id, isAdmin, id)) {
+    res.status(404).json({ error: "Không tìm thấy video." });
+    return;
+  }
+  if (body.name === undefined && body.frameRatio === undefined) {
+    res.status(400).json({ error: "Không có gì để cập nhật." });
+    return;
+  }
+  const name = body.name?.trim();
+  if (body.name !== undefined && !name) {
     res.status(400).json({ error: "Tên video không được để trống." });
     return;
   }
-  renameVideo(
-    req.user!.id,
-    req.user!.role === "admin",
-    req.params.id as string,
-    name,
-  );
+  if (body.frameRatio !== undefined && !isFrameRatio(body.frameRatio)) {
+    res.status(400).json({ error: "Khung hình không hợp lệ." });
+    return;
+  }
+  if (name) renameVideo(req.user!.id, isAdmin, id, name);
+  if (isFrameRatio(body.frameRatio)) setVideoFrameRatio(req.user!.id, isAdmin, id, body.frameRatio);
   res.json({ ok: true });
 });
 

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import OpenAI from "openai";
+import { GPT_IMAGE_SIZE } from "../../../../shared/frame-ratio.js";
 import type { AssetCandidate, ImageAspectRatio } from "../../../../shared/types.js";
 import { MissingApiKeyError, firstAvailableProvider, hasProviderKey, runTask } from "../../../services/ai/task.js";
 import { saveFile } from "../../../services/storage/files.js";
@@ -34,7 +35,7 @@ export const aiImageOpenAiSource: ResearchSource = {
 
   isAvailable: ({ ai }) => hasProviderKey(ai, "openai"),
 
-  async search({ query, perPage }, { userId, ai, sceneContext, referenceImages, aspectRatio, graphicsStyle }) {
+  async search({ query, perPage }, { userId, ai, sceneContext, referenceImages, aspectRatio, frameRatio, graphicsStyle }) {
     if (!ai.keys.openai) throw new MissingApiKeyError("openai");
     const description = query.trim();
     if (!description) throw new Error("Vui lòng nhập mô tả ảnh cần tạo.");
@@ -45,7 +46,11 @@ export const aiImageOpenAiSource: ResearchSource = {
     // count, so it's worth running here too.
     const provider = firstAvailableProvider(ai, "openai");
     const { prompt, count: requestedCount } = provider
-      ? await runTask(imagePromptTask, { description, sceneContext, referenceImages, graphicsStyle, provider }, ai)
+      ? await runTask(
+          imagePromptTask,
+          { description, sceneContext, referenceImages, graphicsStyle, frameRatio, provider },
+          ai,
+        )
       : { prompt: description, count };
     const n = Math.max(1, Math.min(perPage ?? requestedCount, MAX_VARIATIONS));
 
@@ -54,7 +59,8 @@ export const aiImageOpenAiSource: ResearchSource = {
       model: MODEL,
       prompt,
       n,
-      size: SIZE[aspectRatio ?? "square"],
+      // gpt-image has three sizes; a video frame takes the closest one.
+      size: frameRatio ? GPT_IMAGE_SIZE[frameRatio] : SIZE[aspectRatio ?? "square"],
       quality: "medium",
       background: "transparent",
       output_format: "png",

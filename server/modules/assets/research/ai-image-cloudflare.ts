@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { FLUX_DIMENSIONS } from "../../../../shared/frame-ratio.js";
 import type { AssetCandidate, ImageAspectRatio } from "../../../../shared/types.js";
 import { firstAvailableProvider, runTask } from "../../../services/ai/task.js";
 import { saveFile } from "../../../services/storage/files.js";
@@ -44,9 +45,8 @@ async function generateOne(
   accountId: string,
   token: string,
   prompt: string,
-  aspectRatio: ImageAspectRatio,
+  { width, height }: { width: number; height: number },
 ): Promise<Buffer> {
-  const { width, height } = DIMENSIONS[aspectRatio];
   const form = new FormData();
   form.append("prompt", prompt);
   form.append("width", String(width));
@@ -76,14 +76,14 @@ export const aiImageCloudflareSource: ResearchSource = {
   async validateKey(apiKey) {
     try {
       const { accountId, token } = parseKey(apiKey);
-      await generateOne(accountId, token, "a single red dot, test image", "square");
+      await generateOne(accountId, token, "a single red dot, test image", DIMENSIONS.square);
       return null;
     } catch (err) {
       return err instanceof Error ? err.message : String(err);
     }
   },
 
-  async search({ query, perPage }, { apiKey, userId, ai, sceneContext, referenceImages, aspectRatio, graphicsStyle }) {
+  async search({ query, perPage }, { apiKey, userId, ai, sceneContext, referenceImages, aspectRatio, frameRatio, graphicsStyle }) {
     if (!apiKey) throw new Error("Chưa thiết lập Cloudflare API key.");
     const { accountId, token } = parseKey(apiKey);
     const description = query.trim();
@@ -96,12 +96,23 @@ export const aiImageCloudflareSource: ResearchSource = {
     // one (e.g. "tạo 3 ảnh...") — without AI to read that, just one image.
     const provider = firstAvailableProvider(ai);
     const { prompt, count: requestedCount } = provider
-      ? await runTask(imagePromptTask, { description, sceneContext, referenceImages, graphicsStyle, provider }, ai)
+      ? await runTask(
+          imagePromptTask,
+          { description, sceneContext, referenceImages, graphicsStyle, frameRatio, provider },
+          ai,
+        )
       : { prompt: description, count: 1 };
     const count = Math.max(1, Math.min(perPage ?? requestedCount, MAX_VARIATIONS));
 
     const attempts = await Promise.allSettled(
-      Array.from({ length: count }, () => generateOne(accountId, token, prompt, aspectRatio ?? "square")),
+      Array.from({ length: count }, () =>
+        generateOne(
+          accountId,
+          token,
+          prompt,
+          frameRatio ? FLUX_DIMENSIONS[frameRatio] : DIMENSIONS[aspectRatio ?? "square"],
+        ),
+      ),
     );
     const images = attempts.filter(
       (a): a is PromiseFulfilledResult<Buffer> => a.status === "fulfilled",

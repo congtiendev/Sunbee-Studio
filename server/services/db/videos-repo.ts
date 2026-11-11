@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { Video, VideoSummary } from "../../../shared/types.js";
+import { isFrameRatio } from "../../../shared/frame-ratio.js";
+import type { FrameRatio, Video, VideoSummary } from "../../../shared/types.js";
 import { getDb } from "./client.js";
 
 interface VideoRow {
@@ -9,6 +10,7 @@ interface VideoRow {
   created_at: string;
   updated_at: string;
   user_id: string | null;
+  frame_ratio: string | null;
   owner_email: string | null;
   category_name: string;
   project_id: string;
@@ -24,6 +26,7 @@ function rowToVideo(row: VideoRow): VideoSummary {
     updatedAt: row.updated_at,
     userId: row.user_id ?? undefined,
     ownerEmail: row.owner_email ?? undefined,
+    frameRatio: isFrameRatio(row.frame_ratio) ? row.frame_ratio : undefined,
     categoryName: row.category_name,
     projectId: row.project_id,
     projectName: row.project_name,
@@ -35,7 +38,7 @@ function rowToVideo(row: VideoRow): VideoSummary {
  * when it, its category or its project is soft-deleted.
  */
 const SELECT_VIDEOS = `
-  SELECT v.id, v.category_id, v.name, v.created_at, v.updated_at, v.user_id,
+  SELECT v.id, v.category_id, v.name, v.created_at, v.updated_at, v.user_id, v.frame_ratio,
     u.email AS owner_email, c.name AS category_name, p.id AS project_id, p.name AS project_name
   FROM videos v
   JOIN categories c ON c.id = v.category_id AND c.deleted_at IS NULL
@@ -163,6 +166,24 @@ export function renameVideo(
         `UPDATE videos SET name = ?, updated_at = ? WHERE id = ? AND user_id = ?`,
       )
       .run(name, now, id, userId);
+  }
+}
+
+export function setVideoFrameRatio(
+  userId: string,
+  isAdmin: boolean,
+  id: string,
+  frameRatio: FrameRatio,
+): void {
+  const now = new Date().toISOString();
+  if (isAdmin) {
+    getDb()
+      .prepare(`UPDATE videos SET frame_ratio = ?, updated_at = ? WHERE id = ?`)
+      .run(frameRatio, now, id);
+  } else {
+    getDb()
+      .prepare(`UPDATE videos SET frame_ratio = ?, updated_at = ? WHERE id = ? AND user_id = ?`)
+      .run(frameRatio, now, id, userId);
   }
 }
 

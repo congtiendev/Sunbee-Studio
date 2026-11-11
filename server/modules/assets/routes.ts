@@ -5,6 +5,10 @@ import type {
   AssetPromptBatchRequest,
   AssetQuerySuggestRequest,
   AssetResearchRequest,
+  AssetSplitLayersRequest,
+  AssetSplitLayersResponse,
+  RequiredAsset,
+  SceneShot,
   LibraryMediaType,
   SceneResourceSelectRequest,
   User,
@@ -24,13 +28,20 @@ import {
   createLibraryAsset,
   deleteLibraryAsset,
   getLibraryAsset,
+  clearSceneResources,
+  listAssetPrompts,
   listSceneResources,
+  saveAssetPrompt,
   searchLibrary,
   setSceneResource,
   updateLibraryAsset,
 } from "./repo.js";
-import { imagePromptTask } from "./tasks/image-prompt.js";
+import { IMAGE_PROMPT_RULES_VERSION, imagePromptTask } from "./tasks/image-prompt.js";
 import { searchQueryTask } from "./tasks/search-query.js";
+import { splitLayersTask } from "./tasks/split-layers.js";
+import { approveScriptVersion } from "../script/service.js";
+import { getScriptAnalysisById } from "../script/repo.js";
+import { getTemplateById } from "../../services/db/style-templates-repo.js";
 
 const router = Router();
 
@@ -127,6 +138,7 @@ router.post("/research", requireAuth, async (req, res) => {
           sceneContext: body.sceneContext,
           referenceImages: body.referenceImages,
           aspectRatio: body.aspectRatio,
+          frameRatio: body.frameRatio,
           graphicsStyle: body.graphicsStyle,
         },
       ),
@@ -159,6 +171,13 @@ router.post("/image-prompts", requireAuth, async (req, res) => {
     res.status(400).json({ error: `Chưa thiết lập API key cho ${provider}.` });
     return;
   }
+  // Prompts for a video are saved one by one as they're written, so a batch
+  // cut short (error, closed tab) keeps everything done so far.
+  const videoId = body.videoId;
+  if (videoId && !canAccessVideo(req.user!.id, isAdmin(req.user!), videoId)) {
+    res.status(404).json({ error: "Không tìm thấy video." });
+    return;
+  }
   try {
     const results = [];
     for (const item of items) {
@@ -168,16 +187,132 @@ router.post("/image-prompts", requireAuth, async (req, res) => {
           description: item.description,
           sceneContext: item.sceneContext,
           characterReferenceImages: item.characterImages,
+          frameRatio: body.frameRatio,
+          layer: item.layer,
+          placement: item.placement,
+          shot: item.shot,
+          styleFromSkill: true,
           provider,
         },
         ctx,
       );
-      results.push({ key: item.key, prompt: output.prompt, count: output.count });
+      if (videoId && output.prompt.trim()) {
+        saveAssetPrompt(req.user!.id, {
+          videoId,
+          description: item.description,
+          prompt: output.prompt,
+          frameRatio: body.frameRatio,
+          layer: output.layer,
+          rulesVersion: IMAGE_PROMPT_RULES_VERSION,
+        });
+      }
+      results.push({ key: item.key, prompt: output.prompt, count: output.count, layer: output.layer });
     }
     res.json({ results });
   } catch (err) {
     res.status(400).json({ error: errorMessage(err) });
   }
+});
+
+/** Scenes per AI call when planning shots & layers — each scene's answer is long (shots + images per shot). */
+const SPLIT_SCENES_PER_CALL = 4;
+
+/**
+ * Splits the moving subjects of a scene range into layers (a background frame
+ * plus one transparent cutout per visual state) on an existing analysis, and
+ * saves the result as a new approved version. Picks of scenes whose asset
+ * list changed are cleared, since their positions now mean other assets.
+ */
+router.post("/split-layers", requireAuth, async (req, res) => {
+  const body = req.body as AssetSplitLayersRequest;
+  const admin = isAdmin(req.user!);
+  if (!body.videoId || !canAccessVideo(req.user!.id, admin, body.videoId)) {
+    res.status(404).json({ error: "Không tìm thấy video." });
+    return;
+  }
+  const base = getScriptAnalysisById(req.user!.id, admin, body.versionId);
+  if (!base || base.videoId !== body.videoId || base.kind !== "analyzed") {
+    res.status(404).json({ error: "Không tìm thấy bản phân tích của video này." });
+    return;
+  }
+  const ctx = taskContextFor(req.user!.id);
+  const provider = firstAvailableProvider(ctx);
+  if (!provider) {
+    res.status(400).json({ error: "Chưa thiết lập API key AI (Claude hoặc OpenAI)." });
+    return;
+  }
+  const inRange = base.scenes.filter(
+    (scene) => scene.index >= body.fromScene && scene.index <= body.toScene,
+  );
+  if (inRange.length === 0) {
+    res.status(400).json({ error: "Không có cảnh nào trong khoảng đã chọn." });
+    return;
+  }
+  const rosterNames = [
+    ...(base.characterRoster ?? []).map((c) => c.name),
+    ...(base.objectRoster ?? []).map((o) => o.name),
+  ];
+  try {
+    // The video's editing skill shapes how scenes are broken into shots.
+    const editingStyle = base.editingStyleTemplateId
+      ? getTemplateById(req.user!.id, admin, base.editingStyleTemplateId)?.editingStyle
+      : undefined;
+    const rewritten = new Map<number, { shots: SceneShot[]; requiredAssets: RequiredAsset[] }>();
+    for (let i = 0; i < inRange.length; i += SPLIT_SCENES_PER_CALL) {
+      const batch = inRange.slice(i, i + SPLIT_SCENES_PER_CALL);
+      // The scene before the batch — already re-planned in this run when there is one.
+      const before = base.scenes.find((scene) => scene.index === batch[0]!.index - 1);
+      const previousScene =
+        before && rewritten.has(before.index) ? { ...before, ...rewritten.get(before.index)! } : before;
+      const output = await runTask(
+        splitLayersTask,
+        { scenes: batch, rosterNames, editingStyle, previousScene, provider },
+        ctx,
+      );
+      for (const scene of output.scenes) {
+        if (batch.some((s) => s.index === scene.index)) {
+          rewritten.set(scene.index, { shots: scene.shots, requiredAssets: scene.requiredAssets });
+        }
+      }
+    }
+    const changedScenes: number[] = [];
+    const scenes = base.scenes.map((scene) => {
+      const plan = rewritten.get(scene.index);
+      if (
+        !plan ||
+        (JSON.stringify(plan.requiredAssets) === JSON.stringify(scene.requiredAssets) &&
+          JSON.stringify(plan.shots) === JSON.stringify(scene.shots ?? []))
+      ) {
+        return scene;
+      }
+      changedScenes.push(scene.index);
+      return { ...scene, shots: plan.shots, requiredAssets: plan.requiredAssets };
+    });
+    const version =
+      changedScenes.length > 0
+        ? approveScriptVersion(req.user!, {
+            versionId: base.id,
+            scenes,
+            resources: base.resources,
+            style: base.style ?? { genre: "", styleTags: [], toneDescription: "" },
+          })
+        : base;
+    clearSceneResources(body.videoId, changedScenes);
+    const response: AssetSplitLayersResponse = { version, changedScenes };
+    res.json(response);
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
+});
+
+/** The prompts already written for a video's required assets. */
+router.get("/image-prompts", requireAuth, (req, res) => {
+  const videoId = req.query.videoId as string;
+  if (!videoId || !canAccessVideo(req.user!.id, isAdmin(req.user!), videoId)) {
+    res.status(404).json({ error: "Không tìm thấy video." });
+    return;
+  }
+  res.json(listAssetPrompts(videoId, IMAGE_PROMPT_RULES_VERSION));
 });
 
 // ---------- picks per scene ----------

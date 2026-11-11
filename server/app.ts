@@ -23,6 +23,9 @@ export function createApp() {
 
   // Script analyze requests carry up to ~600 base64 video frames (~60MB worst
   // case at MAX_FRAMES_SAFETY_CAP) — leave real headroom above that.
+  // Backups carry every script version's frames (a real one was ~300MB). Parsed
+  // here first, so the general parser below skips this route.
+  app.use("/api/data/import", express.json({ limit: "500mb" }));
   app.use(express.json({ limit: "100mb" }));
   app.use(cookieParser());
   app.use(requestLogger);

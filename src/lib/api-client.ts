@@ -3,6 +3,10 @@ import type {
   AssetCandidate,
   AssetPromptBatchRequest,
   AssetPromptBatchResponse,
+  AssetPromptRecord,
+  AssetSplitLayersRequest,
+  AssetSplitLayersResponse,
+  FrameRatio,
   AssetQuerySuggestRequest,
   AssetQuerySuggestResponse,
   AssetResearchRequest,
@@ -349,6 +353,13 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(req),
       }),
+    splitLayers: (req: AssetSplitLayersRequest): Promise<AssetSplitLayersResponse> =>
+      request("/api/assets/split-layers", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
+    savedImagePrompts: (videoId: string): Promise<AssetPromptRecord[]> =>
+      request(`/api/assets/image-prompts?videoId=${encodeURIComponent(videoId)}`),
     selections: (videoId: string): Promise<SceneResource[]> =>
       request(`/api/assets/selections?videoId=${videoId}`),
     /** Pick (or with candidate null, clear) the asset for one required asset of a scene. */
@@ -459,6 +470,11 @@ export const apiClient = {
       request("/api/videos", {
         method: "POST",
         body: JSON.stringify({ categoryId, name }),
+      }),
+    setFrameRatio: (id: string, frameRatio: FrameRatio): Promise<void> =>
+      request(`/api/videos/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ frameRatio }),
       }),
     rename: (id: string, name: string): Promise<void> =>
       request(`/api/videos/${id}`, {

@@ -39,7 +39,8 @@ function findModel(provider: AnalyzeProvider, modelId?: string): AnalyzeModel {
 // typically runs a bit larger than the input script, hence the multiplier —
 // bumped up since scenes now ask for much more detailed visualDescription prose.
 const CHARS_PER_TOKEN = 4;
-const OUTPUT_TOKEN_MULTIPLIER = 2.2;
+// Scenes now carry a shot list and layered images per shot as well.
+const OUTPUT_TOKEN_MULTIPLIER = 4;
 
 // Rough flat per-image token cost (every model's vision tokenization isn't
 // purely linear — this is a ballpark for the UI estimate, not a bill).
@@ -65,10 +66,11 @@ export function chunkCountForFrames(frameCount: number): number {
 
 /**
  * Longest script passage analyzed in one request. The scenes JSON repeats the
- * passage (each scene's `content`) plus visual notes, so a long script — scripts
- * run up to ~30k characters — must be split for every response to fit.
+ * passage (each scene's `content`) plus visual notes, a shot list and layered
+ * images per shot, so a long script — scripts run up to ~30k characters — must
+ * be split for every response to fit.
  */
-export const SCRIPT_CHARS_PER_ANALYZE_REQUEST = 8_000;
+export const SCRIPT_CHARS_PER_ANALYZE_REQUEST = 4_000;
 
 /** How many requests one analysis takes: enough for both the frames and the text. */
 export function analyzeChunkCount(scriptChars: number, frameCount: number): number {

@@ -14,7 +14,12 @@ import {
   promptOf,
   providerFor,
 } from "../../../services/ai/task.js";
-import { SCRIPT_ANALYSIS_SCHEMA } from "../schema.js";
+import {
+  ASSET_LAYER_RULE,
+  DIRECTOR_RULE,
+  SCRIPT_ANALYSIS_SCHEMA,
+  withAssetLayers,
+} from "../schema.js";
 
 export interface AnalyzeScriptInput {
   scriptText: string;
@@ -39,6 +44,10 @@ const DEFAULT_SYSTEM_PROMPT =
   "- thời lượng ước tính tính bằng giây, vai trò trong mạch truyện (narrativeRole), cỡ cảnh gợi ý (shotSize), chuyển động máy quay gợi ý (cameraMovement), có phải là cảnh cao trào/đáng chia sẻ nhất không (heroMoment), và danh sách tài nguyên cần cho riêng cảnh đó (requiredAssets: loại, mô tả, nguồn sinh/tìm/đã có).\n" +
   "- characters: danh sách NHÂN VẬT (người/con vật có vai trò riêng trong câu chuyện) xuất hiện trong cảnh này, mỗi người gồm `name` (tên/định danh ngắn gọn) và `action` (hành động/cử chỉ cụ thể họ đang làm trong cảnh, ngắn gọn). Dùng ĐÚNG MỘT tên nhất quán cho cùng một nhân vật xuyên suốt toàn bộ kịch bản (không đổi cách gọi giữa chừng, ví dụ không lúc gọi \"Người dẫn chuyện\" lúc gọi \"MC\") để đếm và gom nhóm chính xác được số nhân vật khác nhau trong cả video. Cảnh không có ai xuất hiện (chỉ cảnh vật/đồ vật/chữ) thì để mảng rỗng.\n" +
   "Với mỗi tài nguyên trong requiredAssets, chọn đúng `source` theo nguyên tắc: NHÂN VẬT cụ thể (ngoại hình, trang phục, biểu cảm riêng của một người/con vật trong câu chuyện) và VẬT PHẨM/đồ vật đặc thù (có chi tiết/hình dạng riêng, hoặc ảnh ghép có chú thích tuỳ chỉnh như bản đồ có ghim, biểu đồ có số liệu riêng, ảnh có chữ overlay cụ thể) hầu như chắc chắn KHÔNG có sẵn y hệt trên mạng → dùng `generate` (cần AI tạo mới). Ngược lại, BỐI CẢNH/NỀN chung chung (văn phòng, thiên nhiên, thành phố, bầu trời, đường phố, phong cảnh, b-roll minh hoạ không cần đúng y hệt, chỉ cần đúng không khí/chủ đề) thường tìm được ảnh/video có sẵn → dùng `stock` (tìm trên mạng), không cần tạo mới tốn kém. Chỉ dùng `provided` khi rõ ràng đây là tài sản riêng của người dùng (logo thương hiệu của họ, ảnh thật họ tự chụp...).\n" +
+  DIRECTOR_RULE +
+  "\n" +
+  ASSET_LAYER_RULE +
+  "\n" +
   "Ngoài ra liệt kê tài nguyên tổng thể cần chuẩn bị để quay/dựng (số cảnh quay, giọng đọc cần, nhạc nền, hình ảnh/b-roll cần, ghi chú khác), và tóm tắt phong cách tổng thể (thể loại, các từ khoá phong cách, mô tả tone/giọng điệu) để có thể lưu lại dùng cho các video sau. Trả lời bằng cùng ngôn ngữ với kịch bản gốc.";
 
 const DEFAULT_FRAMES_HINT =
@@ -118,6 +127,6 @@ export const analyzeScriptTask = defineTask<
           : "OpenAI không trả về nội dung phân tích.",
       );
     }
-    return result;
+    return withAssetLayers(result);
   },
 });

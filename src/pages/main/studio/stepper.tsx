@@ -53,70 +53,67 @@ export default function Stepper({
         {steps.map((step, index) => {
           const isCompleted = index < furthestIndex;
           const isCurrent = index === activeIndex;
-          const isReachable = index <= furthestIndex;
           const Icon = step.icon;
 
           return (
-            <li
-              key={step.key}
-              className="relative flex flex-col items-center gap-1.5"
-            >
+            <li key={step.key} className="relative flex justify-center">
+              {/* The whole step — circle and label — is one button; any step can be opened. */}
               <button
                 type="button"
-                disabled={!isReachable || disabled}
+                disabled={disabled}
                 onClick={() => onStepClick(index)}
                 aria-current={isCurrent ? "step" : undefined}
-                className={cn(
-                  "relative flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-white text-gray-400 transition-all duration-300 disabled:cursor-not-allowed dark:bg-gray-900 dark:text-gray-500",
-                  isCompleted &&
-                    "border-brand-500 bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-theme-xs hover:from-brand-600 hover:to-brand-600",
-                  isCurrent &&
-                    !isCompleted &&
-                    "border-brand-500 text-brand-500 ring-4 ring-brand-500/15 dark:text-brand-400",
-                  !isCompleted &&
-                    !isCurrent &&
-                    "border-gray-200 dark:border-gray-700",
-                  isReachable &&
-                    !isCompleted &&
-                    !isCurrent &&
-                    "hover:border-gray-300 hover:text-gray-500 dark:hover:border-gray-600 dark:hover:text-gray-400",
-                )}
+                className="group flex flex-col items-center gap-1.5 rounded-xl px-1 pb-1 outline-none focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed"
               >
-                {isCompleted ? (
-                  <CheckIcon className="size-4" />
-                ) : (
-                  <Icon className="size-4" />
-                )}
+                <span
+                  className={cn(
+                    "relative flex size-9 shrink-0 items-center justify-center rounded-full border-2 bg-white text-gray-400 transition-all duration-300 dark:bg-gray-900 dark:text-gray-500",
+                    isCompleted &&
+                      "border-brand-500 bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-theme-xs group-enabled:group-hover:from-brand-600 group-enabled:group-hover:to-brand-600",
+                    isCurrent &&
+                      !isCompleted &&
+                      "border-brand-500 text-brand-500 ring-4 ring-brand-500/15 dark:text-brand-400",
+                    !isCompleted &&
+                      !isCurrent &&
+                      "border-gray-200 group-enabled:group-hover:border-brand-300 group-enabled:group-hover:text-brand-500 dark:border-gray-700 dark:group-enabled:group-hover:border-brand-500/50 dark:group-enabled:group-hover:text-brand-400",
+                  )}
+                >
+                  {isCompleted ? (
+                    <CheckIcon className="size-4" />
+                  ) : (
+                    <Icon className="size-4" />
+                  )}
 
-                {isCurrent && !isCompleted && (
-                  <span className="absolute -end-0.5 -top-0.5 flex size-3 items-center justify-center rounded-full bg-white dark:bg-gray-900">
-                    <span className="size-1.5 animate-pulse rounded-full bg-brand-500" />
+                  {isCurrent && !isCompleted && (
+                    <span className="absolute -end-0.5 -top-0.5 flex size-3 items-center justify-center rounded-full bg-white dark:bg-gray-900">
+                      <span className="size-1.5 animate-pulse rounded-full bg-brand-500" />
+                    </span>
+                  )}
+                </span>
+
+                <span className="flex flex-col items-center gap-0.5 text-center">
+                  <span
+                    className={cn(
+                      "text-xs font-semibold transition-colors",
+                      isCurrent || isCompleted
+                        ? "text-gray-800 dark:text-white/90"
+                        : "text-gray-400 group-enabled:group-hover:text-gray-600 dark:text-gray-500 dark:group-enabled:group-hover:text-gray-300",
+                    )}
+                  >
+                    {step.label}
                   </span>
-                )}
+                  <span
+                    className={cn(
+                      "hidden text-[11px] transition-colors sm:block",
+                      isCurrent
+                        ? "text-brand-500 dark:text-brand-400"
+                        : "text-gray-400 dark:text-gray-500",
+                    )}
+                  >
+                    {step.hint}
+                  </span>
+                </span>
               </button>
-
-              <div className="flex flex-col items-center gap-0.5 px-1 text-center">
-                <span
-                  className={cn(
-                    "text-xs font-semibold transition-colors",
-                    isCurrent || isCompleted
-                      ? "text-gray-800 dark:text-white/90"
-                      : "text-gray-400 dark:text-gray-500",
-                  )}
-                >
-                  {step.label}
-                </span>
-                <span
-                  className={cn(
-                    "hidden text-[11px] transition-colors sm:block",
-                    isCurrent
-                      ? "text-brand-500 dark:text-brand-400"
-                      : "text-gray-400 dark:text-gray-500",
-                  )}
-                >
-                  {step.hint}
-                </span>
-              </div>
             </li>
           );
         })}

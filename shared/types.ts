@@ -16,6 +16,8 @@ export interface UiPreferences {
   /** The in-progress idea/brief text itself — same reasoning: not tied to any video, so it needs its own persistence to survive a reload. */
   scriptIdeaText?: string;
   scriptDocumentBrief?: string;
+  /** The Assets step's graphics skill ("" = none), saved with its Save button. */
+  assetsGraphicsSkillId?: string;
 }
 
 export interface AppSettings extends UiPreferences {
@@ -104,6 +106,17 @@ export interface Category {
   ownerEmail?: string;
 }
 
+/** A video's frame shape (see `shared/frame-ratio.ts`). */
+export type FrameRatio = "1:1" | "9:16" | "16:9" | "4:3";
+
+/**
+ * What one required-asset image is: a whole frame of its scene ("scene"), or
+ * just its subject on a transparent background ("cutout") to be composited
+ * onto the frame and animated in editing — anything that moves or changes on
+ * its own (a phone lighting up, a character waving) is a cutout.
+ */
+export type ImageLayer = "scene" | "cutout";
+
 export interface Video {
   id: string;
   categoryId: string;
@@ -112,6 +125,8 @@ export interface Video {
   updatedAt: string;
   userId?: string;
   ownerEmail?: string;
+  /** Unset until picked; treat as `DEFAULT_FRAME_RATIO`. */
+  frameRatio?: FrameRatio;
 }
 
 /** A video with the project/category it lives in — what the studio and "recent" lists need. */
@@ -175,6 +190,42 @@ export type CameraMovement =
   | "handheld"
   | "tracking";
 
+/** Camera angle of one shot (see `shared/shots.ts` for how it's described to an AI). */
+export type ShotAngle =
+  | "eyeLevel"
+  | "highAngle"
+  | "lowAngle"
+  | "topDown"
+  | "overShoulder"
+  | "pov"
+  | "dutch";
+
+/**
+ * One shot of a scene, planned the way a film director breaks a moment into
+ * coverage (establishing, insert, reaction, over-the-shoulder...). Each shot
+ * has its own framing, so its images are drawn for that framing.
+ */
+export interface SceneShot {
+  /** 1-based, in screen order. */
+  order: number;
+  shotSize: ShotSize;
+  angle: ShotAngle;
+  cameraMovement: CameraMovement;
+  /** What's in frame and what happens in it. */
+  subject: string;
+  /** Why the shot is there (the story beat it carries). */
+  purpose: string;
+  durationSec: number;
+  /**
+   * The camera/transition technique of this shot, if any — the kind that
+   * decides what gets drawn ("POV qua màn hình", "match cut từ mặt đồng hồ
+   * sang mặt trăng", "parallax 3 lớp", "whip pan sang cảnh sau"...); empty for
+   * a plain cut. Pure editing effects (crash zoom, freeze frame, speed ramp,
+   * J/L-cut, pop-up text) are left to the edit plan step.
+   */
+  technique?: string;
+}
+
 export type RequiredAssetType = "image" | "video" | "audio" | "graphic";
 export type RequiredAssetSource = "generate" | "stock" | "provided";
 
@@ -182,6 +233,22 @@ export interface RequiredAsset {
   type: RequiredAssetType;
   description: string;
   source: RequiredAssetSource;
+  /**
+   * Images only: a whole frame of the scene, or one subject (in one visual
+   * state) for a transparent PNG composited and animated in editing. A
+   * subject that changes during the scene is split by the analysis into a
+   * background frame plus one cutout per state. Absent on older analyses.
+   */
+  layer?: ImageLayer;
+  /**
+   * Images only: how this image sits in its scene's frame. A background: the
+   * camera angle/perspective and the spots left empty for what's composited.
+   * A cutout: where it goes, what it rests on, its angle in that perspective,
+   * facing and size in the frame — so it's drawn to fit, not flat-on.
+   */
+  placement?: string;
+  /** Images only: the `SceneShot.order` this image is for (drawn in that shot's framing). */
+  shot?: number;
 }
 
 /** One character appearing in a scene: who (consistent across scenes) and what they're doing here. */
@@ -201,6 +268,8 @@ export interface ScriptScene {
   heroMoment: boolean;
   /** Absent on versions analyzed before this field existed. */
   characters?: SceneCharacter[];
+  /** The scene broken into shots like film coverage; absent on older analyses (one shot = the scene's own framing). */
+  shots?: SceneShot[];
   requiredAssets: RequiredAsset[];
 }
 
@@ -598,6 +667,12 @@ export interface DataImportResult {
   styleTemplates: number;
   anthropicKeys: number;
   openaiKeyImported: boolean;
+  /** Categories whose project wasn't in the backup, put into a recovery project. */
+  recoveredCategories?: number;
+  /** Videos whose category wasn't in the backup, put into the recovery project. */
+  recoveredVideos?: number;
+  /** Skill reference images the backup only names (image files aren't backed up). */
+  missingReferenceImages?: number;
 }
 
 /** UI text in every supported locale (keep in sync with src/i18n/routing.ts). */
@@ -742,6 +817,8 @@ export interface AssetResearchRequest {
   referenceImages?: string[];
   /** AI image sources: output frame shape. Omitted: square. */
   aspectRatio?: ImageAspectRatio;
+  /** AI image sources: the video's frame ratio — takes precedence over `aspectRatio`. */
+  frameRatio?: FrameRatio;
   /** AI image sources: a type "image" skill's locked graphics methodology, applied to every scene's generation this session. */
   graphicsStyle?: string;
 }
@@ -776,12 +853,46 @@ export interface AssetPromptBatchRequest {
     sceneContext?: string;
     /** Reference photos (data URLs) of the characters in this request, named so the prompt keeps their actual look. */
     characterImages?: { name: string; image: string }[];
+    /** Chosen by the user; omitted lets the AI decide from the description. */
+    layer?: ImageLayer;
+    /** Where/at what angle it sits in its scene (see `RequiredAsset.placement`). */
+    placement?: string;
+    /** The shot it's for, described (`describeShotForAi`). */
+    shot?: string;
   }[];
   provider: "openai" | "claude";
+  /** When set, each prompt is saved to this video as soon as it's written (see `AssetPromptRecord`). */
+  videoId?: string;
+  /** The frame the prompts compose for. */
+  frameRatio?: FrameRatio;
 }
 
 export interface AssetPromptBatchResponse {
-  results: { key: string; prompt: string; count: number }[];
+  results: { key: string; prompt: string; count: number; layer: ImageLayer }[];
+}
+
+export interface AssetSplitLayersRequest {
+  videoId: string;
+  /** The analyzed version whose scenes get split; the result is saved as a new approved version. */
+  versionId: string;
+  fromScene: number;
+  toScene: number;
+}
+
+export interface AssetSplitLayersResponse {
+  version: ScriptAnalysisRecord;
+  /** Scenes whose asset list changed (their earlier picks were cleared). */
+  changedScenes: number[];
+}
+
+/** A saved AI-written image prompt of one of a video's required assets, matched by its description. */
+export interface AssetPromptRecord {
+  description: string;
+  prompt: string;
+  /** The frame it was written for; a prompt for another ratio (or none, older ones) isn't reused. */
+  frameRatio?: FrameRatio;
+  layer?: ImageLayer;
+  updatedAt: string;
 }
 
 /** Portable skill file (`.sunbee-skill.json`). */
