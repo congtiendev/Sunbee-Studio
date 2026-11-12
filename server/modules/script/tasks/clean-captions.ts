@@ -1,6 +1,6 @@
 import { SCRIPT_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
-import type { ProviderKey } from "../../../services/ai/providers/index.js";
+import type { AiEffort, ProviderKey } from "../../../services/ai/providers/index.js";
 import {
   defineTask,
   promptOf,
@@ -16,6 +16,7 @@ export interface CleanCaptionsInput {
   frames: string[];
   provider: ProviderKey;
   model?: string;
+  effort?: AiEffort;
 }
 
 /** Enough frames (spread over the whole video) to read names/on-screen text without paying for all of them. */
@@ -67,7 +68,7 @@ export const cleanCaptionsTask = defineTask<CleanCaptionsInput, string>({
       system: promptOf(ctx, this, "system"),
       text: `${source}:\n\n${input.captions}`,
       images: sampleFrames(input.frames, MAX_FRAMES),
-      effort: "low",
+      effort: input.effort ?? "low",
       maxTokens: SCRIPT_OUTPUT_TOKENS,
     });
     return text.trim();

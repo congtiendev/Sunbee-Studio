@@ -33,7 +33,7 @@ export async function analyzeScriptForUser(
   caller: Caller,
   req: ScriptAnalyzeRequest,
 ): Promise<ScriptAnalyzeResponse> {
-  const provider = req.provider ?? "openai";
+  const provider = req.provider ?? "claude";
   const ctx = taskContextFor(caller.id);
   if (!hasProviderKey(ctx, provider)) throw new MissingApiKeyError(provider);
 
@@ -70,7 +70,7 @@ export async function analyzeScriptForUser(
   // appearance everywhere that character appears.
   const rosterResult = await runTask(
     extractCharactersTask,
-    { scriptText: req.scriptText, provider, model: req.model },
+    { scriptText: req.scriptText, provider, model: req.model, effort: req.effort },
     ctx,
   );
   const knownCharacters =

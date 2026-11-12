@@ -13,6 +13,8 @@ interface StepperProps {
   steps: StepperStep[];
   activeIndex: number;
   furthestIndex: number;
+  /** Steps actually finished (see `onComplete`) — what earns the checkmark; merely having been visited does not. */
+  completedKeys: ReadonlySet<string>;
   onStepClick: (index: number) => void;
   /** Blocks every step button (e.g. a long-running AI call on the active step). */
   disabled?: boolean;
@@ -22,6 +24,7 @@ export default function Stepper({
   steps,
   activeIndex,
   furthestIndex,
+  completedKeys,
   onStepClick,
   disabled = false,
 }: StepperProps) {
@@ -30,7 +33,10 @@ export default function Stepper({
 
   return (
     <div>
-      <ol className="relative grid" style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}>
+      <ol
+        className="relative grid"
+        style={{ gridTemplateColumns: `repeat(${steps.length}, 1fr)` }}
+      >
         <span
           aria-hidden="true"
           className="absolute top-[18px] right-0 left-0 h-0.5 rounded-full bg-gray-100 dark:bg-gray-800"
@@ -40,7 +46,7 @@ export default function Stepper({
         />
         <span
           aria-hidden="true"
-          className="absolute top-[18px] start-0 h-0.5 rounded-full bg-gradient-to-r from-brand-500 to-brand-400 transition-all duration-500 ease-out rtl:bg-gradient-to-l"
+          className="absolute start-0 top-[18px] h-0.5 rounded-full bg-gradient-to-r from-brand-500 to-brand-400 transition-all duration-500 ease-out rtl:bg-gradient-to-l"
           style={{
             marginInlineStart: `calc(100% / ${steps.length} / 2)`,
             width:
@@ -51,7 +57,7 @@ export default function Stepper({
         />
 
         {steps.map((step, index) => {
-          const isCompleted = index < furthestIndex;
+          const isCompleted = completedKeys.has(step.key);
           const isCurrent = index === activeIndex;
           const Icon = step.icon;
 

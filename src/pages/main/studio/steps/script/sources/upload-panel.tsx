@@ -10,9 +10,9 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { TrashBinIcon, UploadIcon } from "@/icons";
 import { useTranslations } from "@/i18n";
+import AiSettingsFields from "@/components/shared/ai-settings-fields";
 import { cn } from "@/utils";
 import { useDropzone } from "react-dropzone";
-import ProviderModelFields from "../provider-model-fields";
 import type { ScriptLanguage } from "../use-script-step";
 import type { ScriptSourcePanelProps } from "./registry";
 
@@ -84,13 +84,15 @@ export default function UploadPanel({ step }: ScriptSourcePanelProps) {
       )}
 
       <div className="mt-3 flex flex-wrap items-end gap-3">
-        <ProviderModelFields
+        <AiSettingsFields
           providerLabel={t("describeProviderLabel")}
           provider={step.describeProvider}
           onProviderChange={step.changeDescribeProvider}
           model={step.describeModel}
           onModelChange={step.setDescribeModel}
           availableProviders={step.availableProviders}
+          effort={step.effort}
+          onEffortChange={step.setEffort}
         />
 
         <Field className="w-40">

@@ -9,7 +9,10 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClaudeIcon, GptIcon } from "@/icons";
 import { useTranslations } from "@/i18n";
-import { ANALYZE_MODELS, type AnalyzeProvider } from "@shared/script-cost-estimate";
+import {
+  ANALYZE_MODELS,
+  type AnalyzeProvider,
+} from "@shared/script-cost-estimate";
 
 /** Provider tabs + model select, shared by every place that picks an AI model. */
 export default function ProviderModelFields({
@@ -33,13 +36,24 @@ export default function ProviderModelFields({
     <>
       <Field className="w-auto">
         <FieldLabel>{providerLabel}</FieldLabel>
-        <Tabs value={provider} onValueChange={(value) => onProviderChange(value as AnalyzeProvider)}>
+        <Tabs
+          value={provider}
+          onValueChange={(value) => onProviderChange(value as AnalyzeProvider)}
+        >
           <TabsList>
-            <TabsTrigger value="openai" className="gap-1.5" disabled={!availableProviders.openai}>
+            <TabsTrigger
+              value="openai"
+              className="gap-1.5"
+              disabled={!availableProviders.openai}
+            >
               <GptIcon className="size-4" />
               {t("providerOpenai")}
             </TabsTrigger>
-            <TabsTrigger value="claude" className="gap-1.5" disabled={!availableProviders.claude}>
+            <TabsTrigger
+              value="claude"
+              className="gap-1.5"
+              disabled={!availableProviders.claude}
+            >
               <ClaudeIcon className="size-4" />
               {t("providerClaude")}
             </TabsTrigger>
@@ -49,10 +63,16 @@ export default function ProviderModelFields({
 
       <Field className="w-56">
         <FieldLabel>{t("modelLabel")}</FieldLabel>
-        <Select value={model} onValueChange={(value) => onModelChange(value as string)}>
+        <Select
+          value={model}
+          onValueChange={(value) => onModelChange(value as string)}
+        >
           <SelectTrigger>
             <SelectValue>
-              {() => ANALYZE_MODELS[provider].find((m) => m.id === model)?.label ?? model}
+              {() =>
+                ANALYZE_MODELS[provider].find((m) => m.id === model)?.label ??
+                model
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>

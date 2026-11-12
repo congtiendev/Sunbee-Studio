@@ -17,7 +17,7 @@ export async function writeScriptFromIdea(
   caller: Caller,
   req: ScriptFromIdeaRequest,
 ): Promise<{ scriptText: string }> {
-  const provider = req.provider ?? "openai";
+  const provider = req.provider ?? "claude";
   const ctx = taskContextFor(caller.id);
   if (!hasProviderKey(ctx, provider)) throw new MissingApiKeyError(provider);
 

@@ -146,7 +146,8 @@
       "mediaLibrary": "Media library",
       "documents": "Documents",
       "skills": "Skills",
-      "training": "AI training"
+      "training": "AI training",
+      "voices": "Voices"
     }
   },
   "header": {
@@ -206,7 +207,10 @@
       },
       "sourceTypes": {
         "youtube": "YouTube",
-        "import": "Import"
+        "import": "Import",
+        "document": "Document",
+        "template": "Template",
+        "idea": "Idea"
       }
     },
     "recentProjects": {
@@ -1111,7 +1115,8 @@
       "warning": "The exported file contains your API keys in plain text. Keep it somewhere private and don't share it.",
       "importOpenaiKey": "OpenAI key imported too.",
       "importRecovered": "{categories} categories and {videos} videos whose project or category wasn't in the file were put into the “Khôi phục từ sao lưu” project.",
-      "importMissingImages": "{count, plural, one {# skill reference image isn't} other {# skill reference images aren't}} in the backup file. Upload them again for those skills."
+      "importMissingImages": "{count, plural, one {# skill reference image isn't} other {# skill reference images aren't}} in the backup file. Upload them again for those skills.",
+      "importSkippedDuplicates": "{count, plural, one {# record was} other {# records were}} already imported before — skipped, not duplicated."
     },
     "prompts": {
       "title": "AI prompts",
@@ -1261,6 +1266,7 @@
       "providerMissingKeyHint": "Set up the missing API key in Settings to enable that option.",
       "modelLabel": "Model",
       "effortLabel": "Effort",
+      "effortHint": "How hard the AI thinks before answering: Low — fast and cheap, fine for simple work; Medium — balanced, fits most tasks; High — most thorough but slower and pricier, for complex work.",
       "effortLow": "Low",
       "effortMedium": "Medium",
       "effortHigh": "High",
@@ -1538,10 +1544,15 @@
     "assets": {
       "title": "Assets for each scene",
       "description": "Research and pick the media every scene needs — from your library, free stock sites, or AI web research. Picks are saved per video.",
+      "badgeLegendLabel": "What the badges mean",
+      "badgeLegendHint": "Type (Image/Video/Audio/Graphic): what kind of media it is. Source (Stock/Generate/Provided): found on a stock site, AI-generated, or already in your library. Layer — images only (Scene/Transparent PNG): Scene is the whole frame; a transparent PNG is just the subject, cut out to composite and animate.",
       "progress": "{done}/{total} picked",
       "progressLabel": "Assets picked",
       "noAnalysis": "Analyze the script first (step 1): the assets each scene needs come from the analysis.",
       "scene": "Scene {index}",
+      "onlyIncomplete": "Only show scenes still missing a pick",
+      "expandAll": "Expand all",
+      "collapseAll": "Collapse all",
       "noAssets": "This scene doesn't list any assets.",
       "notPicked": "Not picked yet",
       "outdated": "The asset description changed since this was picked.",
@@ -1555,17 +1566,25 @@
         "openButton": "Generate via ChatGPT",
         "title": "Batch images via ChatGPT",
         "description": "Download a pack (prompts + style + reference images) for a scene range so ChatGPT makes the images one by one, then drop the images back here to assign them to their scenes.",
+        "aiProviderLabel": "AI for shot planning & prompts:",
         "applyRange": "Apply",
         "rangeAll": "All",
         "characterGroup": "Characters & objects",
         "backgroundGroup": "Backgrounds",
         "copyAll": "Copy all",
         "copyItem": "Copy this item",
+        "expandPrompt": "Show full prompt",
+        "collapsePrompt": "Collapse",
         "empty": "This script has no image-type assets.",
         "importTitle": "Import generated images",
         "importHint": "Images named after their code (p1.png…) are assigned automatically; ones keeping ChatGPT's own names are assigned in order or by picking a code. Transparent PNGs are cropped tight to their subject.",
         "importButton": "Drop images or a .zip here",
         "importDone": "Assigned {assigned} images · {unmatched} waiting.",
+        "importSkipped": "Skipped {count} images that already had one, since you chose not to overwrite.",
+        "overwriteTitle": "Overwrite existing images?",
+        "overwriteDescription": "{count} code(s) already have an image ({codes}). Overwrite them with the new ones, or only fill in the codes that are still missing and keep the existing images?",
+        "overwriteSkip": "Only fill in missing ones",
+        "overwriteConfirm": "Overwrite",
         "stepRange": "Pick a scene range",
         "stepGenerate": "Generate & copy prompts",
         "rangeScenes": "Scenes",
@@ -1578,6 +1597,8 @@
         "generateHint": "AI writes a detailed prompt per item, folding in the scene's context and the locked look of characters. Each prompt is saved as soon as it's written, so closing the dialog or reloading loses nothing.",
         "showInstructions": "Show the instructions for ChatGPT",
         "hideInstructions": "Hide instructions",
+        "saveInstructions": "Save",
+        "resetInstructions": "Reset to default",
         "statScenes": "scenes in range",
         "statItems": "items needing an image (deduped)",
         "stepPack": "Download the ChatGPT pack",
@@ -1625,6 +1646,7 @@
         "splitLayers": "Plan shots for scenes {from}–{to}",
         "splitAgain": "Re-plan shots for scenes {from}–{to}",
         "splitting": "Planning shots…",
+        "stopSplitting": "Stop (after the current batch)",
         "splitDone": "Re-split {count, plural, one {# scene} other {# scenes}}: {scenes}. The asset list has been updated.",
         "splitNoChange": "No scene needed splitting.",
         "splitConfirmTitle": "Plan shots & layers for this scene range?",
@@ -1768,13 +1790,26 @@
       "scriptAnalyses": "Script Analyses",
       "styleTemplates": "Style Templates",
       "users": "Users",
+      "trash": "Trash",
       "logs": "Logs"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {current} of {total}"
     },
     "scriptAnalyses": {
       "owner": "Owner",
       "createdAt": "Created At",
       "source": "Source",
-      "scenes": "Scenes"
+      "scenes": "Scenes",
+      "sourceTypes": {
+        "youtube": "YouTube",
+        "import": "Import",
+        "document": "Document",
+        "template": "Template",
+        "idea": "Idea"
+      }
     },
     "styleTemplates": {
       "owner": "Owner",
@@ -1797,6 +1832,28 @@
       "level": "Level",
       "message": "Message",
       "details": "Details"
+    },
+    "trash": {
+      "hint": "Soft-deleted projects/categories/videos — restore them or purge permanently (cannot be undone).",
+      "empty": "Trash is empty.",
+      "type": "Type",
+      "name": "Name",
+      "parent": "Belongs to",
+      "owner": "Owner",
+      "deletedAt": "Deleted at",
+      "restore": "Restore",
+      "purge": "Delete permanently",
+      "purgeTitle": "Permanently delete \"{name}\"?",
+      "purgeDescription": {
+        "project": "Permanently deletes this project along with every category, video, script analysis and asset inside it — cannot be undone.",
+        "category": "Permanently deletes this category along with every video and its data — cannot be undone.",
+        "video": "Permanently deletes this video along with its script analyses and assets — cannot be undone."
+      },
+      "types": {
+        "project": "Project",
+        "category": "Category",
+        "video": "Video"
+      }
     }
   },
   "liquidGlassPanel": {
@@ -2019,6 +2076,60 @@
         "upload": "Upload images",
         "hint": "Pick multiple images at once, up to 10MB each."
       }
+    }
+  },
+  "voiceLibrary": {
+    "pageTitle": "Voices",
+    "pageDescription": "Clone a voice from one reference sample, then read any text aloud in it. Runs on a local engine on this machine — no cloud voice API.",
+    "createButton": "New voice",
+    "empty": "No voices yet. Add one from a recording or an uploaded sample.",
+    "deleteButton": "Delete",
+    "deleteTitle": "Delete this voice?",
+    "deleteDescription": "\"{name}\" and its reference sample will be deleted.",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "e.g. Narrator – warm male voice",
+      "nameRequired": "Please enter a name.",
+      "sample": "Reference sample",
+      "sampleHint": "A clean recording of this voice, 10–30 seconds, no background noise or music.",
+      "sampleRequired": "Please choose an audio sample.",
+      "sampleSelected": "Sample ready: {name}",
+      "create": "Create voice"
+    },
+    "preview": {
+      "textPlaceholder": "Type a sentence to hear in this voice…",
+      "generateButton": "Generate",
+      "generating": "Generating…",
+      "engineNotReady": "The local voice engine needs a one-time setup (Python) the first time you use it — this can take a minute."
+    },
+    "ttsPanel": {
+      "title": "Text to speech",
+      "selectLabel": "Voice",
+      "selectPlaceholder": "Choose a voice",
+      "textLabel": "Text",
+      "textPlaceholder": "Type what you want read aloud…",
+      "generateButton": "Generate",
+      "generating": "Generating…",
+      "quickPreviewButton": "Try this voice here"
+    },
+    "presets": {
+      "title": "Ready-made voices",
+      "empty": "No ready-made voices yet — see server/services/voice/presets/README.md to add some.",
+      "sampleTextLabel": "Sample sentence",
+      "sampleTextPlaceholder": "Type a sentence, then try it on any voice below…",
+      "sampleTextDefault": "Xin chào, đây là giọng đọc thử được tạo bằng trí tuệ nhân tạo.",
+      "tryButton": "Listen",
+      "installButton": "Add",
+      "installedBadge": "Added"
+    },
+    "fromSong": {
+      "uploadTab": "Upload a sample",
+      "songTab": "Extract from a song",
+      "hint": "Upload a song; the vocal track will be isolated from the music, so you can clone that voice.",
+      "separateButton": "Separate vocals",
+      "working": "Working…",
+      "workingHint": "This can take a few minutes on this machine.",
+      "useThisButton": "Use this clip"
     }
   }
 }

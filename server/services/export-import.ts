@@ -87,6 +87,31 @@ export function buildExport(userId: string): DataExportBundle {
 /** Name of the project (and category) that takes in records whose parent isn't in the bundle. */
 export const RECOVERED_PROJECT_NAME = "Khôi phục từ sao lưu";
 
+type ImportKind = "project" | "category" | "video" | "styleTemplate" | "scriptAnalysis";
+
+/** The record a bundle item's ORIGINAL id was already imported as, if this exact backup (or an overlapping one) was imported before. */
+function alreadyImported(userId: string, kind: ImportKind, originalId: string): string | undefined {
+  const row = getDb()
+    .prepare(
+      `SELECT record_id FROM import_records WHERE user_id = ? AND kind = ? AND original_id = ?`,
+    )
+    .get(userId, kind, originalId) as { record_id: string } | undefined;
+  return row?.record_id;
+}
+
+function recordImported(
+  userId: string,
+  kind: ImportKind,
+  originalId: string,
+  recordId: string,
+): void {
+  getDb()
+    .prepare(
+      `INSERT INTO import_records (user_id, kind, original_id, record_id, created_at) VALUES (?, ?, ?, ?, ?)`,
+    )
+    .run(userId, kind, originalId, recordId, new Date().toISOString());
+}
+
 /** Puts back a record's original timestamps (the repos stamp "now" on insert). */
 function restoreTimestamps(
   table: "projects" | "categories" | "videos" | "style_templates",
@@ -104,12 +129,14 @@ function restoreTimestamps(
 
 /**
  * Re-creates the bundle's rows as brand-new records owned by `userId`, keeping
- * every field and the original timestamps. IDs are never reused — every
- * project/category/video/skill/script version gets a fresh ID and relationships
- * (video, skills used, template source) are remapped through the ones generated
- * here, so importing into an account that already has data never collides.
- * Categories and videos whose parent isn't in the bundle go into a recovery
- * project instead of being dropped; API keys already in the account aren't added twice.
+ * every field and the original timestamps. A record whose ORIGINAL id (from
+ * the account it was exported from) was already imported in an earlier run is
+ * skipped and its existing id reused instead — so importing the same backup
+ * twice, or a newer backup that overlaps an older one, never duplicates data.
+ * A genuinely new id always gets a fresh row: importing into an account that
+ * already has its own, unrelated data never collides. Categories and videos
+ * whose parent isn't in the bundle go into a recovery project instead of
+ * being dropped; API keys already in the account aren't added twice.
  */
 export function importBundle(
   userId: string,
@@ -117,11 +144,22 @@ export function importBundle(
 ): DataImportResult {
   const db = getDb();
   return db.transaction((): DataImportResult => {
+    let skippedDuplicates = 0;
+    let newProjects = 0;
+
     const projectIdMap = new Map<string, string>();
     for (const project of bundle.projects) {
+      const existing = alreadyImported(userId, "project", project.id);
+      if (existing) {
+        projectIdMap.set(project.id, existing);
+        skippedDuplicates++;
+        continue;
+      }
       const id = createProject(userId, project.name).id;
       restoreTimestamps("projects", id, project.createdAt, project.updatedAt);
       projectIdMap.set(project.id, id);
+      recordImported(userId, "project", project.id, id);
+      newProjects++;
     }
 
     // Categories (and videos) whose parent isn't in the bundle — it was deleted
@@ -149,8 +187,15 @@ export function importBundle(
 
     let recoveredCategories = 0;
     let recoveredVideos = 0;
+    let newCategories = 0;
     const categoryIdMap = new Map<string, string>();
     for (const category of bundle.categories) {
+      const existing = alreadyImported(userId, "category", category.id);
+      if (existing) {
+        categoryIdMap.set(category.id, existing);
+        skippedDuplicates++;
+        continue;
+      }
       let projectId = projectIdMap.get(category.projectId);
       if (!projectId) {
         projectId = recoveryProject(category.createdAt);
@@ -159,22 +204,43 @@ export function importBundle(
       const id = createCategory(userId, projectId, category.name).id;
       restoreTimestamps("categories", id, category.createdAt, category.updatedAt);
       categoryIdMap.set(category.id, id);
+      recordImported(userId, "category", category.id, id);
+      newCategories++;
     }
 
+    let newVideos = 0;
     const videoIdMap = new Map<string, string>();
+    const newVideoOriginalIds = new Set<string>();
     for (const video of bundle.videos) {
+      const existing = alreadyImported(userId, "video", video.id);
+      if (existing) {
+        videoIdMap.set(video.id, existing);
+        skippedDuplicates++;
+        continue;
+      }
       let categoryId = categoryIdMap.get(video.categoryId);
       if (!categoryId) {
         categoryId = recoveryCategory(video.createdAt);
         recoveredVideos++;
       }
-      videoIdMap.set(video.id, createVideo(userId, categoryId, video.name).id);
+      const id = createVideo(userId, categoryId, video.name).id;
+      videoIdMap.set(video.id, id);
+      newVideoOriginalIds.add(video.id);
+      recordImported(userId, "video", video.id, id);
+      newVideos++;
     }
 
     // Skills before script versions, which record the skills they used.
     const skillIdMap = new Map<string, string>();
     let missingReferenceImages = 0;
+    let newStyleTemplates = 0;
     for (const template of bundle.styleTemplates) {
+      const existing = alreadyImported(userId, "styleTemplate", template.id);
+      if (existing) {
+        skillIdMap.set(template.id, existing);
+        skippedDuplicates++;
+        continue;
+      }
       const id = saveTemplate(userId, {
         name: template.name,
         // Older backups predate these fields.
@@ -193,6 +259,8 @@ export function importBundle(
       }).id;
       restoreTimestamps("style_templates", id, template.createdAt, template.updatedAt);
       skillIdMap.set(template.id, id);
+      recordImported(userId, "styleTemplate", template.id, id);
+      newStyleTemplates++;
       // The image files themselves aren't part of a backup.
       missingReferenceImages += template.referenceImageFileIds?.length ?? 0;
     }
@@ -200,7 +268,14 @@ export function importBundle(
     const setCreatedAt = db.prepare("UPDATE script_analyses SET created_at = ? WHERE id = ?");
     const scriptIdMap = new Map<string, string>();
     const templateSources: { id: string; sourceId: string }[] = [];
+    let newScriptAnalyses = 0;
     for (const record of bundle.scriptAnalyses) {
+      const existing = alreadyImported(userId, "scriptAnalysis", record.id);
+      if (existing) {
+        scriptIdMap.set(record.id, existing);
+        skippedDuplicates++;
+        continue;
+      }
       const saved = saveScriptVersion(
         userId,
         record.sourceType,
@@ -227,6 +302,8 @@ export function importBundle(
       );
       if (record.createdAt) setCreatedAt.run(record.createdAt, saved.id);
       scriptIdMap.set(record.id, saved.id);
+      recordImported(userId, "scriptAnalysis", record.id, saved.id);
+      newScriptAnalyses++;
       if (record.templateSourceId) {
         templateSources.push({ id: saved.id, sourceId: record.templateSourceId });
       }
@@ -240,9 +317,10 @@ export function importBundle(
       if (sourceId) setTemplateSource.run(sourceId, link.id);
     }
 
-    // Saving script versions touches their videos; put the original times back last.
+    // Saving script versions touches their videos; put the original times back last
+    // (only for videos this run actually created — a skipped one is untouched).
     for (const video of bundle.videos) {
-      const id = videoIdMap.get(video.id);
+      const id = newVideoOriginalIds.has(video.id) ? videoIdMap.get(video.id) : undefined;
       if (id) restoreTimestamps("videos", id, video.createdAt, video.updatedAt);
     }
 
@@ -264,16 +342,17 @@ export function importBundle(
     }
 
     return {
-      projects: projectIdMap.size + (recoveredProjectId ? 1 : 0),
-      categories: categoryIdMap.size + (recoveredCategoryId ? 1 : 0),
-      videos: videoIdMap.size,
-      scriptAnalyses: scriptIdMap.size,
-      styleTemplates: skillIdMap.size,
+      projects: newProjects + (recoveredProjectId ? 1 : 0),
+      categories: newCategories + (recoveredCategoryId ? 1 : 0),
+      videos: newVideos,
+      scriptAnalyses: newScriptAnalyses,
+      styleTemplates: newStyleTemplates,
       anthropicKeys,
       openaiKeyImported: Boolean(bundle.settings.openaiApiKey),
       recoveredCategories,
       recoveredVideos,
       missingReferenceImages,
+      skippedDuplicates,
     };
   })();
 }

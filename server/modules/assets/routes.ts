@@ -36,11 +36,10 @@ import {
   setSceneResource,
   updateLibraryAsset,
 } from "./repo.js";
-import { IMAGE_PROMPT_RULES_VERSION, imagePromptTask } from "./tasks/image-prompt.js";
+import { imagePromptTask } from "./tasks/image-prompt.js";
 import { searchQueryTask } from "./tasks/search-query.js";
 import { splitLayersTask } from "./tasks/split-layers.js";
-import { approveScriptVersion } from "../script/service.js";
-import { getScriptAnalysisById } from "../script/repo.js";
+import { getScriptAnalysisById, updateAnalyzedScenes } from "../script/repo.js";
 import { getTemplateById } from "../../services/db/style-templates-repo.js";
 
 const router = Router();
@@ -193,6 +192,8 @@ router.post("/image-prompts", requireAuth, async (req, res) => {
           shot: item.shot,
           styleFromSkill: true,
           provider,
+          model: body.model,
+          effort: body.effort,
         },
         ctx,
       );
@@ -203,7 +204,6 @@ router.post("/image-prompts", requireAuth, async (req, res) => {
           prompt: output.prompt,
           frameRatio: body.frameRatio,
           layer: output.layer,
-          rulesVersion: IMAGE_PROMPT_RULES_VERSION,
         });
       }
       results.push({ key: item.key, prompt: output.prompt, count: output.count, layer: output.layer });
@@ -220,8 +220,10 @@ const SPLIT_SCENES_PER_CALL = 4;
 /**
  * Splits the moving subjects of a scene range into layers (a background frame
  * plus one transparent cutout per visual state) on an existing analysis, and
- * saves the result as a new approved version. Picks of scenes whose asset
- * list changed are cleared, since their positions now mean other assets.
+ * overwrites that version's scenes in place (no new version — re-running this
+ * is an annotation pass, not a creative redo worth a history entry). Picks of
+ * scenes whose asset list changed are cleared, since their positions now mean
+ * other assets.
  */
 router.post("/split-layers", requireAuth, async (req, res) => {
   const body = req.body as AssetSplitLayersRequest;
@@ -236,7 +238,7 @@ router.post("/split-layers", requireAuth, async (req, res) => {
     return;
   }
   const ctx = taskContextFor(req.user!.id);
-  const provider = firstAvailableProvider(ctx);
+  const provider = firstAvailableProvider(ctx, body.provider ?? "claude");
   if (!provider) {
     res.status(400).json({ error: "Chưa thiết lập API key AI (Claude hoặc OpenAI)." });
     return;
@@ -266,7 +268,15 @@ router.post("/split-layers", requireAuth, async (req, res) => {
         before && rewritten.has(before.index) ? { ...before, ...rewritten.get(before.index)! } : before;
       const output = await runTask(
         splitLayersTask,
-        { scenes: batch, rosterNames, editingStyle, previousScene, provider },
+        {
+          scenes: batch,
+          rosterNames,
+          editingStyle,
+          previousScene,
+          provider,
+          model: body.model,
+          effort: body.effort,
+        },
         ctx,
       );
       for (const scene of output.scenes) {
@@ -290,12 +300,7 @@ router.post("/split-layers", requireAuth, async (req, res) => {
     });
     const version =
       changedScenes.length > 0
-        ? approveScriptVersion(req.user!, {
-            versionId: base.id,
-            scenes,
-            resources: base.resources,
-            style: base.style ?? { genre: "", styleTags: [], toneDescription: "" },
-          })
+        ? (updateAnalyzedScenes(req.user!.id, admin, base.id, scenes) ?? base)
         : base;
     clearSceneResources(body.videoId, changedScenes);
     const response: AssetSplitLayersResponse = { version, changedScenes };
@@ -312,7 +317,7 @@ router.get("/image-prompts", requireAuth, (req, res) => {
     res.status(404).json({ error: "Không tìm thấy video." });
     return;
   }
-  res.json(listAssetPrompts(videoId, IMAGE_PROMPT_RULES_VERSION));
+  res.json(listAssetPrompts(videoId));
 });
 
 // ---------- picks per scene ----------

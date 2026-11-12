@@ -34,7 +34,7 @@ export function registerScriptTools(server: McpServer) {
         script_text: z.string().min(1).describe("The script text to estimate cost for"),
         provider: z
           .enum(["openai", "claude"])
-          .default("openai")
+          .default("claude")
           .describe("Which provider's pricing to estimate against"),
         model: z
           .string()
@@ -78,7 +78,7 @@ export function registerScriptTools(server: McpServer) {
           ),
         provider: z
           .enum(["openai", "claude"])
-          .default("openai")
+          .default("claude")
           .describe("Which AI provider to analyze with"),
         model: z
           .string()

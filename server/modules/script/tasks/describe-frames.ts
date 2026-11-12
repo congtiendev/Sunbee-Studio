@@ -1,6 +1,6 @@
 import { SCRIPT_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
-import type { ProviderKey } from "../../../services/ai/providers/index.js";
+import type { AiEffort, ProviderKey } from "../../../services/ai/providers/index.js";
 import {
   defineTask,
   promptOf,
@@ -24,6 +24,7 @@ export interface DescribeFramesInput {
   frames: string[];
   provider: ProviderKey;
   model?: string;
+  effort?: AiEffort;
   language: ScriptLanguage;
 }
 
@@ -56,6 +57,7 @@ export const describeFramesTask = defineTask<DescribeFramesInput, string>({
     return providerFor(ctx, input.provider).generateText({
       maxTokens: SCRIPT_OUTPUT_TOKENS,
       model: input.model ?? defaultModelFor(input.provider),
+      effort: input.effort ?? "medium",
       system: `${promptOf(ctx, this, "system")}\n\n${LANGUAGE_INSTRUCTION[input.language]}`,
       text: isClaude
         ? "Viết kịch bản mô tả video dựa trên các khung hình trên."

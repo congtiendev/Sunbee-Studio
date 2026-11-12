@@ -415,6 +415,111 @@ const MIGRATIONS: Migration[] = [
       db.exec(`ALTER TABLE asset_prompts ADD COLUMN rules_version INTEGER;`);
     },
   },
+  {
+    id: 24,
+    name: "backup_import_records",
+    up: (db) => {
+      // Maps a bundle record's ORIGINAL id (from the account it was exported
+      // from) to the new row importBundle() created for it, so re-importing
+      // the same backup (or a newer backup that overlaps an older one) skips
+      // records already imported instead of creating duplicates.
+      db.exec(`
+        CREATE TABLE import_records (
+          user_id TEXT NOT NULL,
+          kind TEXT NOT NULL,
+          original_id TEXT NOT NULL,
+          record_id TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          PRIMARY KEY (user_id, kind, original_id)
+        );
+      `);
+    },
+  },
+  {
+    id: 25,
+    name: "voice_profiles",
+    up: (db) => {
+      // A reusable voice, cloned from one reference sample (stored via the
+      // `files` service) — the local TTS sidecar re-reads the sample at
+      // synthesis time, so no separate "clone" step/id is kept here.
+      db.exec(`
+        CREATE TABLE voice_profiles (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          engine TEXT NOT NULL,
+          sample_file_id TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX idx_voice_profiles_user ON voice_profiles(user_id);
+      `);
+    },
+  },
+  {
+    id: 26,
+    name: "voice_profile_preset",
+    up: (db) => {
+      // Which catalog preset (presets.ts) a profile was installed from, if
+      // any — lets the library show "Installed" instead of "Install" and
+      // skip creating a duplicate profile for the same preset.
+      db.exec(`ALTER TABLE voice_profiles ADD COLUMN preset_id TEXT;`);
+    },
+  },
+  {
+    id: 27,
+    name: "voice_profile_piper",
+    up: (db) => {
+      // A Piper-engine profile has no reference sample to clone — it reads
+      // with a fixed, pre-trained speaker instead (piper_model + optional
+      // piper_speaker_id). sample_file_id must become nullable for that, and
+      // SQLite can't drop a NOT NULL via ALTER, so the table is rebuilt.
+      db.exec(`
+        CREATE TABLE voice_profiles_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          engine TEXT NOT NULL,
+          sample_file_id TEXT,
+          created_at TEXT NOT NULL,
+          preset_id TEXT,
+          piper_model TEXT,
+          piper_speaker_id INTEGER
+        );
+        INSERT INTO voice_profiles_new (id, user_id, name, engine, sample_file_id, created_at, preset_id)
+          SELECT id, user_id, name, engine, sample_file_id, created_at, preset_id FROM voice_profiles;
+        DROP TABLE voice_profiles;
+        ALTER TABLE voice_profiles_new RENAME TO voice_profiles;
+        CREATE INDEX idx_voice_profiles_user ON voice_profiles(user_id);
+      `);
+    },
+  },
+  {
+    id: 28,
+    name: "voice_profile_vieneu",
+    up: (db) => {
+      // Switched the local engine from Piper to VieNeu-TTS (one engine for
+      // both built-in voices and cloning — see server/services/voice/python/
+      // engine.py). piper_model/piper_speaker_id are gone; preset_voice_id
+      // holds a built-in voice's name (see vieneu-presets.ts) instead.
+      db.exec(`
+        CREATE TABLE voice_profiles_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          engine TEXT NOT NULL,
+          sample_file_id TEXT,
+          created_at TEXT NOT NULL,
+          preset_id TEXT,
+          preset_voice_id TEXT
+        );
+        INSERT INTO voice_profiles_new (id, user_id, name, engine, sample_file_id, created_at, preset_id)
+          SELECT id, user_id, name, engine, sample_file_id, created_at, preset_id FROM voice_profiles;
+        DROP TABLE voice_profiles;
+        ALTER TABLE voice_profiles_new RENAME TO voice_profiles;
+        CREATE INDEX idx_voice_profiles_user ON voice_profiles(user_id);
+      `);
+    },
+  },
 ];
 
 export function runNumberedMigrations(db: Database.Database): void {

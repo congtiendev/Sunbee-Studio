@@ -20,7 +20,7 @@ export async function writeScriptFromDocuments(
   caller: Caller,
   req: ScriptFromDocumentRequest,
 ): Promise<{ scriptText: string; documentTitles: string[] }> {
-  const provider = req.provider ?? "openai";
+  const provider = req.provider ?? "claude";
   const ctx = taskContextFor(caller.id);
   if (!hasProviderKey(ctx, provider)) throw new MissingApiKeyError(provider);
 

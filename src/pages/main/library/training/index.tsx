@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import AiSettingsFields from "@/components/shared/ai-settings-fields";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,12 +29,10 @@ import { paths } from "@/lib/paths";
 import type { SkillType } from "@shared/types";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router";
-import ProviderModelFields from "@/pages/main/studio/steps/script/provider-model-fields";
 import GuidePreview from "./guide-preview";
 import SourcePicker from "./source-picker";
 import {
   useTraining,
-  type TrainingEffort,
   type TrainingState,
   type TrainingTarget,
 } from "./use-training";
@@ -324,12 +323,6 @@ function LearnedSources({ state }: Props) {
 
 function RunCard({ state }: Props) {
   const t = useTranslations("training.run");
-  const tScript = useTranslations("videoStudio.script");
-  const effortLabels: Record<TrainingEffort, string> = {
-    low: tScript("effortLow"),
-    medium: tScript("effortMedium"),
-    high: tScript("effortHigh"),
-  };
   const { newScripts, newDocuments, newImages, learnedKept, learnedScripts } =
     state.counts;
   const isImage = state.targetType === "image";
@@ -344,32 +337,16 @@ function RunCard({ state }: Props) {
       <CardTitle>{t("title")}</CardTitle>
 
       <div className="flex flex-wrap items-end gap-4">
-        <ProviderModelFields
+        <AiSettingsFields
           providerLabel={t("providerLabel")}
           provider={state.provider}
           onProviderChange={state.changeProvider}
           model={state.model}
           onModelChange={state.setModel}
           availableProviders={state.availableProviders}
+          effort={state.effort}
+          onEffortChange={state.setEffort}
         />
-        <Field className="w-40">
-          <FieldLabel>{tScript("effortLabel")}</FieldLabel>
-          <Select
-            value={state.effort}
-            onValueChange={(value) => state.setEffort(value as TrainingEffort)}
-          >
-            <SelectTrigger>
-              <SelectValue>{() => effortLabels[state.effort]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(["low", "medium", "high"] as const).map((value) => (
-                <SelectItem key={value} value={value}>
-                  {effortLabels[value]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
       </div>
 
       <Field>

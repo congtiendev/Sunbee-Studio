@@ -347,6 +347,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         useAi: linkUseAi,
         provider: describeProvider,
         model: describeModel,
+        effort,
         language: scriptLanguage,
       });
       setScriptTextRaw(res.scriptText);
@@ -380,6 +381,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         describeProvider,
         describeModel,
         scriptLanguage,
+        effort,
       );
       setScriptTextRaw(res.scriptText);
       setSavedScriptText(res.scriptText);
@@ -410,6 +412,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         language: scriptLanguage,
         provider: describeProvider,
         model: describeModel,
+        effort,
         styleTemplateId: selectedTemplateId === NO_TEMPLATE ? undefined : selectedTemplateId,
         videoId,
       });
@@ -438,6 +441,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
         language: scriptLanguage,
         provider: describeProvider,
         model: describeModel,
+        effort,
         styleTemplateId: selectedTemplateId === NO_TEMPLATE ? undefined : selectedTemplateId,
         videoId,
       });

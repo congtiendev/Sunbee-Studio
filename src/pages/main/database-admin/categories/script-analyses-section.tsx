@@ -14,6 +14,8 @@ import { TrashBinIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
 import type { ScriptAnalysisListItem } from "@shared/types";
 import { useEffect, useState } from "react";
+import TablePagination from "../table-pagination";
+import { usePageSlice } from "../use-page-slice";
 
 export default function ScriptAnalysesSection() {
   const t = useTranslations("databaseAdmin.scriptAnalyses");
@@ -21,6 +23,8 @@ export default function ScriptAnalysesSection() {
   const [rows, setRows] = useState<ScriptAnalysisListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const { pageItems, totalPages, page: currentPage } = usePageSlice(rows, page);
 
   const load = async () => {
     setLoading(true);
@@ -88,7 +92,7 @@ export default function ScriptAnalysesSection() {
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {rows.map((row) => (
+                {pageItems.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
                       {row.ownerEmail ?? "—"}
@@ -97,7 +101,7 @@ export default function ScriptAnalysesSection() {
                       {new Date(row.createdAt).toLocaleString()}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      {row.sourceType}
+                      {t(`sourceTypes.${row.sourceType}`)}
                       {row.sourceUrl ? ` · ${row.sourceUrl}` : ""}
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
@@ -119,6 +123,7 @@ export default function ScriptAnalysesSection() {
             </Table>
           </div>
         )}
+        <TablePagination page={currentPage} totalPages={totalPages} onPageChange={setPage} />
       </CardContent>
     </Card>
   );

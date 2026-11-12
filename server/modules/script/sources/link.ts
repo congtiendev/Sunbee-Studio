@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AnalyzeProvider } from "../../../../shared/script-cost-estimate.js";
 import type { LinkScriptOrigin } from "../../../../shared/types.js";
+import type { AiEffort } from "../../../services/ai/providers/index.js";
 import {
   firstAvailableProvider,
   runTask,
@@ -24,6 +25,7 @@ export interface LinkSourceOptions {
   useAi?: boolean;
   provider?: AnalyzeProvider;
   model?: string;
+  effort?: AiEffort;
   language?: ScriptLanguage;
 }
 
@@ -53,6 +55,7 @@ async function editSpeech(
   frames: string[],
   provider: AnalyzeProvider | undefined,
   model: string | undefined,
+  effort: AiEffort | undefined,
 ): Promise<string | null> {
   const editor = firstAvailableProvider(ctx, provider);
   if (!editor) return null;
@@ -65,6 +68,7 @@ async function editSpeech(
         frames,
         provider: editor,
         model: editor === provider ? model : undefined,
+        effort: editor === provider ? effort : undefined,
       },
       ctx,
     );
@@ -85,7 +89,7 @@ async function editSpeech(
 export async function fetchScriptFromLink(
   url: string,
   ctx: TaskContext,
-  { useAi = true, provider, model, language = "vi" }: LinkSourceOptions = {},
+  { useAi = true, provider, model, effort, language = "vi" }: LinkSourceOptions = {},
 ): Promise<LinkSourceResult> {
   const dir = await mkdtemp(join(tmpdir(), "sunbee-link-"));
   try {
@@ -97,6 +101,7 @@ export async function fetchScriptFromLink(
     const options = {
       describeProvider: provider,
       describeModel: model,
+      describeEffort: effort,
       language,
     };
 
@@ -137,6 +142,7 @@ export async function fetchScriptFromLink(
               frames,
               provider,
               model,
+              effort,
             );
             return reviewed
               ? { scriptText: reviewed, frames, origin: "transcribedReviewed" }
@@ -177,6 +183,7 @@ export async function fetchScriptFromLink(
         frames,
         provider,
         model,
+        effort,
       );
       return cleaned
         ? { scriptText: cleaned, frames, origin: "captionsCleaned" }

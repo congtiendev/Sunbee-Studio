@@ -49,6 +49,8 @@ export interface PackInput {
   styleImages: string[];
   /** Reference photos of roster characters/objects (data URLs). */
   characterImages: { name: string; dataUrl: string }[];
+  /** Hand-edited replacement for the generated `huong-dan.md` text, if the user customized it. */
+  instructionsOverride?: string;
 }
 
 interface PackFile {
@@ -120,6 +122,13 @@ function styleMarkdown(skill: NonNullable<PackInput["skill"]>): string {
 }
 
 export function instructionsMarkdown(input: PackInput): string {
+  return input.instructionsOverride?.trim()
+    ? input.instructionsOverride
+    : generatedInstructionsMarkdown(input);
+}
+
+/** The computed instructions text, ignoring any hand-edited override — what "reset to default" restores. */
+export function generatedInstructionsMarkdown(input: PackInput): string {
   const { styleFiles, characterFiles } = plan(input);
   const promptsFile = promptsFileName(input.range);
   const attachments = [
@@ -153,7 +162,17 @@ ${attachments.filter(Boolean).join("\n")}
 6. Hành động phải HỢP LÝ như người thật: tư thế, hướng nhìn, cách cầm/dùng đồ vật đúng đời thực — vd. đang xem điện thoại thì màn hình quay về phía nhân vật (người xem thấy mặt lưng máy), nhìn camera nói chuyện thì điện thoại hạ xuống/cầm hờ, không chĩa màn hình vào ống kính, trừ khi yêu cầu ghi rõ là chìa màn hình cho người xem. Mọi khung của một sprite sheet giữ cùng cách cầm và cùng tay cầm. Nếu yêu cầu có chỗ vô lý thì vẽ theo cách hợp lý.
 7. Không tự thêm chữ, logo hay watermark nếu yêu cầu không ghi.
 8. Giữ thống nhất phong cách và ngoại hình nhân vật giữa mọi ảnh.
-9. Làm xong MỘT CẢNH thì dừng lại; khi tôi nhắn “tiếp” thì làm cảnh kế tiếp.
+9. Làm xong MỘT CẢNH thì dừng lại; khi tôi nhắn “tiếp” thì làm cảnh kế tiếp. Nếu tôi nhắn “duyệt” thì làm LUÔN MỘT LẦN tất cả các cảnh còn lại, không dừng lại hỏi giữa các cảnh nữa.
+
+## Sau khi xong toàn bộ ảnh
+
+Khi đã tạo xong HẾT các ảnh của cảnh ${input.range.from}–${input.range.to} (hết mọi lượt “tiếp”):
+
+1. Đặt tên mỗi file ảnh BẮT ĐẦU bằng đúng MÃ của nó, giữ đuôi ảnh (vd. \`p1.png\`, \`p12.png\`, \`p1-canh-2.png\` đều được, chỉ cần bắt đầu bằng mã).
+2. Tạo MỘT thư mục riêng cho MỖI CẢNH (vd. \`canh-4\`, \`canh-5\`…), rồi xếp đúng các ảnh thuộc cảnh đó vào thư mục của nó.
+3. Nén toàn bộ các thư mục cảnh đó thành MỘT file \`.zip\` duy nhất và đưa file zip đó cho tôi tải xuống.
+
+Tôi sẽ tải file zip này lên để nhập ảnh vào dự án.
 
 Bắt đầu với **${firstSceneLabel(input)}**.
 `;
@@ -256,9 +275,20 @@ export function packFileList(input: PackInput): string[] {
   ];
 }
 
-/** Instructions + prompt list as one text, for pasting when the style already lives in a ChatGPT Project. */
+/**
+ * Everything the pack holds that can be plain text — instructions, the
+ * skill's methodology, and the prompt list — for pasting straight into a
+ * chat. The only things it can't carry are the reference *images*
+ * themselves (style samples, character photos): those still need the zip,
+ * or already living in a ChatGPT Project this is pasted into.
+ */
 export function packAsText(input: PackInput): string {
-  return `${instructionsMarkdown(input)}\n---\n\n${promptsMarkdown(input)}`;
+  const parts = [
+    instructionsMarkdown(input),
+    input.skill && styleMarkdown(input.skill),
+    promptsMarkdown(input),
+  ];
+  return parts.filter(Boolean).join("\n---\n\n");
 }
 
 export async function buildPackZip(input: PackInput): Promise<Blob> {

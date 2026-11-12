@@ -1,6 +1,14 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,14 +47,17 @@ function errorMessage(err: unknown): string {
 }
 
 /** Images from the dropped/picked files, zips unpacked, oldest first. */
-async function collectImages(files: File[]): Promise<Omit<IncomingImage, "id" | "previewUrl">[]> {
+async function collectImages(
+  files: File[],
+): Promise<Omit<IncomingImage, "id" | "previewUrl">[]> {
   const images: Omit<IncomingImage, "id" | "previewUrl">[] = [];
   for (const file of files) {
     if (/\.zip$/i.test(file.name) || file.type.includes("zip")) {
       const zip = await JSZip.loadAsync(file);
       for (const entry of Object.values(zip.files)) {
         const name = entry.name.split("/").pop() ?? entry.name;
-        if (entry.dir || !IMAGE_FILE.test(name) || name.startsWith(".")) continue;
+        if (entry.dir || !IMAGE_FILE.test(name) || name.startsWith("."))
+          continue;
         const blob = await entry.async("blob");
         images.push({
           name,
@@ -58,7 +69,9 @@ async function collectImages(files: File[]): Promise<Omit<IncomingImage, "id" | 
       images.push({ name: file.name, file, order: file.lastModified });
     }
   }
-  return images.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  return images.sort(
+    (a, b) => a.order - b.order || a.name.localeCompare(b.name),
+  );
 }
 
 /**
@@ -86,16 +99,38 @@ export default function BatchImageImport({
   const [choice, setChoice] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [summary, setSummary] = useState<{ assigned: number; unmatched: number } | null>(null);
+  const [summary, setSummary] = useState<{
+    assigned: number;
+    skipped: number;
+    unmatched: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Codes an incoming batch would overwrite — asked about once per batch,
+  // never per file, so one zip with a few repeats isn't a wall of dialogs.
+  const [overwritePrompt, setOverwritePrompt] = useState<string[] | null>(null);
+  const overwriteResolver = useRef<((overwrite: boolean) => void) | null>(null);
+  const confirmOverwrite = (keys: string[]): Promise<boolean> =>
+    new Promise((resolve) => {
+      overwriteResolver.current = resolve;
+      setOverwritePrompt(keys);
+    });
+  const resolveOverwrite = (overwrite: boolean) => {
+    overwriteResolver.current?.(overwrite);
+    overwriteResolver.current = null;
+    setOverwritePrompt(null);
+  };
 
   // Free the previews still waiting when the dialog goes away.
   const pendingRef = useRef(pending);
   useEffect(() => {
     pendingRef.current = pending;
   }, [pending]);
-  useEffect(() => () => pendingRef.current.forEach((img) => URL.revokeObjectURL(img.previewUrl)), []);
+  useEffect(
+    () => () =>
+      pendingRef.current.forEach((img) => URL.revokeObjectURL(img.previewUrl)),
+    [],
+  );
 
   const missing = targets.filter((target) => !imported.has(target.key));
   const labelOf = new Map(targets.map((target) => [target.key, target.label]));
@@ -126,19 +161,46 @@ export default function BatchImageImport({
     run(async () => {
       const images = await collectImages(files);
       const known = new Set(targets.map((target) => target.key));
-      let assigned = 0;
+      const matched: {
+        image: Omit<IncomingImage, "id" | "previewUrl">;
+        key: string;
+      }[] = [];
       const unmatched: IncomingImage[] = [];
       for (const image of images) {
         const key = CODE.exec(image.name)?.[1]?.toLowerCase();
-        if (key && known.has(key)) {
-          await onAssign(key, image.file);
-          assigned++;
-        } else {
-          unmatched.push({ ...image, id: crypto.randomUUID(), previewUrl: URL.createObjectURL(image.file) });
-        }
+        if (key && known.has(key)) matched.push({ image, key });
+        else
+          unmatched.push({
+            ...image,
+            id: crypto.randomUUID(),
+            previewUrl: URL.createObjectURL(image.file),
+          });
       }
-      setPending((prev) => [...prev, ...unmatched].sort((a, b) => a.order - b.order));
-      setSummary({ assigned, unmatched: unmatched.length });
+      // Ask once if this batch would replace an image that's already there;
+      // declining still imports everything else, just skips those codes.
+      const wouldOverwrite = [
+        ...new Set(
+          matched.filter((m) => imported.has(m.key)).map((m) => m.key),
+        ),
+      ];
+      const overwrite =
+        wouldOverwrite.length === 0 || (await confirmOverwrite(wouldOverwrite));
+
+      let assigned = 0;
+      let skipped = 0;
+      for (const { image, key } of matched) {
+        if (!overwrite && imported.has(key)) {
+          skipped++;
+          continue;
+        }
+        await onAssign(key, image.file);
+        assigned++;
+        onDone();
+      }
+      setPending((prev) =>
+        [...prev, ...unmatched].sort((a, b) => a.order - b.order),
+      );
+      setSummary({ assigned, skipped, unmatched: unmatched.length });
     });
 
   const assignOne = (image: IncomingImage, key: string) =>
@@ -150,7 +212,9 @@ export default function BatchImageImport({
   /** Pairs waiting images (oldest first) with the codes still missing an image (p1 first). */
   const assignInOrder = () =>
     run(async () => {
-      const pairs = pending.slice(0, missing.length).map((image, i) => [image, missing[i]!.key] as const);
+      const pairs = pending
+        .slice(0, missing.length)
+        .map((image, i) => [image, missing[i]!.key] as const);
       const done: string[] = [];
       try {
         for (const [image, key] of pairs) {
@@ -198,9 +262,17 @@ export default function BatchImageImport({
             : "border-gray-300 hover:border-brand-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:border-brand-500/50 dark:hover:bg-white/[0.02]",
         )}
       >
-        {busy ? <Spinner /> : <UploadIcon className="size-5 text-gray-400 dark:text-gray-500" />}
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t("importButton")}</span>
-        <span className="text-[11px] text-gray-500 dark:text-gray-400">{t("importHint")}</span>
+        {busy ? (
+          <Spinner />
+        ) : (
+          <UploadIcon className="size-5 text-gray-400 dark:text-gray-500" />
+        )}
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t("importButton")}
+        </span>
+        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+          {t("importHint")}
+        </span>
       </button>
 
       {error && (
@@ -210,7 +282,12 @@ export default function BatchImageImport({
       )}
       {summary && (
         <p className="text-xs text-gray-600 dark:text-gray-400">
-          {t("importDone", { assigned: summary.assigned, unmatched: summary.unmatched })}
+          {t("importDone", {
+            assigned: summary.assigned,
+            unmatched: summary.unmatched,
+          })}
+          {summary.skipped > 0 &&
+            ` ${t("importSkipped", { count: summary.skipped })}`}
         </p>
       )}
 
@@ -249,24 +326,39 @@ export default function BatchImageImport({
                     className="size-11 shrink-0 rounded-lg border border-gray-200 object-cover dark:border-gray-700"
                   />
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className="truncate text-[11px] text-gray-500 dark:text-gray-400" title={image.name}>
+                    <p
+                      className="truncate text-[11px] text-gray-500 dark:text-gray-400"
+                      title={image.name}
+                    >
                       {image.name}
                     </p>
                     <div className="flex items-center gap-1.5">
                       <Select
                         value={selected}
                         onValueChange={(value) =>
-                          setChoice((prev) => ({ ...prev, [image.id]: value as string }))
+                          setChoice((prev) => ({
+                            ...prev,
+                            [image.id]: value as string,
+                          }))
                         }
                       >
                         <SelectTrigger className="h-8 min-w-0 flex-1 text-xs">
                           <SelectValue placeholder={t("pickCode")}>
-                            {() => (selected ? (labelOf.get(selected) ?? selected) : t("pickCode"))}
+                            {() =>
+                              selected
+                                ? (labelOf.get(selected) ?? selected)
+                                : t("pickCode")
+                            }
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {/* Codes still without an image first. */}
-                          {[...missing, ...targets.filter((target) => imported.has(target.key))].map((target) => (
+                          {[
+                            ...missing,
+                            ...targets.filter((target) =>
+                              imported.has(target.key),
+                            ),
+                          ].map((target) => (
                             <SelectItem key={target.key} value={target.key}>
                               {target.label}
                               {imported.has(target.key) ? " ✓" : ""}
@@ -302,6 +394,37 @@ export default function BatchImageImport({
           </ul>
         </div>
       )}
+
+      <Dialog
+        open={overwritePrompt !== null}
+        onOpenChange={(open) => {
+          if (!open) resolveOverwrite(false);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("overwriteTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("overwriteDescription", {
+                count: overwritePrompt?.length ?? 0,
+                codes: (overwritePrompt ?? []).join(", "),
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => resolveOverwrite(false)}
+            >
+              {t("overwriteSkip")}
+            </Button>
+            <Button type="button" onClick={() => resolveOverwrite(true)}>
+              {t("overwriteConfirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

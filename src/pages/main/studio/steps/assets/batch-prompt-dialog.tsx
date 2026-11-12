@@ -8,7 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import AiSettingsFields from "@/components/shared/ai-settings-fields";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import type { AiEffort } from "@/components/shared/effort-field";
 import {
   InputGroup,
   InputGroupAddon,
@@ -18,6 +20,7 @@ import {
 import { Progress } from "@/components/ui/progress-bar";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/i18n";
 import {
   BrushIcon,
@@ -38,14 +41,23 @@ import type {
   ScriptScene,
   FrameRatio,
   ImageLayer,
+  SceneResource,
   SceneShot,
   ScriptAnalysisRecord,
   StyleTemplate,
 } from "@shared/types";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import BatchImageImport from "./batch-image-import";
 import {
   buildPackZip,
+  generatedInstructionsMarkdown,
   instructionsMarkdown,
   packAsText,
   packFileList,
@@ -55,6 +67,10 @@ import {
 import { blobToDataUrl, sceneContextOf } from "./scene-context";
 import { trimToSubject } from "./trim-image";
 import { describeShotForAi, shotOf } from "@shared/shots";
+import {
+  defaultModelFor,
+  type AnalyzeProvider,
+} from "@shared/script-cost-estimate";
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -98,7 +114,11 @@ function groupRequiredAssets(
     // images are made in (what "assign in order" on import relies on).
     const inShotOrder = scene.requiredAssets
       .map((asset, assetIndex) => ({ asset, assetIndex }))
-      .sort((a, b) => (a.asset.shot ?? Infinity) - (b.asset.shot ?? Infinity) || a.assetIndex - b.assetIndex);
+      .sort(
+        (a, b) =>
+          (a.asset.shot ?? Infinity) - (b.asset.shot ?? Infinity) ||
+          a.assetIndex - b.assetIndex,
+      );
     inShotOrder.forEach(({ asset, assetIndex }) => {
       if (asset.type !== "image" && asset.type !== "graphic") return;
       const normalized = asset.description.trim().toLowerCase();
@@ -109,8 +129,12 @@ function groupRequiredAssets(
         return;
       }
       const entries = [
-        ...characterRoster.filter((c) => normalized.includes(c.name.toLowerCase())),
-        ...objectRoster.filter((o) => normalized.includes(o.name.toLowerCase())),
+        ...characterRoster.filter((c) =>
+          normalized.includes(c.name.toLowerCase()),
+        ),
+        ...objectRoster.filter((o) =>
+          normalized.includes(o.name.toLowerCase()),
+        ),
       ];
       counter += 1;
       byNormalized.set(normalized, {
@@ -135,17 +159,27 @@ function groupRequiredAssets(
 const promptKeyOf = (description: string) => description.trim().toLowerCase();
 
 /** Fills in prompts saved earlier for this video and frame (matched by description). */
-function withSavedPrompts(groups: PromptGroup[], saved: ReadonlyMap<string, SavedPrompt>): PromptGroup[] {
+function withSavedPrompts(
+  groups: PromptGroup[],
+  saved: ReadonlyMap<string, SavedPrompt>,
+): PromptGroup[] {
   return groups.map((group) => {
     if (group.prompt) return group;
     const found = saved.get(promptKeyOf(group.description));
     // A hand-picked layer the saved prompt wasn't written for needs a new one.
-    if (!found || (group.layerChosen && found.layer !== group.layer)) return group;
-    return { ...group, prompt: found.prompt, layer: found.layer ?? group.layer };
+    if (!found || (group.layerChosen && found.layer !== group.layer))
+      return group;
+    return {
+      ...group,
+      prompt: found.prompt,
+      layer: found.layer ?? group.layer,
+    };
   });
 }
 
-function libraryCandidateOf(asset: Awaited<ReturnType<typeof apiClient.assets.library.upload>>): AssetCandidate {
+function libraryCandidateOf(
+  asset: Awaited<ReturnType<typeof apiClient.assets.library.upload>>,
+): AssetCandidate {
   const fileUrl = apiClient.documents.fileUrl(asset.fileId);
   return {
     sourceKey: "library",
@@ -154,7 +188,10 @@ function libraryCandidateOf(asset: Awaited<ReturnType<typeof apiClient.assets.li
     title: asset.name,
     previewUrl: asset.mediaType === "image" ? fileUrl : undefined,
     url: fileUrl,
-    description: [asset.description, asset.tags.length ? `#${asset.tags.join(" #")}` : ""]
+    description: [
+      asset.description,
+      asset.tags.length ? `#${asset.tags.join(" #")}` : "",
+    ]
       .filter(Boolean)
       .join(" "),
   };
@@ -164,6 +201,8 @@ function libraryCandidateOf(asset: Awaited<ReturnType<typeof apiClient.assets.li
 const CHUNK_SIZE = 20;
 /** Prompts written per request — small enough for the progress bar to move and "Stop" to answer quickly. */
 const PROMPTS_PER_REQUEST = 3;
+/** Scenes per client request when planning shots & layers — matches the server's own AI-call batching, for smooth progress. */
+const SPLIT_CHUNK_SCENES = 4;
 
 /** Numbered step of the workflow panel: ① range → ② prompts → ③ import. */
 function WorkflowStep({
@@ -193,7 +232,9 @@ function WorkflowStep({
         >
           {done ? <CheckIcon className="size-3" /> : number}
         </span>
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-white/90">{title}</h3>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white/90">
+          {title}
+        </h3>
         {action && <div className="ms-auto">{action}</div>}
       </div>
       <div className="space-y-3">{children}</div>
@@ -216,6 +257,8 @@ interface BatchPromptDialogProps {
   frameRatio: FrameRatio;
   /** The analyzed version `scenes` come from — what "split layers" rewrites. */
   versionId: string;
+  /** The video's actual saved picks — which codes already have a real image, not just ones imported this dialog session. */
+  selections: SceneResource[];
   /** After "split layers" saved a new version. */
   onScenesChanged: (version: ScriptAnalysisRecord) => void;
   onImported: () => void;
@@ -231,6 +274,7 @@ export default function BatchPromptDialog({
   graphicsSkill,
   referenceImages,
   frameRatio,
+  selections,
   versionId,
   onScenesChanged,
   onImported,
@@ -253,8 +297,10 @@ export default function BatchPromptDialog({
   const scenesIn = (r: { from: number; to: number }) =>
     scenes.filter((s) => s.index >= r.from && s.index <= r.to);
   const sceneCount = scenesIn(range).length;
-  const draftChanged = fromDraft !== String(range.from) || toDraft !== String(range.to);
-  const isWholeRange = !draftChanged && range.from === minScene && range.to === maxScene;
+  const draftChanged =
+    fromDraft !== String(range.from) || toDraft !== String(range.to);
+  const isWholeRange =
+    !draftChanged && range.from === minScene && range.to === maxScene;
 
   // Ready-made batches for long scripts.
   const chunks: { from: number; to: number }[] = [];
@@ -269,14 +315,19 @@ export default function BatchPromptDialog({
   );
   // Prompts are saved server-side as soon as they're written; these are the
   // ones already in the DB for this video, re-applied whenever the list is rebuilt.
-  const [savedPrompts, setSavedPrompts] = useState<ReadonlyMap<string, SavedPrompt>>(() => new Map());
+  const [savedPrompts, setSavedPrompts] = useState<
+    ReadonlyMap<string, SavedPrompt>
+  >(() => new Map());
   const applySavedPrompts = useCallback(
     (records: AssetPromptRecord[]) => {
       // Only prompts written for this frame (older ones, written for a square frame, have none).
       const saved = new Map(
         records
           .filter((r) => r.frameRatio === frameRatio)
-          .map((r) => [promptKeyOf(r.description), { prompt: r.prompt, layer: r.layer }]),
+          .map((r) => [
+            promptKeyOf(r.description),
+            { prompt: r.prompt, layer: r.layer },
+          ]),
       );
       setSavedPrompts(saved);
       setGroups((prev) => withSavedPrompts(prev, saved));
@@ -299,69 +350,200 @@ export default function BatchPromptDialog({
       active = false;
     };
   }, [videoId, applySavedPrompts]);
-  /** Code → preview URL of the image imported for it (this range). */
-  const [imported, setImported] = useState<ReadonlyMap<string, string>>(() => new Map());
+  /** Real picks by slot ("sceneIndex:assetIndex") — the source of truth for what already has an image. */
+  const pickedBySlot = useMemo(
+    () =>
+      new Map(selections.map((s) => [`${s.sceneIndex}:${s.assetIndex}`, s])),
+    [selections],
+  );
+  /**
+   * Code → preview URL of the image it actually has saved, derived from the
+   * video's real picks (not a per-dialog-session guess) — so it's still
+   * accurate after closing and reopening this dialog, or switching range
+   * and back.
+   */
+  const imported = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const group of groups) {
+      const picks = group.slots.map((slot) =>
+        pickedBySlot.get(`${slot.sceneIndex}:${slot.assetIndex}`),
+      );
+      if (picks.length > 0 && picks.every((pick) => pick)) {
+        const candidate = picks[0]!.candidate;
+        map.set(group.key, candidate.previewUrl ?? candidate.url);
+      }
+    }
+    return map;
+  }, [groups, pickedBySlot]);
   /** Code → the untrimmed file, for items whose import was cropped — so "use the original" can undo it. */
-  const [originals, setOriginals] = useState<ReadonlyMap<string, File>>(() => new Map());
+  const [originals, setOriginals] = useState<ReadonlyMap<string, File>>(
+    () => new Map(),
+  );
   const [restoring, setRestoring] = useState<string | null>(null);
   const [confirmRewrite, setConfirmRewrite] = useState(false);
   const [confirmSplit, setConfirmSplit] = useState(false);
   const [splitting, setSplitting] = useState(false);
   const [splitResult, setSplitResult] = useState<number[] | null>(null);
+  const [splitProgress, setSplitProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  const stopSplitRef = useRef(false);
 
   // A new version (after "split layers") brings new scenes: rebuild the list
   // for the same range, during render rather than in an effect.
   const [scenesShown, setScenesShown] = useState(scenes);
   if (scenesShown !== scenes) {
     setScenesShown(scenes);
-    setGroups(withSavedPrompts(groupRequiredAssets(scenesIn(range), characterRoster, objectRoster), savedPrompts));
-    setImported(new Map());
+    setGroups(
+      withSavedPrompts(
+        groupRequiredAssets(scenesIn(range), characterRoster, objectRoster),
+        savedPrompts,
+      ),
+    );
     setOriginals(new Map());
   }
 
   const imageAssetsInRange = scenesIn(range).flatMap((scene) =>
-    scene.requiredAssets.filter((asset) => asset.type === "image" || asset.type === "graphic"),
+    scene.requiredAssets.filter(
+      (asset) => asset.type === "image" || asset.type === "graphic",
+    ),
   );
   // Planned = broken into shots, every image layered and tied to a shot.
-  const layeredCount = imageAssetsInRange.filter((asset) => asset.layer && asset.shot).length;
+  const layeredCount = imageAssetsInRange.filter(
+    (asset) => asset.layer && asset.shot,
+  ).length;
   const allLayered =
     imageAssetsInRange.length > 0 &&
     layeredCount === imageAssetsInRange.length &&
     scenesIn(range).every((scene) => (scene.shots?.length ?? 0) > 0);
 
-  /** Has the AI split this range's moving subjects into background + per-state cutouts (new version). */
+  /**
+   * Has the AI split this range's moving subjects into background +
+   * per-state cutouts — a few scenes per call (matching the server's own AI-
+   * call batching) so progress shows as it goes and a long run can be
+   * stopped partway; each call saves to the same version in place, so
+   * stopping just leaves the rest of the range unplanned, not undone.
+   */
   const splitLayers = async () => {
+    const sceneIndices = scenesIn(range).map((s) => s.index);
+    if (sceneIndices.length === 0) return;
     setSplitting(true);
     setError(null);
     setSplitResult(null);
+    setSplitProgress({ done: 0, total: sceneIndices.length });
+    stopSplitRef.current = false;
+    const changed: number[] = [];
     try {
-      const { version, changedScenes } = await apiClient.assets.splitLayers({
-        videoId,
-        versionId,
-        fromScene: range.from,
-        toScene: range.to,
-      });
-      setSplitResult(changedScenes);
-      if (changedScenes.length > 0) {
-        onScenesChanged(version);
-        onImported();
+      for (
+        let i = 0;
+        i < sceneIndices.length && !stopSplitRef.current;
+        i += SPLIT_CHUNK_SCENES
+      ) {
+        const chunk = sceneIndices.slice(i, i + SPLIT_CHUNK_SCENES);
+        const { version, changedScenes } = await apiClient.assets.splitLayers({
+          videoId,
+          versionId,
+          fromScene: chunk[0]!,
+          toScene: chunk[chunk.length - 1]!,
+          provider: aiProvider,
+          model: aiModel,
+          effort: aiEffort,
+        });
+        changed.push(...changedScenes);
+        if (changedScenes.length > 0) {
+          onScenesChanged(version);
+          onImported();
+        }
+        setSplitProgress({
+          done: Math.min(i + chunk.length, sceneIndices.length),
+          total: sceneIndices.length,
+        });
       }
+      setSplitResult(changed);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
       setSplitting(false);
+      setSplitProgress(null);
     }
   };
   const [tab, setTab] = useState<PromptGroup["category"]>("character");
   const [showInstructions, setShowInstructions] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [packing, setPacking] = useState(false);
+  const [copyingAll, setCopyingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // Prompts are long English paragraphs — collapsed by default (one card per
+  // group, hundreds of groups) so the list stays scannable.
+  const [expandedPrompts, setExpandedPrompts] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const togglePromptExpanded = (key: string) =>
+    setExpandedPrompts((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  // AI provider/model/effort for "Phân shot" and "Tạo prompt" — always
+  // user-picked, Claude by default (never a silent OpenAI fallback), limited
+  // to whichever keys are actually set in Settings.
+  const [aiProvider, setAiProviderRaw] = useState<AnalyzeProvider>("claude");
+  const [aiModel, setAiModel] = useState(defaultModelFor("claude"));
+  // "Tạo prompt" historically ran at low effort (a short rewrite, not worth
+  // more); kept as the shared default so switching providers/effort here
+  // never costs more by default than before, only when chosen.
+  const [aiEffort, setAiEffort] = useState<AiEffort>("low");
+  const [availableAiProviders, setAvailableAiProviders] = useState<
+    Record<AnalyzeProvider, boolean>
+  >({ openai: true, claude: true });
+  const setAiProvider = (next: AnalyzeProvider) => {
+    setAiProviderRaw(next);
+    setAiModel(defaultModelFor(next));
+  };
+
+  // Hand-edited replacement for the generated instructions, shared by every
+  // pack (an account setting, not tied to this video) — null until loaded or
+  // never customized, in which case the generated text is used as-is.
+  const [instructionsOverride, setInstructionsOverride] = useState<
+    string | null
+  >(null);
+  const [instructionsDraft, setInstructionsDraft] = useState<string | null>(
+    null,
+  );
+  const [savingInstructions, setSavingInstructions] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void apiClient.settings.get().then((settings) => {
+      if (!active) return;
+      if (settings.assetsPackInstructions) {
+        setInstructionsOverride(settings.assetsPackInstructions);
+      }
+      setAvailableAiProviders({
+        openai: Boolean(settings.openaiApiKey),
+        claude: Boolean(settings.anthropicApiKey),
+      });
+      // Prefer Claude by default, but fall back to whichever key is actually
+      // configured if only one of them is.
+      if (!settings.anthropicApiKey && settings.openaiApiKey) {
+        setAiProvider("openai");
+      } else if (!settings.openaiApiKey && settings.anthropicApiKey) {
+        setAiProvider("claude");
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const clampScene = (text: string, fallback: number) => {
     const n = Number.parseInt(text, 10);
-    return Number.isFinite(n) ? Math.min(Math.max(n, minScene), maxScene) : fallback;
+    return Number.isFinite(n)
+      ? Math.min(Math.max(n, minScene), maxScene)
+      : fallback;
   };
 
   /** Rebuilds the list for a scene range (codes restart at p1, so prompts and imports reset). */
@@ -372,13 +554,23 @@ export default function BatchPromptDialog({
     setFromDraft(String(r.from));
     setToDraft(String(r.to));
     setRange(r);
-    setGroups(withSavedPrompts(groupRequiredAssets(scenesIn(r), characterRoster, objectRoster), savedPrompts));
-    setImported(new Map());
+    setGroups(
+      withSavedPrompts(
+        groupRequiredAssets(scenesIn(r), characterRoster, objectRoster),
+        savedPrompts,
+      ),
+    );
     setOriginals(new Map());
   };
 
-  const characterGroups = useMemo(() => groups.filter((g) => g.category === "character"), [groups]);
-  const backgroundGroups = useMemo(() => groups.filter((g) => g.category === "background"), [groups]);
+  const characterGroups = useMemo(
+    () => groups.filter((g) => g.category === "character"),
+    [groups],
+  );
+  const backgroundGroups = useMemo(
+    () => groups.filter((g) => g.category === "background"),
+    [groups],
+  );
   const generatedCount = groups.filter((g) => g.prompt).length;
   const allPromptsReady = groups.length > 0 && generatedCount === groups.length;
   const importedCount = groups.filter((g) => imported.has(g.key)).length;
@@ -386,7 +578,9 @@ export default function BatchPromptDialog({
   const activeTab =
     tab === "character" && characterGroups.length === 0
       ? "background"
-      : tab === "background" && backgroundGroups.length === 0 && characterGroups.length > 0
+      : tab === "background" &&
+          backgroundGroups.length === 0 &&
+          characterGroups.length > 0
         ? "character"
         : tab;
 
@@ -394,9 +588,40 @@ export default function BatchPromptDialog({
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
-      setTimeout(() => setCopiedKey((prev) => (prev === key ? null : prev)), 2000);
+      setTimeout(
+        () => setCopiedKey((prev) => (prev === key ? null : prev)),
+        2000,
+      );
     } catch (err) {
       console.error("Failed to copy text: ", err);
+    }
+  };
+
+  /**
+   * "Copy all" for pasting into a chat: the text only (instructions + skill
+   * methodology + prompt list). A clipboard write can hold only one item, so
+   * it can't carry the reference images alongside it the way the zip does —
+   * those still need the download-and-drag-in flow.
+   */
+  const copyAll = async () => {
+    setCopyingAll(true);
+    try {
+      await copy("__all__", packAsText(packInput()));
+    } finally {
+      setCopyingAll(false);
+    }
+  };
+
+  const saveInstructions = async (text: string) => {
+    setSavingInstructions(true);
+    try {
+      await apiClient.settings.set({ assetsPackInstructions: text });
+      setInstructionsOverride(text.trim() ? text : null);
+      setInstructionsDraft(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSavingInstructions(false);
     }
   };
 
@@ -405,8 +630,11 @@ export default function BatchPromptDialog({
     entries: (RecurringCharacter | RecurringObject)[],
   ): Promise<{ name: string; image: string }[]> => {
     const withPhoto = entries.filter(
-      (c): c is (RecurringCharacter | RecurringObject) & { appearanceImageFileId: string } =>
-        Boolean(c.appearanceImageFileId),
+      (
+        c,
+      ): c is (RecurringCharacter | RecurringObject) & {
+        appearanceImageFileId: string;
+      } => Boolean(c.appearanceImageFileId),
     );
     const images = await Promise.all(
       withPhoto.map(async (c) => {
@@ -435,14 +663,20 @@ export default function BatchPromptDialog({
    * the prompt-writing rules changed. Layers the AI picked are re-decided;
    * ones picked by hand are kept.
    */
-  const generateAll = async ({ rewrite = false }: { rewrite?: boolean } = {}) => {
+  const generateAll = async ({
+    rewrite = false,
+  }: { rewrite?: boolean } = {}) => {
     const pending = rewrite ? groups : groups.filter((g) => !g.prompt);
     if (pending.length === 0) return;
     setGenerating(true);
     setError(null);
     stopRef.current = false;
     try {
-      for (let i = 0; i < pending.length && !stopRef.current; i += PROMPTS_PER_REQUEST) {
+      for (
+        let i = 0;
+        i < pending.length && !stopRef.current;
+        i += PROMPTS_PER_REQUEST
+      ) {
         const batch = pending.slice(i, i + PROMPTS_PER_REQUEST);
         const items = await Promise.all(
           batch.map(async (g) => ({
@@ -456,16 +690,22 @@ export default function BatchPromptDialog({
           })),
         );
         const { results } = await apiClient.assets.imagePrompts({
-          provider: "claude",
+          provider: aiProvider,
+          model: aiModel,
+          effort: aiEffort,
           items,
           videoId,
           frameRatio,
         });
-        const byKey = new Map(results.map((r) => [r.key, { prompt: r.prompt, layer: r.layer }]));
+        const byKey = new Map(
+          results.map((r) => [r.key, { prompt: r.prompt, layer: r.layer }]),
+        );
         setGroups((prev) =>
           prev.map((g) => {
             const written = byKey.get(g.key);
-            return written ? { ...g, prompt: written.prompt, layer: written.layer } : g;
+            return written
+              ? { ...g, prompt: written.prompt, layer: written.layer }
+              : g;
           }),
         );
         setSavedPrompts((prev) => {
@@ -491,23 +731,35 @@ export default function BatchPromptDialog({
     setGroups((prev) =>
       prev.map((g) =>
         g.key === key
-          ? { ...g, layer, layerChosen: true, prompt: g.layer === layer ? g.prompt : undefined }
+          ? {
+              ...g,
+              layer,
+              layerChosen: true,
+              prompt: g.layer === layer ? g.prompt : undefined,
+            }
           : g,
       ),
     );
 
-  const sceneNumbers = (group: PromptGroup) => [...new Set(group.slots.map((s) => s.sceneIndex))];
+  const sceneNumbers = (group: PromptGroup) => [
+    ...new Set(group.slots.map((s) => s.sceneIndex)),
+  ];
   const sceneLabel = (group: PromptGroup) =>
-    group.slots.map((s) => tAssets("scene", { index: s.sceneIndex })).join(", ");
+    group.slots
+      .map((s) => tAssets("scene", { index: s.sceneIndex }))
+      .join(", ");
   /** "Cảnh 1, 5, 9" — one word, then the numbers (same scene listed once). */
-  const sceneList = (group: PromptGroup) => t("scenesList", { list: sceneNumbers(group).join(", ") });
+  const sceneList = (group: PromptGroup) =>
+    t("scenesList", { list: sceneNumbers(group).join(", ") });
 
   // ---------- the pack for ChatGPT ----------
 
   // Code order (p1, p2… = scene order) everywhere ChatGPT or "assign in order"
   // is involved — the tabs only split the list for reading.
   const orderedGroups = groups;
-  const packInput = (characterImages: PackInput["characterImages"] = []): PackInput => ({
+  const packInput = (
+    characterImages: PackInput["characterImages"] = [],
+  ): PackInput => ({
     range,
     frameRatio,
     groups: orderedGroups.map((group) => ({
@@ -525,11 +777,14 @@ export default function BatchPromptDialog({
     skill: graphicsSkill,
     styleImages: referenceImages,
     characterImages,
+    instructionsOverride: instructionsOverride ?? undefined,
   });
 
   // Every roster character/object named in this range, once.
   const rangeEntries = [
-    ...new Map(groups.flatMap((g) => g.entries).map((entry) => [entry.name, entry])).values(),
+    ...new Map(
+      groups.flatMap((g) => g.entries).map((entry) => [entry.name, entry]),
+    ).values(),
   ];
   // For listing the pack's files before the photos are fetched (names only).
   const characterPhotoPlaceholders = rangeEntries
@@ -540,10 +795,12 @@ export default function BatchPromptDialog({
     setPacking(true);
     setError(null);
     try {
-      const characterImages = (await characterImagesFor(rangeEntries)).map((c) => ({
-        name: c.name,
-        dataUrl: c.image,
-      }));
+      const characterImages = (await characterImagesFor(rangeEntries)).map(
+        (c) => ({
+          name: c.name,
+          dataUrl: c.image,
+        }),
+      );
       const input = packInput(characterImages);
       const url = URL.createObjectURL(await buildPackZip(input));
       const a = document.createElement("a");
@@ -560,7 +817,11 @@ export default function BatchPromptDialog({
 
   // ---------- bringing the images back ----------
 
-  const assignImage = async (key: string, file: File, options: { trim?: boolean } = {}) => {
+  const assignImage = async (
+    key: string,
+    file: File,
+    options: { trim?: boolean } = {},
+  ) => {
     const group = groups.find((g) => g.key === key);
     if (!group) return;
     // An object/character for compositing keeps no empty margin around it.
@@ -585,7 +846,6 @@ export default function BatchPromptDialog({
         candidate,
       });
     }
-    setImported((prev) => new Map(prev).set(key, candidate.previewUrl ?? candidate.url));
     setOriginals((prev) => {
       const next = new Map(prev);
       if (cut?.trimmed) next.set(key, file);
@@ -613,13 +873,19 @@ export default function BatchPromptDialog({
   const renderGroup = (group: PromptGroup) => {
     const image = imported.get(group.key);
     return (
-      <div key={group.key} className="flex gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+      <div
+        key={group.key}
+        className="flex gap-3 rounded-xl border border-gray-200 p-3 dark:border-gray-800"
+      >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <Badge variant="light" color="primary" size="sm">
               {group.key}
             </Badge>
-            <span className="min-w-0 truncate text-xs text-gray-500 dark:text-gray-400" title={sceneLabel(group)}>
+            <span
+              className="min-w-0 truncate text-xs text-gray-500 dark:text-gray-400"
+              title={sceneLabel(group)}
+            >
               {sceneList(group)}
             </span>
             <span
@@ -631,23 +897,44 @@ export default function BatchPromptDialog({
               )}
             >
               {(image || group.prompt) && <CheckIcon className="size-3" />}
-              {t(image ? "statusImage" : group.prompt ? "statusReady" : "statusPending")}
+              {t(
+                image
+                  ? "statusImage"
+                  : group.prompt
+                    ? "statusReady"
+                    : "statusPending",
+              )}
             </span>
             <Button
               type="button"
               size="icon-xs"
               variant="ghost"
               title={t("copyItem")}
-              onClick={() => void copy(group.key, `${group.description}\n${group.prompt ?? ""}`)}
+              onClick={() =>
+                void copy(
+                  group.key,
+                  `${group.description}\n${group.prompt ?? ""}`,
+                )
+              }
             >
-              {copiedKey === group.key ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+              {copiedKey === group.key ? (
+                <CheckIcon className="size-3.5" />
+              ) : (
+                <CopyIcon className="size-3.5" />
+              )}
             </Button>
           </div>
-          <p className="mt-1.5 text-sm text-gray-700 dark:text-gray-300">{group.description}</p>
+          <p className="mt-1.5 text-sm text-gray-700 dark:text-gray-300">
+            {group.description}
+          </p>
           {group.shot && (
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {tAssets("shotHeader", { order: group.shot.order, total: group.shotTotal ?? 1 })}:{" "}
-              {tScript(`shotSizes.${group.shot.shotSize}`)} · {tAssets(`shotAngles.${group.shot.angle}`)}
+              {tAssets("shotHeader", {
+                order: group.shot.order,
+                total: group.shotTotal ?? 1,
+              })}
+              : {tScript(`shotSizes.${group.shot.shotSize}`)} ·{" "}
+              {tAssets(`shotAngles.${group.shot.angle}`)}
             </p>
           )}
           {group.placement && (
@@ -671,17 +958,39 @@ export default function BatchPromptDialog({
                     : "border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:text-gray-400",
                 )}
               >
-                {layer === "scene" ? t("layer.scene", { ratio: frameRatio }) : t("layer.cutout")}
+                {layer === "scene"
+                  ? t("layer.scene", { ratio: frameRatio })
+                  : t("layer.cutout")}
               </button>
             ))}
             {!group.layer && (
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">{t("layerAuto")}</span>
+              <span className="text-[11px] text-gray-400 dark:text-gray-500">
+                {t("layerAuto")}
+              </span>
             )}
           </div>
           {group.prompt && (
-            <p className="mt-2 rounded-lg bg-gray-50 p-2 font-mono text-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-400">
-              {group.prompt}
-            </p>
+            <div className="mt-2 rounded-lg bg-gray-50 p-2 dark:bg-white/[0.03]">
+              <p
+                className={cn(
+                  "font-mono text-xs text-gray-600 dark:text-gray-400",
+                  !expandedPrompts.has(group.key) && "line-clamp-2",
+                )}
+              >
+                {group.prompt}
+              </p>
+              <button
+                type="button"
+                className="mt-1 text-[11px] font-medium text-brand-500 hover:underline dark:text-brand-400"
+                onClick={() => togglePromptExpanded(group.key)}
+              >
+                {t(
+                  expandedPrompts.has(group.key)
+                    ? "collapsePrompt"
+                    : "expandPrompt",
+                )}
+              </button>
+            </div>
           )}
         </div>
         {image && (
@@ -711,9 +1020,13 @@ export default function BatchPromptDialog({
 
   const renderList = (list: PromptGroup[]) =>
     list.length > 0 ? (
-      <div className="grid items-start gap-2 xl:grid-cols-2">{list.map(renderGroup)}</div>
+      <div className="grid items-start gap-2 xl:grid-cols-2">
+        {list.map(renderGroup)}
+      </div>
     ) : (
-      <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">{t("emptyTab")}</p>
+      <p className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        {t("emptyTab")}
+      </p>
     );
 
   return (
@@ -724,15 +1037,28 @@ export default function BatchPromptDialog({
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
+        <div className="flex flex-wrap items-end gap-3">
+          <AiSettingsFields
+            providerLabel={t("aiProviderLabel")}
+            provider={aiProvider}
+            onProviderChange={setAiProvider}
+            model={aiModel}
+            onModelChange={setAiModel}
+            availableProviders={availableAiProviders}
+            effort={aiEffort}
+            onEffortChange={setAiEffort}
+          />
+        </div>
+
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto custom-scrollbar md:flex-row md:overflow-hidden">
+        <div className="flex custom-scrollbar min-h-0 flex-1 flex-col gap-5 overflow-y-auto md:flex-row md:overflow-hidden">
           {/* Workflow: ① range → ② prompts → ③ pack → ④ import. */}
-          <aside className="shrink-0 md:w-80 md:overflow-y-auto md:pe-1 md:custom-scrollbar xl:w-96">
+          <aside className="shrink-0 md:custom-scrollbar md:w-80 md:overflow-y-auto md:pe-1 xl:w-96">
             <WorkflowStep
               number={1}
               title={t("stepRange")}
@@ -757,13 +1083,17 @@ export default function BatchPromptDialog({
               >
                 <InputGroup className="h-10 flex-1">
                   <InputGroupAddon>
-                    <InputGroupText className="text-xs">{t("rangeScenes")}</InputGroupText>
+                    <InputGroupText className="text-xs">
+                      {t("rangeScenes")}
+                    </InputGroupText>
                   </InputGroupAddon>
                   <InputGroupInput
                     inputMode="numeric"
                     aria-label={t("rangeFromLabel")}
                     value={fromDraft}
-                    onChange={(e) => setFromDraft(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) =>
+                      setFromDraft(e.target.value.replace(/\D/g, ""))
+                    }
                     className="px-1 text-center tabular-nums"
                   />
                   <span className="text-gray-400 rtl:rotate-180" aria-hidden>
@@ -773,7 +1103,9 @@ export default function BatchPromptDialog({
                     inputMode="numeric"
                     aria-label={t("rangeToLabel")}
                     value={toDraft}
-                    onChange={(e) => setToDraft(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) =>
+                      setToDraft(e.target.value.replace(/\D/g, ""))
+                    }
                     className="px-1 text-center tabular-nums"
                   />
                 </InputGroup>
@@ -787,7 +1119,10 @@ export default function BatchPromptDialog({
               {chunks.length > 0 && (
                 <div className="grid grid-cols-4 gap-1.5">
                   {chunks.map((chunk) => {
-                    const active = !draftChanged && chunk.from === range.from && chunk.to === range.to;
+                    const active =
+                      !draftChanged &&
+                      chunk.from === range.from &&
+                      chunk.to === range.to;
                     return (
                       <button
                         key={`${chunk.from}-${chunk.to}`}
@@ -809,12 +1144,20 @@ export default function BatchPromptDialog({
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
-                  <p className="text-base font-semibold text-gray-800 tabular-nums dark:text-white/90">{sceneCount}</p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">{t("statScenes")}</p>
+                  <p className="text-base font-semibold text-gray-800 tabular-nums dark:text-white/90">
+                    {sceneCount}
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {t("statScenes")}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/[0.03]">
-                  <p className="text-base font-semibold text-gray-800 tabular-nums dark:text-white/90">{groups.length}</p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">{t("statItems")}</p>
+                  <p className="text-base font-semibold text-gray-800 tabular-nums dark:text-white/90">
+                    {groups.length}
+                  </p>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                    {t("statItems")}
+                  </p>
                 </div>
               </div>
             </WorkflowStep>
@@ -831,23 +1174,50 @@ export default function BatchPromptDialog({
                 </span>
               }
             >
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("layersHint")}</p>
-              <Button
-                type="button"
-                variant={allLayered ? "outline" : "default"}
-                className="w-full gap-1.5"
-                disabled={splitting || generating || imageAssetsInRange.length === 0}
-                onClick={() => setConfirmSplit(true)}
-              >
-                {splitting ? <Spinner /> : <LayerIcon className="size-4" />}
-                {splitting
-                  ? t("splitting")
-                  : t(allLayered ? "splitAgain" : "splitLayers", { from: range.from, to: range.to })}
-              </Button>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {t("layersHint")}
+              </p>
+              {splitting && splitProgress && (
+                <Progress
+                  value={Math.round(
+                    (splitProgress.done / splitProgress.total) * 100,
+                  )}
+                />
+              )}
+              {splitting ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-1.5"
+                  onClick={() => {
+                    stopSplitRef.current = true;
+                  }}
+                >
+                  <Spinner />
+                  {t("stopSplitting")}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant={allLayered ? "outline" : "default"}
+                  className="w-full gap-1.5"
+                  disabled={generating || imageAssetsInRange.length === 0}
+                  onClick={() => setConfirmSplit(true)}
+                >
+                  <LayerIcon className="size-4" />
+                  {t(allLayered ? "splitAgain" : "splitLayers", {
+                    from: range.from,
+                    to: range.to,
+                  })}
+                </Button>
+              )}
               {splitResult && (
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   {splitResult.length > 0
-                    ? t("splitDone", { count: splitResult.length, scenes: splitResult.join(", ") })
+                    ? t("splitDone", {
+                        count: splitResult.length,
+                        scenes: splitResult.join(", "),
+                      })
                     : t("splitNoChange")}
                 </p>
               )}
@@ -855,7 +1225,10 @@ export default function BatchPromptDialog({
                 open={confirmSplit}
                 onOpenChange={setConfirmSplit}
                 title={t("splitConfirmTitle")}
-                description={t("splitConfirmDescription", { from: range.from, to: range.to })}
+                description={t("splitConfirmDescription", {
+                  from: range.from,
+                  to: range.to,
+                })}
                 confirmLabel={t("splitConfirm")}
                 onConfirm={async () => {
                   setConfirmSplit(false);
@@ -876,7 +1249,13 @@ export default function BatchPromptDialog({
                 </span>
               }
             >
-              <Progress value={groups.length ? Math.round((generatedCount / groups.length) * 100) : 0} />
+              <Progress
+                value={
+                  groups.length
+                    ? Math.round((generatedCount / groups.length) * 100)
+                    : 0
+                }
+              />
               {!allLayered && imageAssetsInRange.length > 0 && (
                 <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
                   {t("promptsNeedLayers")}
@@ -902,10 +1281,16 @@ export default function BatchPromptDialog({
                   disabled={groups.length === 0 || allPromptsReady}
                   onClick={() => void generateAll()}
                 >
-                  {allPromptsReady ? <CheckIcon className="size-4" /> : <SparkIcon className="size-4" />}
+                  {allPromptsReady ? (
+                    <CheckIcon className="size-4" />
+                  ) : (
+                    <SparkIcon className="size-4" />
+                  )}
                   {allPromptsReady
                     ? t("promptsReady")
-                    : t("generateMissing", { count: groups.length - generatedCount })}
+                    : t("generateMissing", {
+                        count: groups.length - generatedCount,
+                      })}
                 </Button>
               )}
               {generatedCount > 0 && !generating && (
@@ -921,14 +1306,18 @@ export default function BatchPromptDialog({
                 open={confirmRewrite}
                 onOpenChange={setConfirmRewrite}
                 title={t("rewriteAllTitle")}
-                description={t("rewriteAllDescription", { count: groups.length })}
+                description={t("rewriteAllDescription", {
+                  count: groups.length,
+                })}
                 confirmLabel={t("rewriteAllConfirm")}
                 onConfirm={async () => {
                   setConfirmRewrite(false);
                   void generateAll({ rewrite: true });
                 }}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("generateHint")}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {t("generateHint")}
+              </p>
             </WorkflowStep>
 
             <WorkflowStep number={4} title={t("stepPack")}>
@@ -949,7 +1338,9 @@ export default function BatchPromptDialog({
                 </p>
               )}
               {graphicsSkill && referenceImages.length === 0 && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400">{t("packSkillNoImages")}</p>
+                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  {t("packSkillNoImages")}
+                </p>
               )}
 
               {/* Exactly what the zip will hold, so nothing is a surprise after unzipping. */}
@@ -960,13 +1351,20 @@ export default function BatchPromptDialog({
                     cutouts: groups.filter((g) => g.layer === "cutout").length,
                   })}
                 </p>
-                <p className="mt-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">{t("packContents")}</p>
+                <p className="mt-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                  {t("packContents")}
+                </p>
                 <ul className="mt-1 space-y-0.5">
-                  {packFileList(packInput(characterPhotoPlaceholders)).map((file) => (
-                    <li key={file} className="truncate font-mono text-[11px] text-gray-700 dark:text-gray-300">
-                      {file}
-                    </li>
-                  ))}
+                  {packFileList(packInput(characterPhotoPlaceholders)).map(
+                    (file) => (
+                      <li
+                        key={file}
+                        className="font-mono truncate text-[11px] text-gray-700 dark:text-gray-300"
+                      >
+                        {file}
+                      </li>
+                    ),
+                  )}
                 </ul>
               </div>
 
@@ -989,16 +1387,24 @@ export default function BatchPromptDialog({
                   className="h-auto"
                   title={t("copyAll")}
                   aria-label={t("copyAll")}
-                  disabled={generating || !allPromptsReady}
-                  onClick={() => void copy("__all__", packAsText(packInput()))}
+                  disabled={generating || copyingAll || !allPromptsReady}
+                  onClick={() => void copyAll()}
                 >
-                  {copiedKey === "__all__" ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
+                  {copyingAll ? (
+                    <Spinner className="size-4" />
+                  ) : copiedKey === "__all__" ? (
+                    <CheckIcon className="size-4" />
+                  ) : (
+                    <CopyIcon className="size-4" />
+                  )}
                 </Button>
               </div>
               {!allPromptsReady && groups.length > 0 ? (
                 <div className="space-y-1">
                   <p className="text-xs text-amber-600 dark:text-amber-400">
-                    {t("packNeedsPrompts", { count: groups.length - generatedCount })}
+                    {t("packNeedsPrompts", {
+                      count: groups.length - generatedCount,
+                    })}
                   </p>
                   <button
                     type="button"
@@ -1010,7 +1416,9 @@ export default function BatchPromptDialog({
                   </button>
                 </div>
               ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t("packHint")}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {t("packHint")}
+                </p>
               )}
 
               <button
@@ -1019,13 +1427,70 @@ export default function BatchPromptDialog({
                 onClick={() => setShowInstructions((v) => !v)}
               >
                 {t(showInstructions ? "hideInstructions" : "showInstructions")}
-                <ChevronDownIcon className={cn("size-3.5 transition-transform", showInstructions && "rotate-180")} />
+                <ChevronDownIcon
+                  className={cn(
+                    "size-3.5 transition-transform",
+                    showInstructions && "rotate-180",
+                  )}
+                />
               </button>
-              {showInstructions && (
-                <pre className="max-h-72 overflow-y-auto rounded-lg border border-brand-100 bg-brand-50/50 p-2.5 font-sans text-xs whitespace-pre-wrap text-gray-700 custom-scrollbar dark:border-brand-500/20 dark:bg-brand-500/5 dark:text-gray-300">
-                  {instructionsMarkdown(packInput())}
-                </pre>
-              )}
+              {showInstructions &&
+                (() => {
+                  const text =
+                    instructionsDraft ?? instructionsMarkdown(packInput());
+                  const dirty =
+                    instructionsDraft !== null &&
+                    instructionsDraft !==
+                      (instructionsOverride ??
+                        generatedInstructionsMarkdown(packInput()));
+                  return (
+                    <div className="space-y-1.5">
+                      <Textarea
+                        value={text}
+                        onChange={(e) => setInstructionsDraft(e.target.value)}
+                        rows={14}
+                        className="font-sans max-h-72 text-xs whitespace-pre-wrap"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          disabled={savingInstructions || !dirty}
+                          onClick={() => void saveInstructions(text)}
+                        >
+                          {savingInstructions && <Spinner />}
+                          {t("saveInstructions")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => void copy("__instructions__", text)}
+                        >
+                          {copiedKey === "__instructions__" ? (
+                            <CheckIcon className="size-3.5" />
+                          ) : (
+                            <CopyIcon className="size-3.5" />
+                          )}
+                          {t("copyItem")}
+                        </Button>
+                        {(instructionsOverride ||
+                          instructionsDraft !== null) && (
+                          <button
+                            type="button"
+                            className="text-xs text-gray-500 underline-offset-2 hover:text-brand-500 hover:underline dark:text-gray-400"
+                            onClick={() => void saveInstructions("")}
+                          >
+                            {t("resetInstructions")}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
             </WorkflowStep>
 
             <WorkflowStep
@@ -1034,7 +1499,10 @@ export default function BatchPromptDialog({
               done={groups.length > 0 && importedCount === groups.length}
               action={
                 <span className="text-xs text-gray-500 tabular-nums dark:text-gray-400">
-                  {t("importedCount", { done: importedCount, total: groups.length })}
+                  {t("importedCount", {
+                    done: importedCount,
+                    total: groups.length,
+                  })}
                 </span>
               }
             >
@@ -1055,14 +1523,21 @@ export default function BatchPromptDialog({
           {/* The requests themselves. */}
           <div className="flex min-w-0 flex-1 flex-col md:min-h-0 md:border-s md:border-gray-100 md:ps-5 md:dark:border-gray-800">
             {groups.length === 0 ? (
-              <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">{t("empty")}</p>
+              <p className="py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                {t("empty")}
+              </p>
             ) : (
               <Tabs
                 value={activeTab}
-                onValueChange={(value) => setTab(value as PromptGroup["category"])}
+                onValueChange={(value) =>
+                  setTab(value as PromptGroup["category"])
+                }
                 className="flex min-h-0 flex-1 flex-col"
               >
-                <TabsList variant="line" className="w-full justify-start border-b border-gray-200 dark:border-gray-800">
+                <TabsList
+                  variant="line"
+                  className="w-full justify-start border-b border-gray-200 dark:border-gray-800"
+                >
                   <TabsTrigger value="character" className="gap-1.5">
                     {t("characterGroup")}
                     <Badge variant="light" color="gray" size="sm">
@@ -1076,10 +1551,16 @@ export default function BatchPromptDialog({
                     </Badge>
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="character" className="pt-3 md:min-h-0 md:flex-1 md:overflow-y-auto md:custom-scrollbar">
+                <TabsContent
+                  value="character"
+                  className="pt-3 md:custom-scrollbar md:min-h-0 md:flex-1 md:overflow-y-auto"
+                >
                   {renderList(characterGroups)}
                 </TabsContent>
-                <TabsContent value="background" className="pt-3 md:min-h-0 md:flex-1 md:overflow-y-auto md:custom-scrollbar">
+                <TabsContent
+                  value="background"
+                  className="pt-3 md:custom-scrollbar md:min-h-0 md:flex-1 md:overflow-y-auto"
+                >
                   {renderList(backgroundGroups)}
                 </TabsContent>
               </Tabs>

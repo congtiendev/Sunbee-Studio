@@ -21,6 +21,8 @@ import { useTranslations } from "@/i18n";
 import { apiClient } from "@/lib/api-client";
 import type { LogEntry } from "@shared/types";
 import { useCallback, useEffect, useState } from "react";
+import TablePagination from "../table-pagination";
+import { usePageSlice } from "../use-page-slice";
 
 const LEVEL_BADGE: Record<LogEntry["level"], { color: "error" | "warning" | "gray"; variant: "solid" | "light" }> = {
   error: { color: "error", variant: "solid" },
@@ -32,22 +34,26 @@ export default function LogsSection() {
   const t = useTranslations("databaseAdmin.logs");
 
   const [dates, setDates] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
+  // "" (not undefined) so the Select stays controlled from the first render — Base UI
+  // otherwise logs a warning and keeps showing the placeholder once a real date arrives.
+  const [selectedDate, setSelectedDate] = useState("");
   const [level, setLevel] = useState<string>("all");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const { pageItems, totalPages, page: currentPage } = usePageSlice(entries, page);
 
   const load = useCallback(
-    (date: string | undefined, levelFilter: string) => {
+    (date: string, levelFilter: string) => {
       setLoading(true);
       setError(null);
       apiClient.admin
-        .logs({ date, level: levelFilter === "all" ? undefined : levelFilter })
+        .logs({ date: date || undefined, level: levelFilter === "all" ? undefined : levelFilter })
         .then((res) => {
           setDates(res.dates);
           setEntries(res.entries);
-          setSelectedDate((prev) => prev ?? res.dates[0]);
+          setSelectedDate((prev) => prev || res.dates[0] || "");
         })
         .catch((err: unknown) => {
           setError(err instanceof Error ? err.message : String(err));
@@ -59,7 +65,7 @@ export default function LogsSection() {
 
   useEffect(() => {
     load(selectedDate, level);
-     
+
   }, [selectedDate, level]);
 
   return (
@@ -149,7 +155,7 @@ export default function LogsSection() {
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {entries.map((entry, index) => {
+                {pageItems.map((entry, index) => {
                   const { time, level: entryLevel, message, ...meta } = entry;
                   const badge = LEVEL_BADGE[entryLevel] ?? LEVEL_BADGE.info;
                   return (
@@ -175,6 +181,7 @@ export default function LogsSection() {
             </Table>
           </div>
         )}
+        <TablePagination page={currentPage} totalPages={totalPages} onPageChange={setPage} />
       </CardContent>
     </Card>
   );

@@ -3,6 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AnalyzeProvider } from "../../../../shared/script-cost-estimate.js";
+import type { AiEffort } from "../../../services/ai/providers/index.js";
 import {
   firstAvailableProvider,
   MissingApiKeyError,
@@ -39,6 +40,7 @@ export interface VideoTranscription {
 export interface UploadSourceOptions {
   describeProvider?: AnalyzeProvider;
   describeModel?: string;
+  describeEffort?: AiEffort;
   language?: ScriptLanguage;
 }
 
@@ -120,6 +122,7 @@ export async function transcribeMedia(
   {
     describeProvider = "claude",
     describeModel,
+    describeEffort,
     language = "vi",
   }: UploadSourceOptions = {},
 ): Promise<VideoTranscription> {
@@ -150,7 +153,7 @@ export async function transcribeMedia(
     try {
       // The AI picked for the video (Claude by default) checks the transcript.
       const verifier =
-        firstAvailableProvider(ctx, describeProvider) ?? "openai";
+        firstAvailableProvider(ctx, describeProvider) ?? "claude";
       const verification = await runTask(
         verifyTranscriptTask,
         {
@@ -158,6 +161,7 @@ export async function transcribeMedia(
           frames,
           provider: verifier,
           model: verifier === describeProvider ? describeModel : undefined,
+          effort: verifier === describeProvider ? describeEffort : undefined,
         },
         ctx,
       );
@@ -185,6 +189,7 @@ export async function transcribeMedia(
     const description = await describeFramesBestEffort(ctx, frames, {
       describeProvider,
       describeModel,
+      describeEffort,
       language,
     });
     if (description) {
@@ -207,6 +212,7 @@ export async function describeFramesBestEffort(
   {
     describeProvider = "claude",
     describeModel,
+    describeEffort,
     language = "vi",
   }: UploadSourceOptions = {},
 ): Promise<string> {
@@ -221,8 +227,9 @@ export async function describeFramesBestEffort(
         {
           frames,
           provider,
-          // The picked model only applies to the picked provider.
+          // The picked model/effort only apply to the picked provider.
           model: provider === describeProvider ? describeModel : undefined,
+          effort: provider === describeProvider ? describeEffort : undefined,
           language,
         },
         ctx,

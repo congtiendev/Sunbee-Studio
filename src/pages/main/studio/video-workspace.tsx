@@ -117,6 +117,7 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
             steps={steps}
             activeIndex={activeIndex}
             furthestIndex={furthestIndex}
+            completedKeys={completedSteps}
             onStepClick={(index) => void switchTo(index)}
             disabled={stepBusy}
           />
@@ -146,7 +147,11 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
           {t("navigation.back")}
         </Button>
 
-        <SaveButton handle={saveHandle} disabled={stepBusy} onSave={() => void save()} />
+        <SaveButton
+          handle={saveHandle}
+          disabled={stepBusy}
+          onSave={() => void save()}
+        />
 
         {isLastStep ? (
           <span />
@@ -165,7 +170,11 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
       </div>
 
       <ScrollButtons
-        save={dirty || saveHandle?.saving ? { saving: Boolean(saveHandle?.saving), onSave: () => void save() } : undefined}
+        save={
+          dirty || saveHandle?.saving
+            ? { saving: Boolean(saveHandle?.saving), onSave: () => void save() }
+            : undefined
+        }
       />
     </>
   );

@@ -1,6 +1,6 @@
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import type { RequiredAsset, SceneShot, ScriptScene } from "../../../../shared/types.js";
-import type { ProviderKey } from "../../../services/ai/providers/index.js";
+import type { AiEffort, ProviderKey } from "../../../services/ai/providers/index.js";
 import { ANALYSIS_PASSAGE_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defineTask, promptOf, providerFor } from "../../../services/ai/task.js";
 import {
@@ -21,6 +21,8 @@ export interface SplitLayersInput {
   /** The scene right before this batch, for continuity only (not re-planned). */
   previousScene?: ScriptScene;
   provider: ProviderKey;
+  model?: string;
+  effort?: AiEffort;
 }
 
 export interface SplitLayersOutput {
@@ -94,7 +96,8 @@ export const splitLayersTask = defineTask<SplitLayersInput, SplitLayersOutput>({
     const editingStyle = input.editingStyle?.trim();
     const result = await providerFor(ctx, input.provider).generateStructured<SplitLayersOutput>({
       maxTokens: ANALYSIS_PASSAGE_OUTPUT_TOKENS,
-      model: defaultModelFor(input.provider),
+      model: input.model ?? defaultModelFor(input.provider),
+      effort: input.effort ?? "medium",
       system:
         promptOf(ctx, this, "system") +
         (editingStyle
@@ -115,7 +118,6 @@ export const splitLayersTask = defineTask<SplitLayersInput, SplitLayersOutput>({
       ]
         .filter(Boolean)
         .join("\n\n"),
-      effort: "medium",
       schema: SCHEMA,
       schemaName: "plan_shots_layers",
     });

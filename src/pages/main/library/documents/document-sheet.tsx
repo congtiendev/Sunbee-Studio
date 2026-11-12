@@ -206,7 +206,9 @@ function DocumentSheetBody({
                           checked={isLinked(link)}
                           onCheckedChange={(checked) => toggle(link, checked)}
                         />
-                        <span className="truncate">{item.name}</span>
+                        <span className="truncate" title={item.name}>
+                          {item.name}
+                        </span>
                       </label>
                     );
                   })}

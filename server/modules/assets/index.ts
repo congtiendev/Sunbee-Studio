@@ -1,7 +1,6 @@
 import { registerResearchSource } from "../../services/research/registry.js";
 import type { StepModule } from "../types.js";
 import { aiImageCloudflareSource } from "./research/ai-image-cloudflare.js";
-import { aiImageOpenAiSource } from "./research/ai-image-openai.js";
 import { aiImageSearchClaudeSource } from "./research/ai-image-search-claude.js";
 import { librarySource } from "./research/library-source.js";
 import { webSource } from "./research/web-source.js";
@@ -16,8 +15,10 @@ import { assetTasks } from "./tasks/index.js";
 registerResearchSource(librarySource);
 registerResearchSource(webSource);
 registerResearchSource(aiImageCloudflareSource);
-registerResearchSource(aiImageOpenAiSource);
 registerResearchSource(aiImageSearchClaudeSource);
+// aiImageOpenAiSource ("ChatGPT (gpt-image-1.5)") is temporarily off at the
+// user's request — not registered, so it never shows up to pick and never
+// calls OpenAI. Re-add the import + this line to bring it back.
 
 /** Step 2 — gather the media each scene needs: research, pick, and keep a library. */
 export const assetsModule: StepModule = {

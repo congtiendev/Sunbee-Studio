@@ -18,6 +18,8 @@ export interface UiPreferences {
   scriptDocumentBrief?: string;
   /** The Assets step's graphics skill ("" = none), saved with its Save button. */
   assetsGraphicsSkillId?: string;
+  /** Hand-edited replacement for the generated ChatGPT-pack instructions (`huong-dan.md`) — shared by every pack, not tied to any video. */
+  assetsPackInstructions?: string;
 }
 
 export interface AppSettings extends UiPreferences {
@@ -76,7 +78,12 @@ export interface SkillDetail extends StyleTemplate {
 
 export type SkillInput = Omit<
   StyleTemplate,
-  "id" | "createdAt" | "updatedAt" | "userId" | "ownerEmail" | "referenceImageFileIds"
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "userId"
+  | "ownerEmail"
+  | "referenceImageFileIds"
 >;
 
 export interface SkillUpdateRequest extends Partial<SkillInput> {
@@ -143,6 +150,7 @@ export interface FetchTranscriptRequest {
   useAi?: boolean;
   provider?: "openai" | "claude";
   model?: string;
+  effort?: "low" | "medium" | "high";
   language?: "vi" | "en";
 }
 
@@ -176,19 +184,10 @@ export type SceneNarrativeRole =
   | "outro";
 
 export type ShotSize =
-  | "extremeCloseUp"
-  | "closeUp"
-  | "medium"
-  | "wide"
-  | "extremeWide";
+  "extremeCloseUp" | "closeUp" | "medium" | "wide" | "extremeWide";
 
 export type CameraMovement =
-  | "static"
-  | "pan"
-  | "tilt"
-  | "zoom"
-  | "handheld"
-  | "tracking";
+  "static" | "pan" | "tilt" | "zoom" | "handheld" | "tracking";
 
 /** Camera angle of one shot (see `shared/shots.ts` for how it's described to an AI). */
 export type ShotAngle =
@@ -282,7 +281,8 @@ export interface ScriptResources {
 }
 
 /** Where a script version came from. */
-export type ScriptSourceType = "youtube" | "import" | "document" | "template" | "idea";
+export type ScriptSourceType =
+  "youtube" | "import" | "document" | "template" | "idea";
 
 /**
  * Saves hand-edited script text outside of fetch/write/analyze (auto-save, or
@@ -673,6 +673,31 @@ export interface DataImportResult {
   recoveredVideos?: number;
   /** Skill reference images the backup only names (image files aren't backed up). */
   missingReferenceImages?: number;
+  /** Bundle records already imported in an earlier run (matched by their original id) — skipped instead of creating a duplicate. */
+  skippedDuplicates?: number;
+}
+
+export type TrashItemType = "project" | "category" | "video";
+
+/** A soft-deleted project, category or video, as the Trash page lists it. */
+export interface TrashItem {
+  type: TrashItemType;
+  id: string;
+  name: string;
+  deletedAt: string;
+  ownerEmail?: string;
+  /** Breadcrumb for context: the project's name for a category, "project / category" for a video. */
+  parentLabel?: string;
+}
+
+/** What a trash purge actually removed — a project/category cascades into everything under it. */
+export interface TrashPurgeResult {
+  projects: number;
+  categories: number;
+  videos: number;
+  scriptAnalyses: number;
+  sceneResources: number;
+  assetPrompts: number;
 }
 
 /** UI text in every supported locale (keep in sync with src/i18n/routing.ts). */
@@ -712,7 +737,12 @@ export interface PromptTaskInfo {
   prompts: PromptSlotInfo[];
 }
 
-export type StoredFileKind = "document" | "asset" | "skill-attachment" | "character-reference";
+export type StoredFileKind =
+  | "document"
+  | "asset"
+  | "skill-attachment"
+  | "character-reference"
+  | "voice-sample";
 
 export interface StoredFile {
   id: string;
@@ -723,6 +753,47 @@ export interface StoredFile {
   size: number;
   sha256: string;
   createdAt: string;
+}
+
+/** Only one local engine (VieNeu-TTS) today; the field exists so a profile keeps working if another is added later. */
+export type VoiceEngine = "local";
+
+/** A reusable voice for the TTS sidecar — either cloned from a sample, or one of VieNeu-TTS's built-in voices. */
+export interface VoiceProfile {
+  id: string;
+  name: string;
+  engine: VoiceEngine;
+  /** Cloned from this sample. Exactly one of this or `presetVoiceId` is set. */
+  sampleFileId?: string;
+  /** One of VieNeu-TTS's 25 built-in voices (see `vieneu-presets.ts`) — no sample, ready instantly. */
+  presetVoiceId?: string;
+  createdAt: string;
+  /** The catalog preset (see `VoicePreset`) this was installed from, if any. */
+  presetId?: string;
+}
+
+export interface VoicePreviewRequest {
+  text: string;
+}
+
+/**
+ * A ready-made voice listed in the catalog (`server/services/voice/presets.ts`,
+ * merging VieNeu-TTS's 25 built-in voices with a user-filled manifest of their
+ * own sample-based voices) that the user can add to their library with one
+ * click — no sample of their own to record.
+ */
+export interface VoicePreset {
+  id: string;
+  name: string;
+  language: string;
+  gender: "male" | "female" | "other";
+  description?: string;
+  /** Shown so a legally murky voice (most community checkpoints) isn't installed blindly. */
+  license?: string;
+  /** true = license allows commercial use; false = no; undefined = unclear — verify yourself. */
+  commercialOk?: boolean;
+  /** Whether the caller already installed this preset (as a `VoiceProfile`). */
+  installed: boolean;
 }
 
 /** "link": a web page found by AI research (reference material, not a media file). */
@@ -861,6 +932,8 @@ export interface AssetPromptBatchRequest {
     shot?: string;
   }[];
   provider: "openai" | "claude";
+  model?: string;
+  effort?: "low" | "medium" | "high";
   /** When set, each prompt is saved to this video as soon as it's written (see `AssetPromptRecord`). */
   videoId?: string;
   /** The frame the prompts compose for. */
@@ -873,10 +946,14 @@ export interface AssetPromptBatchResponse {
 
 export interface AssetSplitLayersRequest {
   videoId: string;
-  /** The analyzed version whose scenes get split; the result is saved as a new approved version. */
+  /** The analyzed version whose scenes get split; overwritten in place, no new version. */
   versionId: string;
   fromScene: number;
   toScene: number;
+  /** Chosen by the user; Claude when omitted. */
+  provider?: "openai" | "claude";
+  model?: string;
+  effort?: "low" | "medium" | "high";
 }
 
 export interface AssetSplitLayersResponse {

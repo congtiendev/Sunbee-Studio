@@ -67,14 +67,14 @@ export function hasProviderKey(ctx: TaskContext, provider: ProviderKey): boolean
   return Boolean(provider === "claude" ? ctx.keys.anthropic : ctx.keys.openai);
 }
 
-/** The requested provider when its key is set, else whichever has a key (OpenAI first), else null. */
+/** The requested provider when its key is set, else whichever has a key (Claude first), else null. */
 export function firstAvailableProvider(
   ctx: TaskContext,
   preferred?: ProviderKey,
 ): ProviderKey | null {
   if (preferred && hasProviderKey(ctx, preferred)) return preferred;
-  if (hasProviderKey(ctx, "openai")) return "openai";
   if (hasProviderKey(ctx, "claude")) return "claude";
+  if (hasProviderKey(ctx, "openai")) return "openai";
   return null;
 }
 

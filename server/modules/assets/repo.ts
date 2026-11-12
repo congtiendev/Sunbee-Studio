@@ -158,15 +158,15 @@ export function assetPromptKey(description: string): string {
   return description.trim().toLowerCase();
 }
 
-/** Prompts saved for a video — only those written under `rulesVersion` (older ones are stale). */
-export function listAssetPrompts(videoId: string, rulesVersion: number): AssetPromptRecord[] {
+/** Prompts saved for a video — always reused regardless of when they were written; a rewrite overwrites the same row in place. */
+export function listAssetPrompts(videoId: string): AssetPromptRecord[] {
   return (
     getDb()
       .prepare(
         `SELECT description, prompt, frame_ratio, layer, updated_at FROM asset_prompts
-         WHERE video_id = ? AND rules_version = ? ORDER BY updated_at`,
+         WHERE video_id = ? ORDER BY updated_at`,
       )
-      .all(videoId, rulesVersion) as {
+      .all(videoId) as {
         description: string;
         prompt: string;
         frame_ratio: string | null;
@@ -190,20 +190,18 @@ export function saveAssetPrompt(
     prompt: string;
     frameRatio?: FrameRatio;
     layer?: ImageLayer;
-    rulesVersion: number;
   },
 ): void {
   const now = new Date().toISOString();
   getDb()
     .prepare(
-      `INSERT INTO asset_prompts (video_id, description_key, user_id, description, prompt, frame_ratio, layer, rules_version, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO asset_prompts (video_id, description_key, user_id, description, prompt, frame_ratio, layer, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (video_id, description_key) DO UPDATE SET
          description = excluded.description,
          prompt = excluded.prompt,
          frame_ratio = excluded.frame_ratio,
          layer = excluded.layer,
-         rules_version = excluded.rules_version,
          updated_at = excluded.updated_at`,
     )
     .run(
@@ -214,7 +212,6 @@ export function saveAssetPrompt(
       input.prompt,
       input.frameRatio ?? null,
       input.layer ?? null,
-      input.rulesVersion,
       now,
       now,
     );

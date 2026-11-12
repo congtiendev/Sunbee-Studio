@@ -3,10 +3,29 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress-bar";
+import { Switch } from "@/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useTranslations } from "@/i18n";
-import { ListIcon, SearchIcon, StarFilledIcon, TrashBinIcon } from "@/icons";
+import {
+  ChevronDownIcon,
+  InfoIcon,
+  ListIcon,
+  SearchIcon,
+  StarFilledIcon,
+  TrashBinIcon,
+} from "@/icons";
 import { apiClient } from "@/lib/api-client";
+import { cn } from "@/utils";
 import type {
   AssetCandidate,
   ResearchSourceInfo,
@@ -16,7 +35,7 @@ import type {
   ScriptScene,
   StyleTemplate,
 } from "@shared/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
@@ -96,6 +115,15 @@ export default function AssetsStep({
   const [skillSavedAt, setSkillSavedAt] = useState<Date | null>(null);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [batchPromptOpen, setBatchPromptOpen] = useState(false);
+  // Which scenes are expanded — a long script easily has hundreds of asset
+  // rows, so scenes already fully picked start collapsed and only the ones
+  // still needing work open by default.
+  const [openScenes, setOpenScenes] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
+  const [onlyIncomplete, setOnlyIncomplete] = useState(false);
+  const [scrollTarget, setScrollTarget] = useState<number | null>(null);
+  const sceneRefs = useRef(new Map<number, HTMLElement>());
 
   useEffect(() => {
     let active = true;
@@ -240,6 +268,46 @@ export default function AssetsStep({
         ).length,
       0,
     ) ?? 0;
+  const filledCountOf = (scene: ScriptScene) =>
+    scene.requiredAssets.filter((_, i) => bySlot.has(slotKey(scene.index, i)))
+      .length;
+  const sceneFilled = (scene: ScriptScene) =>
+    filledCountOf(scene) === scene.requiredAssets.length;
+
+  // Scenes start collapsed — early on almost none are filled yet, so
+  // "open every unfinished one" would mean opening nearly all of them (slow
+  // to render, nothing left to toggle). Jumping to a scene or "Mở tất cả"
+  // opens what's actually needed.
+  useEffect(() => {
+    if (!version) return;
+    setOpenScenes(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on first load of this version
+  }, [version?.id]);
+
+  useEffect(() => {
+    if (scrollTarget === null) return;
+    sceneRefs.current.get(scrollTarget)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    setScrollTarget(null);
+  }, [scrollTarget, openScenes, onlyIncomplete]);
+
+  const toggleScene = (index: number) =>
+    setOpenScenes((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+
+  const jumpToScene = (index: number) => {
+    setOnlyIncomplete(false);
+    setOpenScenes((prev) =>
+      prev.has(index) ? prev : new Set(prev).add(index),
+    );
+    setScrollTarget(index);
+  };
 
   const select = async (candidate: AssetCandidate) => {
     if (!target) return;
@@ -326,29 +394,27 @@ export default function AssetsStep({
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-1">
         <div className="min-w-0 flex-1 basis-72">
-          <CardTitle>{t("title")}</CardTitle>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>{t("title")}</CardTitle>
+            <Tooltip>
+              <TooltipTrigger
+                type="button"
+                aria-label={t("badgeLegendLabel")}
+                className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              >
+                <InfoIcon className="size-3.5" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-80 whitespace-normal">
+                {t("badgeLegendHint")}
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {t("description")}
           </p>
-        </div>
-        <div className="w-full sm:w-60">
-          <div className="flex items-baseline justify-between gap-2 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
-              {t("progressLabel")}
-            </span>
-            <span className="font-medium text-gray-800 tabular-nums dark:text-white/90">
-              {filledSlots}/{totalSlots}
-            </span>
-          </div>
-          <Progress
-            value={
-              totalSlots ? Math.round((filledSlots / totalSlots) * 100) : 0
-            }
-            className="mt-1.5"
-          />
         </div>
       </div>
 
@@ -394,6 +460,82 @@ export default function AssetsStep({
         </Button>
       </div>
 
+      {/* Progress + quick scene nav in one unboxed strip, so it reads as
+          navigation rather than another toolbar card. Only a finished scene
+          gets a color — an untouched one stays neutral instead of a wall of
+          amber, since "not done yet" is the normal state early on. */}
+      <div className="space-y-2.5 border-t border-gray-100 pt-3 dark:border-gray-800">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500 dark:text-gray-400">
+              {t("progressLabel")}
+            </span>
+            <span className="font-medium text-gray-800 tabular-nums dark:text-white/90">
+              {filledSlots}/{totalSlots}
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="assets-only-incomplete" className="text-xs">
+                {t("onlyIncomplete")}
+              </Label>
+              <Switch
+                id="assets-only-incomplete"
+                checked={onlyIncomplete}
+                onCheckedChange={setOnlyIncomplete}
+              />
+            </div>
+            <div className="flex gap-3 text-xs font-medium">
+              <button
+                type="button"
+                className="text-brand-500 hover:underline dark:text-brand-400"
+                onClick={() =>
+                  setOpenScenes(new Set(version.scenes.map((s) => s.index)))
+                }
+              >
+                {t("expandAll")}
+              </button>
+              <button
+                type="button"
+                className="text-gray-500 hover:underline dark:text-gray-400"
+                onClick={() => setOpenScenes(new Set())}
+              >
+                {t("collapseAll")}
+              </button>
+            </div>
+          </div>
+        </div>
+        <Progress
+          value={totalSlots ? Math.round((filledSlots / totalSlots) * 100) : 0}
+        />
+        <div className="flex flex-wrap gap-1">
+          {version.scenes
+            .filter((scene) => !onlyIncomplete || !sceneFilled(scene))
+            .map((scene) => {
+              const filled = sceneFilled(scene);
+              const hasAssets = scene.requiredAssets.length > 0;
+              return (
+                <button
+                  key={scene.index}
+                  type="button"
+                  title={t("scene", { index: scene.index })}
+                  onClick={() => jumpToScene(scene.index)}
+                  className={cn(
+                    "flex size-5 shrink-0 items-center justify-center rounded text-[10px] font-medium tabular-nums transition-colors",
+                    !hasAssets
+                      ? "text-gray-300 hover:bg-gray-100 dark:text-gray-600 dark:hover:bg-white/5"
+                      : filled
+                        ? "bg-brand-500/15 text-brand-600 hover:bg-brand-500/25 dark:text-brand-400"
+                        : "text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/5",
+                  )}
+                >
+                  {scene.index}
+                </button>
+              );
+            })}
+        </div>
+      </div>
+
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
@@ -401,179 +543,234 @@ export default function AssetsStep({
       )}
 
       <div className="space-y-4">
-        {version.scenes.map((scene) => (
-          <section
-            key={scene.index}
-            className="rounded-xl border border-gray-200 p-4 dark:border-gray-800"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                {t("scene", { index: scene.index })}
-              </span>
-              {scene.heroMoment && (
-                <StarFilledIcon className="size-3.5 text-yellow-400" />
-              )}
-              <Badge variant="light" color="primary" size="sm">
-                {tScript(`narrativeRoles.${scene.narrativeRole}`)}
-              </Badge>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {scene.estimatedDurationSec}s
-              </span>
-            </div>
-            <p className="mt-1 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
-              {scene.content}
-            </p>
-
-            {scene.requiredAssets.length === 0 ? (
-              <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
-                {t("noAssets")}
-              </p>
-            ) : (
-              <div className="mt-3 space-y-3">
-                {assetGroupsOf(scene).map((group) => (
-                  <div key={group.key}>
-                    {group.shot ? (
-                      <p className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
-                        <span className="font-semibold text-gray-800 dark:text-white/90">
-                          {t("shotHeader", {
-                            order: group.shot.order,
-                            total: scene.shots?.length ?? 1,
-                          })}
-                        </span>
-                        {" · "}
-                        {tScript(`shotSizes.${group.shot.shotSize}`)} ·{" "}
-                        {t(`shotAngles.${group.shot.angle}`)} ·{" "}
-                        {group.shot.durationSec}s — {group.shot.subject}
-                        {group.shot.technique?.trim() && (
-                          <span className="ms-1 font-medium text-brand-600 dark:text-brand-400">
-                            · {t("techniqueLabel")}: {group.shot.technique}
-                          </span>
+        {version.scenes
+          .filter((scene) => !onlyIncomplete || !sceneFilled(scene))
+          .map((scene) => {
+            const open = openScenes.has(scene.index);
+            const filledCount = filledCountOf(scene);
+            return (
+              <section
+                key={scene.index}
+                ref={(el) => {
+                  if (el) sceneRefs.current.set(scene.index, el);
+                  else sceneRefs.current.delete(scene.index);
+                }}
+                className="rounded-xl border border-gray-200 p-4 dark:border-gray-800"
+              >
+                <Collapsible
+                  open={open}
+                  onOpenChange={() => toggleScene(scene.index)}
+                >
+                  <CollapsibleTrigger className="flex w-full flex-wrap items-center gap-2 text-start">
+                    <ChevronDownIcon
+                      className={cn(
+                        "size-4 shrink-0 text-gray-400 transition-transform",
+                        open && "rotate-180",
+                      )}
+                    />
+                    <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                      {t("scene", { index: scene.index })}
+                    </span>
+                    {scene.heroMoment && (
+                      <StarFilledIcon className="size-3.5 text-yellow-400" />
+                    )}
+                    <Badge variant="light" color="primary" size="sm">
+                      {tScript(`narrativeRoles.${scene.narrativeRole}`)}
+                    </Badge>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {scene.estimatedDurationSec}s
+                    </span>
+                    {scene.requiredAssets.length > 0 && (
+                      <span
+                        className={cn(
+                          "ms-auto text-xs font-medium tabular-nums",
+                          filledCount === scene.requiredAssets.length
+                            ? "text-brand-600 dark:text-brand-400"
+                            : "text-amber-600 dark:text-amber-400",
                         )}
+                      >
+                        {filledCount}/{scene.requiredAssets.length}
+                      </span>
+                    )}
+                  </CollapsibleTrigger>
+                  <p className="mt-1 line-clamp-2 ps-6 text-sm text-gray-600 dark:text-gray-400">
+                    {scene.content}
+                  </p>
+
+                  <CollapsibleContent>
+                    {scene.requiredAssets.length === 0 ? (
+                      <p className="mt-3 ps-6 text-xs text-gray-400 dark:text-gray-500">
+                        {t("noAssets")}
                       </p>
                     ) : (
-                      (scene.shots?.length ?? 0) > 0 && (
-                        <p className="px-3 text-xs font-medium text-gray-500 dark:text-gray-400">
-                          {t("otherAssets")}
-                        </p>
-                      )
-                    )}
-                    <ul className="divide-y divide-gray-100 dark:divide-gray-800">
-                      {group.items.map(({ asset, assetIndex }) => {
-                        const pick = bySlot.get(
-                          slotKey(scene.index, assetIndex),
-                        );
-                        const outdated =
-                          pick && pick.assetDescription !== asset.description;
-                        return (
-                          <li
-                            key={assetIndex}
-                            className="flex flex-wrap items-center gap-3 py-3"
-                          >
-                            <div className="min-w-0 flex-1 basis-60">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <Badge variant="light" color="gray" size="sm">
-                                  {tScript(`assetTypes.${asset.type}`)}
-                                </Badge>
-                                <Badge variant="light" color="info" size="sm">
-                                  {t(`assetSources.${asset.source}`)}
-                                </Badge>
-                                {asset.layer && (
-                                  <Badge
-                                    variant="light"
-                                    color={
-                                      asset.layer === "cutout"
-                                        ? "warning"
-                                        : "gray"
-                                    }
-                                    size="sm"
-                                  >
-                                    {t(`layerBadge.${asset.layer}`)}
-                                  </Badge>
+                      <div className="mt-3 space-y-3">
+                        {assetGroupsOf(scene).map((group) => (
+                          <div key={group.key}>
+                            {group.shot ? (
+                              <p className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
+                                <span className="font-semibold text-gray-800 dark:text-white/90">
+                                  {t("shotHeader", {
+                                    order: group.shot.order,
+                                    total: scene.shots?.length ?? 1,
+                                  })}
+                                </span>
+                                {" · "}
+                                {tScript(
+                                  `shotSizes.${group.shot.shotSize}`,
+                                )} · {t(`shotAngles.${group.shot.angle}`)} ·{" "}
+                                {group.shot.durationSec}s — {group.shot.subject}
+                                {group.shot.technique?.trim() && (
+                                  <span className="ms-1 font-medium text-brand-600 dark:text-brand-400">
+                                    · {t("techniqueLabel")}:{" "}
+                                    {group.shot.technique}
+                                  </span>
                                 )}
-                              </div>
-                              <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                {asset.description}
                               </p>
-                              {asset.placement && (
-                                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                  {t("placementLabel")}: {asset.placement}
-                                </p>
-                              )}
-                            </div>
-
-                            {pick ? (
-                              <div className="flex min-w-0 basis-72 items-center gap-2.5">
-                                <CandidatePreview
-                                  candidate={pick.candidate}
-                                  compact
-                                  className="h-12 w-20 shrink-0 rounded-lg"
-                                />
-                                <div className="min-w-0">
-                                  <p className="truncate text-xs font-medium text-gray-800 dark:text-white/90">
-                                    {pick.candidate.title}
-                                  </p>
-                                  <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">
-                                    {t(`sources.${pick.candidate.sourceKey}`, {
-                                      defaultValue: pick.candidate.sourceKey,
-                                    })}
-                                    {pick.candidate.attribution
-                                      ? ` · ${pick.candidate.attribution}`
-                                      : ""}
-                                  </p>
-                                  {outdated && (
-                                    <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                                      {t("outdated")}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
                             ) : (
-                              <span className="basis-72 text-xs text-gray-400 dark:text-gray-500">
-                                {t("notPicked")}
-                              </span>
+                              (scene.shots?.length ?? 0) > 0 && (
+                                <p className="px-3 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                  {t("otherAssets")}
+                                </p>
+                              )
                             )}
+                            <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {group.items.map(({ asset, assetIndex }) => {
+                                const pick = bySlot.get(
+                                  slotKey(scene.index, assetIndex),
+                                );
+                                const outdated =
+                                  pick &&
+                                  pick.assetDescription !== asset.description;
+                                return (
+                                  <li
+                                    key={assetIndex}
+                                    className="flex flex-wrap items-center gap-3 py-3"
+                                  >
+                                    <div className="min-w-0 flex-1 basis-60">
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        <Badge
+                                          variant="light"
+                                          color="gray"
+                                          size="sm"
+                                        >
+                                          {tScript(`assetTypes.${asset.type}`)}
+                                        </Badge>
+                                        <Badge
+                                          variant="light"
+                                          color="info"
+                                          size="sm"
+                                        >
+                                          {t(`assetSources.${asset.source}`)}
+                                        </Badge>
+                                        {asset.layer && (
+                                          <Badge
+                                            variant="light"
+                                            color={
+                                              asset.layer === "cutout"
+                                                ? "warning"
+                                                : "gray"
+                                            }
+                                            size="sm"
+                                          >
+                                            {t(`layerBadge.${asset.layer}`)}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                                        {asset.description}
+                                      </p>
+                                      {asset.placement && (
+                                        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                          {t("placementLabel")}:{" "}
+                                          {asset.placement}
+                                        </p>
+                                      )}
+                                    </div>
 
-                            <div className="flex shrink-0 gap-1">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={pick ? "outline" : "default"}
-                                className="gap-1.5"
-                                onClick={() =>
-                                  setTarget({ scene, assetIndex, asset })
-                                }
-                              >
-                                <SearchIcon className="size-4" />
-                                {t(pick ? "change" : "research.open")}
-                              </Button>
-                              {pick && (
-                                <Button
-                                  type="button"
-                                  size="icon-sm"
-                                  variant="ghost"
-                                  title={t("remove")}
-                                  disabled={
-                                    clearing ===
-                                    slotKey(scene.index, assetIndex)
-                                  }
-                                  onClick={() =>
-                                    void clear(scene.index, assetIndex)
-                                  }
-                                >
-                                  <TrashBinIcon className="size-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        ))}
+                                    {pick ? (
+                                      <div className="flex min-w-0 basis-72 items-center gap-2.5">
+                                        <CandidatePreview
+                                          candidate={pick.candidate}
+                                          compact
+                                          className="h-12 w-20 shrink-0 rounded-lg"
+                                        />
+                                        <div className="min-w-0">
+                                          <p className="truncate text-xs font-medium text-gray-800 dark:text-white/90">
+                                            {pick.candidate.title}
+                                          </p>
+                                          <p className="truncate text-[11px] text-gray-500 dark:text-gray-400">
+                                            {t(
+                                              `sources.${pick.candidate.sourceKey}`,
+                                              {
+                                                defaultValue:
+                                                  pick.candidate.sourceKey,
+                                              },
+                                            )}
+                                            {pick.candidate.attribution
+                                              ? ` · ${pick.candidate.attribution}`
+                                              : ""}
+                                          </p>
+                                          {outdated && (
+                                            <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                                              {t("outdated")}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <span className="basis-72 text-xs text-gray-400 dark:text-gray-500">
+                                        {t("notPicked")}
+                                      </span>
+                                    )}
+
+                                    <div className="flex shrink-0 gap-1">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant={pick ? "outline" : "default"}
+                                        className="gap-1.5"
+                                        onClick={() =>
+                                          setTarget({
+                                            scene,
+                                            assetIndex,
+                                            asset,
+                                          })
+                                        }
+                                      >
+                                        <SearchIcon className="size-4" />
+                                        {t(pick ? "change" : "research.open")}
+                                      </Button>
+                                      {pick && (
+                                        <Button
+                                          type="button"
+                                          size="icon-sm"
+                                          variant="ghost"
+                                          title={t("remove")}
+                                          disabled={
+                                            clearing ===
+                                            slotKey(scene.index, assetIndex)
+                                          }
+                                          onClick={() =>
+                                            void clear(scene.index, assetIndex)
+                                          }
+                                        >
+                                          <TrashBinIcon className="size-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              </section>
+            );
+          })}
       </div>
 
       <ResearchSheet
@@ -607,6 +804,7 @@ export default function AssetsStep({
         referenceImages={referenceImages}
         frameRatio={frameRatio}
         versionId={version.id}
+        selections={selections}
         onScenesChanged={setVersion}
         onImported={reloadSelections}
       />

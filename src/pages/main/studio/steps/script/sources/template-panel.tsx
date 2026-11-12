@@ -18,7 +18,7 @@ import { cn } from "@/utils";
 import DocumentPicker from "@/pages/main/library/documents/document-picker";
 import type { DocumentSummary, ScriptAnalysisSummary } from "@shared/types";
 import { useEffect, useState } from "react";
-import ProviderModelFields from "../provider-model-fields";
+import AiSettingsFields from "@/components/shared/ai-settings-fields";
 import type { ScriptLanguage } from "../use-script-step";
 import type { ScriptSourcePanelProps } from "./registry";
 
@@ -132,13 +132,15 @@ export default function TemplatePanel({ step }: ScriptSourcePanelProps) {
       </Field>
 
       <div className="flex flex-wrap items-end gap-3">
-        <ProviderModelFields
+        <AiSettingsFields
           providerLabel={t("fromDocument.providerLabel")}
           provider={step.describeProvider}
           onProviderChange={step.changeDescribeProvider}
           model={step.describeModel}
           onModelChange={step.setDescribeModel}
           availableProviders={step.availableProviders}
+          effort={step.effort}
+          onEffortChange={step.setEffort}
         />
         <Field className="w-36">
           <FieldLabel>{t("fromDocument.durationLabel")}</FieldLabel>

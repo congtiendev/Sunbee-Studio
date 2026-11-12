@@ -7,6 +7,7 @@ import { useState } from "react";
 import LogsSection from "@/pages/main/database-admin/categories/logs-section";
 import ScriptAnalysesSection from "@/pages/main/database-admin/categories/script-analyses-section";
 import StyleTemplatesSection from "@/pages/main/database-admin/categories/style-templates-section";
+import TrashSection from "@/pages/main/database-admin/categories/trash-section";
 import UsersSection from "@/pages/main/database-admin/categories/users-section";
 import type { DatabaseAdminCategoryKey } from "@/pages/main/database-admin/types";
 
@@ -37,7 +38,13 @@ export default function DatabaseAdminPage() {
           }
           moreLabel={tCommon("moreTabs")}
           items={(
-            ["scriptAnalyses", "styleTemplates", "users", "logs"] as const
+            [
+              "scriptAnalyses",
+              "styleTemplates",
+              "users",
+              "trash",
+              "logs",
+            ] as const
           ).map((key) => ({
             value: key,
             label: t(`categories.${key}`),
@@ -52,6 +59,9 @@ export default function DatabaseAdminPage() {
         </TabsContent>
         <TabsContent value="users">
           <UsersSection />
+        </TabsContent>
+        <TabsContent value="trash">
+          <TrashSection />
         </TabsContent>
         <TabsContent value="logs">
           <LogsSection />

@@ -147,7 +147,8 @@
       "mediaLibrary": "Kho media",
       "documents": "Tài liệu",
       "skills": "Skill (phong cách AI)",
-      "training": "Huấn luyện AI"
+      "training": "Huấn luyện AI",
+      "voices": "Giọng nói"
     }
   },
   "header": {
@@ -1174,7 +1175,8 @@
       "warning": "File xuất ra chứa API key ở dạng văn bản thường. Hãy cất giữ riêng tư và không chia sẻ.",
       "importOpenaiKey": "Đã nhập cả OpenAI key.",
       "importRecovered": "{categories} danh mục và {videos} video không còn dự án/danh mục gốc trong file đã được đưa vào dự án “Khôi phục từ sao lưu”.",
-      "importMissingImages": "{count} ảnh mẫu của skill không có trong file sao lưu — hãy tải lại ảnh cho các skill đó."
+      "importMissingImages": "{count} ảnh mẫu của skill không có trong file sao lưu — hãy tải lại ảnh cho các skill đó.",
+      "importSkippedDuplicates": "{count} mục đã được nhập từ trước (bỏ qua, không tạo trùng)."
     }
   },
   "videoStudio": {
@@ -1282,6 +1284,7 @@
       "providerMissingKeyHint": "Thiết lập API key còn thiếu trong Settings để bật lựa chọn đó.",
       "modelLabel": "Model",
       "effortLabel": "Mức nỗ lực",
+      "effortHint": "AI suy nghĩ kỹ đến đâu trước khi trả lời: Thấp — nhanh, rẻ, hợp việc đơn giản; Vừa — cân bằng, dùng được cho hầu hết việc; Cao — kỹ nhất nhưng chậm và tốn hơn, dành cho việc phức tạp.",
       "effortLow": "Thấp",
       "effortMedium": "Vừa",
       "effortHigh": "Cao",
@@ -1559,10 +1562,15 @@
     "assets": {
       "title": "Tài nguyên cho từng cảnh",
       "description": "Research và chọn tư liệu mỗi cảnh cần — từ thư viện của bạn, kho stock miễn phí, hoặc research web bằng AI. Lựa chọn được lưu theo video.",
+      "badgeLegendLabel": "Giải thích các nhãn",
+      "badgeLegendHint": "Loại (Ảnh/Video/Âm thanh/Đồ hoạ): dạng tư liệu. Nguồn (Stock/Tạo mới/Có sẵn): lấy từ kho stock, AI tạo mới, hay đã có sẵn trong thư viện. Lớp — chỉ ảnh (Khung hình/PNG nền trong): Khung hình là cả bối cảnh; PNG nền trong chỉ có chủ thể, nền trong suốt để ghép và làm chuyển động.",
       "progress": "Đã chọn {done}/{total}",
       "progressLabel": "Đã chọn tư liệu",
       "noAnalysis": "Hãy phân tích kịch bản trước (bước 1): danh sách tài nguyên của từng cảnh lấy từ bản phân tích.",
       "scene": "Cảnh {index}",
+      "onlyIncomplete": "Chỉ hiện cảnh còn thiếu",
+      "expandAll": "Mở tất cả",
+      "collapseAll": "Thu gọn tất cả",
       "noAssets": "Cảnh này không có tài nguyên nào.",
       "notPicked": "Chưa chọn",
       "outdated": "Mô tả tài nguyên đã thay đổi sau khi chọn.",
@@ -1576,17 +1584,25 @@
         "openButton": "Tạo ảnh qua ChatGPT",
         "title": "Tạo ảnh hàng loạt qua ChatGPT",
         "description": "Tải gói (prompt + phong cách + ảnh mẫu) cho một khoảng cảnh để ChatGPT tạo lần lượt từng ảnh, rồi thả ảnh về đây để tự gán vào cảnh.",
+        "aiProviderLabel": "AI phân shot & viết prompt:",
         "applyRange": "Áp dụng",
         "rangeAll": "Tất cả",
         "characterGroup": "Nhân vật & vật phẩm",
         "backgroundGroup": "Bối cảnh",
         "copyAll": "Copy tất cả",
         "copyItem": "Copy mục này",
+        "expandPrompt": "Xem đầy đủ",
+        "collapsePrompt": "Thu gọn",
         "empty": "Kịch bản này chưa có tài nguyên dạng ảnh nào.",
         "importTitle": "Nhập ảnh đã tạo",
         "importHint": "Ảnh đặt tên theo mã (p1.png…) tự gán; ảnh tải từ ChatGPT giữ nguyên tên thì gán theo thứ tự hoặc chọn mã. Ảnh PNG nền trong được tự cắt sát viền.",
         "importButton": "Thả ảnh hoặc file .zip vào đây",
         "importDone": "Đã gán {assigned} ảnh · {unmatched} ảnh chờ gán.",
+        "importSkipped": "Đã bỏ qua {count} ảnh vì đã có ảnh và bạn chọn không ghi đè.",
+        "overwriteTitle": "Ghi đè ảnh đã có?",
+        "overwriteDescription": "{count} mã đã có ảnh rồi ({codes}). Bạn muốn ghi đè bằng ảnh mới, hay chỉ nhập các mã còn thiếu và giữ nguyên ảnh cũ?",
+        "overwriteSkip": "Chỉ nhập ảnh còn thiếu",
+        "overwriteConfirm": "Ghi đè",
         "stepRange": "Chọn khoảng cảnh",
         "stepGenerate": "Tạo & copy prompt",
         "rangeScenes": "Cảnh",
@@ -1599,6 +1615,8 @@
         "generateHint": "AI viết prompt chi tiết cho từng mục — gộp bối cảnh cảnh và ngoại hình nhân vật cố định. Mỗi prompt được lưu ngay khi viết xong, đóng hộp thoại hay F5 không mất.",
         "showInstructions": "Xem hướng dẫn gửi ChatGPT",
         "hideInstructions": "Ẩn hướng dẫn",
+        "saveInstructions": "Lưu",
+        "resetInstructions": "Dùng lại mặc định",
         "statScenes": "cảnh trong khoảng",
         "statItems": "mục cần ảnh (đã gộp trùng)",
         "stepPack": "Tải gói cho ChatGPT",
@@ -1646,6 +1664,7 @@
         "splitLayers": "Phân shot & tách lớp cảnh {from}–{to}",
         "splitAgain": "Phân shot lại cảnh {from}–{to}",
         "splitting": "Đang phân shot…",
+        "stopSplitting": "Dừng (xong lượt đang chạy)",
         "splitDone": "Đã tách lại {count} cảnh: {scenes}. Danh sách tư liệu bên phải đã cập nhật.",
         "splitNoChange": "Không có cảnh nào cần tách thêm.",
         "splitConfirmTitle": "Phân shot & tách lớp cho khoảng cảnh này?",
@@ -1733,7 +1752,7 @@
     },
     "library": {
       "pageTitle": "Kho media",
-      "pageDescription": "Ảnh, video và âm thanh của riêng bạn. Đặt tên và tag rõ ràng: bước Tài nguyên tìm trong thư viện theo tên, tag và mô tả.",
+      "pageDescription": "Ảnh, video và âm thanh của riêng bạn. Đặt tên và tag rõ ràng để bước Tài nguyên dễ tìm trong thư viện theo tên, tag và mô tả.",
       "searchPlaceholder": "Tìm theo tên, tag hoặc mô tả",
       "searchButton": "Tìm",
       "uploadButton": "Tải lên",
@@ -1789,13 +1808,26 @@
       "scriptAnalyses": "Phân tích kịch bản",
       "styleTemplates": "Skill phong cách",
       "users": "Người dùng",
+      "trash": "Thùng rác",
       "logs": "Nhật ký"
+    },
+    "pagination": {
+      "previous": "Trước",
+      "next": "Sau",
+      "pageOf": "Trang {current}/{total}"
     },
     "scriptAnalyses": {
       "owner": "Chủ sở hữu",
       "createdAt": "Ngày tạo",
       "source": "Nguồn",
-      "scenes": "Số cảnh"
+      "scenes": "Số cảnh",
+      "sourceTypes": {
+        "youtube": "YouTube",
+        "import": "Nhập",
+        "document": "Tài liệu",
+        "template": "Mẫu kịch bản",
+        "idea": "Ý tưởng"
+      }
     },
     "styleTemplates": {
       "owner": "Chủ sở hữu",
@@ -1818,6 +1850,28 @@
       "level": "Mức độ",
       "message": "Nội dung",
       "details": "Chi tiết"
+    },
+    "trash": {
+      "hint": "Dự án/danh mục/video đã xoá mềm — khôi phục lại hoặc xoá vĩnh viễn (không thể hoàn tác).",
+      "empty": "Thùng rác trống.",
+      "type": "Loại",
+      "name": "Tên",
+      "parent": "Thuộc về",
+      "owner": "Chủ sở hữu",
+      "deletedAt": "Đã xoá lúc",
+      "restore": "Khôi phục",
+      "purge": "Xoá vĩnh viễn",
+      "purgeTitle": "Xoá vĩnh viễn \"{name}\"?",
+      "purgeDescription": {
+        "project": "Xoá hẳn dự án này cùng toàn bộ danh mục, video, phân tích kịch bản và tài nguyên bên trong — không thể khôi phục.",
+        "category": "Xoá hẳn danh mục này cùng toàn bộ video và dữ liệu bên trong — không thể khôi phục.",
+        "video": "Xoá hẳn video này cùng phân tích kịch bản và tài nguyên của nó — không thể khôi phục."
+      },
+      "types": {
+        "project": "Dự án",
+        "category": "Danh mục",
+        "video": "Video"
+      }
     }
   },
   "projects": {
@@ -1909,7 +1963,10 @@
       },
       "sourceTypes": {
         "youtube": "YouTube",
-        "import": "Nhập"
+        "import": "Nhập",
+        "document": "Tài liệu",
+        "template": "Mẫu kịch bản",
+        "idea": "Ý tưởng"
       }
     },
     "recentProjects": {
@@ -2093,6 +2150,60 @@
         "upload": "Tải ảnh lên",
         "hint": "Có thể chọn nhiều ảnh cùng lúc, tối đa 10MB mỗi ảnh."
       }
+    }
+  },
+  "voiceLibrary": {
+    "pageTitle": "Giọng nói",
+    "pageDescription": "Clone một giọng nói từ một mẫu ghi âm, rồi đọc bất kỳ văn bản nào bằng giọng đó. Chạy bằng engine local trên máy — không dùng API giọng nói trả phí.",
+    "createButton": "Thêm giọng nói",
+    "empty": "Chưa có giọng nói nào. Thêm một giọng từ bản ghi âm hoặc file mẫu.",
+    "deleteButton": "Xoá",
+    "deleteTitle": "Xoá giọng nói này?",
+    "deleteDescription": "\"{name}\" và file mẫu của nó sẽ bị xoá.",
+    "form": {
+      "name": "Tên",
+      "namePlaceholder": "ví dụ: Người kể chuyện – giọng nam ấm",
+      "nameRequired": "Vui lòng nhập tên.",
+      "sample": "Mẫu giọng nói",
+      "sampleHint": "Một đoạn ghi âm rõ giọng, 10–30 giây, không có tiếng ồn hay nhạc nền.",
+      "sampleRequired": "Vui lòng chọn file âm thanh mẫu.",
+      "sampleSelected": "Đã có mẫu: {name}",
+      "create": "Tạo giọng nói"
+    },
+    "preview": {
+      "textPlaceholder": "Nhập một câu để nghe thử bằng giọng này…",
+      "generateButton": "Tạo thử",
+      "generating": "Đang tạo…",
+      "engineNotReady": "Engine giọng nói local cần thiết lập một lần (Python) ở lần dùng đầu tiên — có thể mất khoảng một phút."
+    },
+    "ttsPanel": {
+      "title": "Chuyển văn bản thành giọng nói",
+      "selectLabel": "Giọng",
+      "selectPlaceholder": "Chọn một giọng",
+      "textLabel": "Văn bản",
+      "textPlaceholder": "Nhập nội dung muốn đọc…",
+      "generateButton": "Tạo",
+      "generating": "Đang tạo…",
+      "quickPreviewButton": "Nghe thử giọng này ở đây"
+    },
+    "presets": {
+      "title": "Giọng có sẵn",
+      "empty": "Chưa có giọng có sẵn nào — xem server/services/voice/presets/README.md để thêm.",
+      "sampleTextLabel": "Câu mẫu",
+      "sampleTextPlaceholder": "Nhập một câu, rồi bấm nghe thử ở bất kỳ giọng nào bên dưới…",
+      "sampleTextDefault": "Xin chào, đây là giọng đọc thử được tạo bằng trí tuệ nhân tạo.",
+      "tryButton": "Nghe thử",
+      "installButton": "Thêm",
+      "installedBadge": "Đã thêm"
+    },
+    "fromSong": {
+      "uploadTab": "Tải mẫu lên",
+      "songTab": "Tách từ bài hát",
+      "hint": "Tải lên một bài hát; phần vocal sẽ được tách ra khỏi nhạc đệm để bạn dùng clone giọng.",
+      "separateButton": "Tách giọng",
+      "working": "Đang xử lý…",
+      "workingHint": "Có thể mất vài phút trên máy này.",
+      "useThisButton": "Dùng đoạn này"
     }
   }
 }

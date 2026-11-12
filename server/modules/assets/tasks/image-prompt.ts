@@ -1,19 +1,8 @@
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import { frameRatioForAi } from "../../../../shared/frame-ratio.js";
 import type { FrameRatio, ImageLayer } from "../../../../shared/types.js";
-import type { ProviderKey } from "../../../services/ai/providers/index.js";
+import type { AiEffort, ProviderKey } from "../../../services/ai/providers/index.js";
 import { defineTask, promptOf, providerFor } from "../../../services/ai/task.js";
-
-/**
- * Bump whenever the rules below (or what's sent with them) change in a way
- * that makes earlier prompts wrong — saved prompts from an older version are
- * no longer reused, so they get written again under the current rules.
- * 2: verbatim on-screen text, no style words from the scene, frame ratio,
- *    layers / sprite sheets, position & angle in the scene.
- * 3: plausibility check of poses and how objects are held/used.
- * 4: drawn for its shot's framing (shot size + camera angle).
- */
-export const IMAGE_PROMPT_RULES_VERSION = 4;
 
 export interface ImagePromptInput {
   /** The asset description as the user typed it — often Vietnamese. */
@@ -39,6 +28,8 @@ export interface ImagePromptInput {
    */
   styleFromSkill?: boolean;
   provider: ProviderKey;
+  model?: string;
+  effort?: AiEffort;
 }
 
 export interface ImagePromptOutput {
@@ -99,7 +90,8 @@ export const imagePromptTask = defineTask<ImagePromptInput, ImagePromptOutput>({
     const characterImages = input.characterReferenceImages ?? [];
     const images = [...styleImages, ...characterImages.map((c) => c.image)];
     const result = await providerFor(ctx, input.provider).generateStructured<ImagePromptOutput>({
-      model: defaultModelFor(input.provider),
+      model: input.model ?? defaultModelFor(input.provider),
+      effort: input.effort ?? "low",
       system: promptOf(ctx, this, "system"),
       text: [
         `Mô tả tài nguyên: ${input.description}`,
@@ -124,7 +116,6 @@ export const imagePromptTask = defineTask<ImagePromptInput, ImagePromptOutput>({
         .filter(Boolean)
         .join("\n"),
       images: images.length ? images : undefined,
-      effort: "low",
       schema: SCHEMA,
       schemaName: "image_prompt",
     });

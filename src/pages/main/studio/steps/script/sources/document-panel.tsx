@@ -11,11 +11,11 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/i18n";
+import AiSettingsFields from "@/components/shared/ai-settings-fields";
 import { apiClient } from "@/lib/api-client";
 import DocumentPicker from "@/pages/main/library/documents/document-picker";
 import type { DocumentSummary } from "@shared/types";
 import { useEffect, useState } from "react";
-import ProviderModelFields from "../provider-model-fields";
 import SkillSelectField from "../skill-select-field";
 import type { ScriptLanguage } from "../use-script-step";
 import type { ScriptSourcePanelProps } from "./registry";
@@ -71,13 +71,15 @@ export default function DocumentPanel({ step }: ScriptSourcePanelProps) {
       </Field>
 
       <div className="flex flex-wrap items-end gap-3">
-        <ProviderModelFields
+        <AiSettingsFields
           providerLabel={t("fromDocument.providerLabel")}
           provider={step.describeProvider}
           onProviderChange={step.changeDescribeProvider}
           model={step.describeModel}
           onModelChange={step.setDescribeModel}
           availableProviders={step.availableProviders}
+          effort={step.effort}
+          onEffortChange={step.setEffort}
         />
         <Field className="w-36">
           <FieldLabel>{t("fromDocument.durationLabel")}</FieldLabel>

@@ -6,6 +6,7 @@ import type {
   ScriptAnalysisRecord,
   ScriptAnalysisSummary,
   ScriptAnalyzeResult,
+  ScriptScene,
   ScriptSourceType,
 } from "../../../shared/types.js";
 import { getDb } from "../../services/db/client.js";
@@ -180,6 +181,35 @@ export function updateDraftScriptText(
           `UPDATE script_analyses SET script_text = ? WHERE id = ? AND user_id = ?`,
         )
         .run(scriptText, id, userId);
+  if (result.changes === 0) return null;
+  return getScriptAnalysisById(userId, isAdmin, id);
+}
+
+/**
+ * Overwrites an "analyzed" version's scenes in place — no new version, no
+ * history entry. Used only by annotation passes over already-analyzed scenes
+ * (shot/layer planning, asset prompts) that enrich the existing breakdown
+ * rather than re-deciding it, so re-running one doesn't pile up versions
+ * nobody asked to keep. Null means not found or not owned.
+ */
+export function updateAnalyzedScenes(
+  userId: string,
+  isAdmin: boolean,
+  id: string,
+  scenes: ScriptScene[],
+): ScriptAnalysisRecord | null {
+  const existing = getScriptAnalysisById(userId, isAdmin, id);
+  if (!existing || existing.kind !== "analyzed") return null;
+  const scenesJson = JSON.stringify(scenes);
+  const result = isAdmin
+    ? getDb()
+        .prepare(`UPDATE script_analyses SET scenes_json = ? WHERE id = ?`)
+        .run(scenesJson, id)
+    : getDb()
+        .prepare(
+          `UPDATE script_analyses SET scenes_json = ? WHERE id = ? AND user_id = ?`,
+        )
+        .run(scenesJson, id, userId);
   if (result.changes === 0) return null;
   return getScriptAnalysisById(userId, isAdmin, id);
 }

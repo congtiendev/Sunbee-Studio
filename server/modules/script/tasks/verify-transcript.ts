@@ -2,7 +2,7 @@ import {
   defaultModelFor,
   GPT_4_1_MODEL,
 } from "../../../../shared/script-cost-estimate.js";
-import type { ProviderKey } from "../../../services/ai/providers/index.js";
+import type { AiEffort, ProviderKey } from "../../../services/ai/providers/index.js";
 import {
   defineTask,
   promptOf,
@@ -33,6 +33,7 @@ export interface VerifyTranscriptInput {
   /** Default OpenAI (GPT-4.1); the user's pick (e.g. Claude) when its key is set. */
   provider?: ProviderKey;
   model?: string;
+  effort?: AiEffort;
 }
 
 export const verifyTranscriptTask = defineTask<
@@ -59,7 +60,7 @@ export const verifyTranscriptTask = defineTask<
   ],
 
   async run(input, ctx) {
-    const provider = input.provider ?? "openai";
+    const provider = input.provider ?? "claude";
     const result = await providerFor(
       ctx,
       provider,
@@ -67,6 +68,7 @@ export const verifyTranscriptTask = defineTask<
       model:
         input.model ??
         (provider === "openai" ? GPT_4_1_MODEL : defaultModelFor(provider)),
+      effort: input.effort ?? "medium",
       system: promptOf(ctx, this, "system"),
       text: input.scriptText,
       images: input.frames,

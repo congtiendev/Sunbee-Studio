@@ -25,7 +25,7 @@ export async function writeScriptFromTemplate(
   caller: Caller,
   req: ScriptFromTemplateRequest,
 ): Promise<ScriptFromTemplateResponse> {
-  const provider = req.provider ?? "openai";
+  const provider = req.provider ?? "claude";
   const ctx = taskContextFor(caller.id);
   if (!hasProviderKey(ctx, provider)) throw new MissingApiKeyError(provider);
 

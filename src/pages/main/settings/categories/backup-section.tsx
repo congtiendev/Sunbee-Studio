@@ -93,6 +93,10 @@ export default function BackupSection() {
                 ` ${t("importMissingImages", {
                   count: result.missingReferenceImages ?? 0,
                 })}`}
+              {(result.skippedDuplicates ?? 0) > 0 &&
+                ` ${t("importSkippedDuplicates", {
+                  count: result.skippedDuplicates ?? 0,
+                })}`}
             </AlertDescription>
           </Alert>
         )}

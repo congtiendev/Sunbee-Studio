@@ -1,5 +1,2 @@
 export type DatabaseAdminCategoryKey =
-  | "scriptAnalyses"
-  | "styleTemplates"
-  | "users"
-  | "logs";
+  "scriptAnalyses" | "styleTemplates" | "users" | "trash" | "logs";

@@ -34,6 +34,7 @@ const UI_PREFERENCE_KEYS = [
   "scriptIdeaText",
   "scriptDocumentBrief",
   "assetsGraphicsSkillId",
+  "assetsPackInstructions",
 ] as const satisfies readonly (keyof UiPreferences)[];
 
 function filePath() {

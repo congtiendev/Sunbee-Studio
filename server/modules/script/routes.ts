@@ -87,6 +87,7 @@ router.post("/fetch-transcript", requireAuth, requireVideoAccess, async (req, re
         useAi: body.useAi ?? true,
         provider: body.provider,
         model: body.model,
+        effort: body.effort,
         language: body.language,
       });
     const version = saveScriptVersion(
@@ -149,6 +150,7 @@ router.post(
         videoId?: string;
         provider?: "openai" | "claude";
         model?: string;
+        effort?: "low" | "medium" | "high";
         language?: "vi" | "en";
       };
       const { scriptText, frames, noSpeechDetected, aiDescribed } =
@@ -159,6 +161,7 @@ router.post(
           {
             describeProvider: body.provider,
             describeModel: body.model,
+            describeEffort: body.effort,
             language: body.language,
           },
         );
@@ -205,7 +208,7 @@ router.post("/from-document", requireAuth, requireVideoAccess, async (req, res) 
       body.videoId,
       {
         styleTemplateId: body.styleTemplateId,
-        provider: body.provider ?? "openai",
+        provider: body.provider ?? "claude",
         model: body.model,
         language: body.language ?? "vi",
       },
@@ -232,7 +235,7 @@ router.post("/from-idea", requireAuth, requireVideoAccess, async (req, res) => {
       body.videoId,
       {
         styleTemplateId: body.styleTemplateId,
-        provider: body.provider ?? "openai",
+        provider: body.provider ?? "claude",
         model: body.model,
         language: body.language ?? "vi",
       },

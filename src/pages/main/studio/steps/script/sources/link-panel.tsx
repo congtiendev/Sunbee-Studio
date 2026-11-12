@@ -12,7 +12,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useTranslations } from "@/i18n";
-import ProviderModelFields from "../provider-model-fields";
+import AiSettingsFields from "@/components/shared/ai-settings-fields";
 import type { ScriptLanguage } from "../use-script-step";
 import type { ScriptSourcePanelProps } from "./registry";
 
@@ -62,13 +62,15 @@ export default function LinkPanel({ step }: ScriptSourcePanelProps) {
         </Field>
         {step.linkUseAi && (
           <>
-            <ProviderModelFields
+            <AiSettingsFields
               providerLabel={t("link.providerLabel")}
               provider={step.describeProvider}
               onProviderChange={step.changeDescribeProvider}
               model={step.describeModel}
               onModelChange={step.setDescribeModel}
               availableProviders={step.availableProviders}
+              effort={step.effort}
+              onEffortChange={step.setEffort}
             />
             <Field className="w-40">
               <FieldLabel>{t("scriptLanguageLabel")}</FieldLabel>

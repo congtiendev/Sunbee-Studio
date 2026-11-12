@@ -53,15 +53,17 @@ import type {
   SceneResource,
   SceneResourceSelectRequest,
   StyleTemplate,
+  TrashItem,
+  TrashItemType,
+  TrashPurgeResult,
   User,
   Video,
   VideoSummary,
+  VoicePreset,
+  VoiceProfile,
 } from "@shared/types";
 
-async function request<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(path, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -99,6 +101,24 @@ async function requestUpload<T>(path: string, formData: FormData): Promise<T> {
   return data as T;
 }
 
+// A request whose success response is raw binary (audio), not JSON — error
+// responses are still JSON, so those parse normally.
+async function requestBlob(
+  path: string,
+  init: { method: "POST"; headers?: Record<string, string>; body: BodyInit },
+): Promise<Blob> {
+  const res = await fetch(path, { credentials: "include", ...init });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(
+      (data && typeof data === "object" && "error" in data
+        ? (data.error as string)
+        : null) ?? `Request failed (${res.status})`,
+    );
+  }
+  return res.blob();
+}
+
 export const apiClient = {
   auth: {
     register: (req: AuthRegisterRequest): Promise<User> =>
@@ -117,7 +137,9 @@ export const apiClient = {
     listUsers: (): Promise<User[]> => request("/api/admin/users"),
   },
   admin: {
-    logs: (params: { date?: string; level?: string } = {}): Promise<LogsResult> => {
+    logs: (
+      params: { date?: string; level?: string } = {},
+    ): Promise<LogsResult> => {
       const query = new URLSearchParams();
       if (params.date) query.set("date", params.date);
       if (params.level) query.set("level", params.level);
@@ -143,7 +165,10 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(req),
       }),
-    addAnthropicKey: (req: { name: string; apiKey: string }): Promise<AppSettings> =>
+    addAnthropicKey: (req: {
+      name: string;
+      apiKey: string;
+    }): Promise<AppSettings> =>
       request("/api/settings/anthropic-keys", {
         method: "POST",
         body: JSON.stringify(req),
@@ -156,7 +181,9 @@ export const apiClient = {
     removeAnthropicKey: (id: string): Promise<AppSettings> =>
       request(`/api/settings/anthropic-keys/${id}`, { method: "DELETE" }),
     activateAnthropicKey: (id: string): Promise<AppSettings> =>
-      request(`/api/settings/anthropic-keys/${id}/activate`, { method: "POST" }),
+      request(`/api/settings/anthropic-keys/${id}/activate`, {
+        method: "POST",
+      }),
     researchSources: (): Promise<ResearchSourceInfo[]> =>
       request("/api/settings/research-sources"),
   },
@@ -168,11 +195,18 @@ export const apiClient = {
       content: string,
       scope: PromptScope = "user",
     ): Promise<PromptOverride> =>
-      request(`/api/prompts/${encodeURIComponent(taskKey)}/${encodeURIComponent(slot)}`, {
-        method: "PUT",
-        body: JSON.stringify({ content, scope }),
-      }),
-    reset: (taskKey: string, slot: string, scope: PromptScope = "user"): Promise<{ ok: true }> =>
+      request(
+        `/api/prompts/${encodeURIComponent(taskKey)}/${encodeURIComponent(slot)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ content, scope }),
+        },
+      ),
+    reset: (
+      taskKey: string,
+      slot: string,
+      scope: PromptScope = "user",
+    ): Promise<{ ok: true }> =>
       request(
         `/api/prompts/${encodeURIComponent(taskKey)}/${encodeURIComponent(slot)}?scope=${scope}`,
         { method: "DELETE" },
@@ -185,6 +219,11 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(bundle),
       }),
+    trash: (): Promise<TrashItem[]> => request("/api/data/trash"),
+    restoreTrash: (type: TrashItemType, id: string): Promise<{ ok: true }> =>
+      request(`/api/data/trash/${type}/${id}/restore`, { method: "POST" }),
+    purgeTrash: (type: TrashItemType, id: string): Promise<TrashPurgeResult> =>
+      request(`/api/data/trash/${type}/${id}`, { method: "DELETE" }),
   },
   templates: {
     list: (): Promise<StyleTemplate[]> => request("/api/templates"),
@@ -215,7 +254,9 @@ export const apiClient = {
       return requestUpload(`/api/templates/${id}/reference-images`, formData);
     },
     removeReferenceImage: (id: string, fileId: string): Promise<SkillDetail> =>
-      request(`/api/templates/${id}/reference-images/${fileId}`, { method: "DELETE" }),
+      request(`/api/templates/${id}/reference-images/${fileId}`, {
+        method: "DELETE",
+      }),
   },
   script: {
     fetchTranscript: (
@@ -231,6 +272,7 @@ export const apiClient = {
       provider?: "openai" | "claude",
       model?: string,
       language?: "vi" | "en",
+      effort?: "low" | "medium" | "high",
     ): Promise<FetchTranscriptResult> => {
       const formData = new FormData();
       formData.set("video", file);
@@ -238,10 +280,13 @@ export const apiClient = {
       if (provider) formData.set("provider", provider);
       if (model) formData.set("model", model);
       if (language) formData.set("language", language);
+      if (effort) formData.set("effort", effort);
       return requestUpload("/api/script/transcribe-upload", formData);
     },
     /** Source "document": AI writes a script from documents (saved as a draft version). */
-    fromDocument: (req: ScriptFromDocumentRequest): Promise<FetchTranscriptResult> =>
+    fromDocument: (
+      req: ScriptFromDocumentRequest,
+    ): Promise<FetchTranscriptResult> =>
       request("/api/script/from-document", {
         method: "POST",
         body: JSON.stringify(req),
@@ -253,7 +298,9 @@ export const apiClient = {
         body: JSON.stringify(req),
       }),
     /** Source "template": new script + scenes modelled on an analyzed version. */
-    fromTemplate: (req: ScriptFromTemplateRequest): Promise<ScriptFromTemplateResponse> =>
+    fromTemplate: (
+      req: ScriptFromTemplateRequest,
+    ): Promise<ScriptFromTemplateResponse> =>
       request("/api/script/from-template", {
         method: "POST",
         body: JSON.stringify(req),
@@ -310,7 +357,8 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ title, text }),
       }),
-    get: (id: string): Promise<DocumentRecord> => request(`/api/documents/${id}`),
+    get: (id: string): Promise<DocumentRecord> =>
+      request(`/api/documents/${id}`),
     rename: (id: string, title: string): Promise<void> =>
       request(`/api/documents/${id}`, {
         method: "PATCH",
@@ -319,14 +367,22 @@ export const apiClient = {
     delete: (id: string): Promise<void> =>
       request(`/api/documents/${id}`, { method: "DELETE" }),
     /** Replace every skill/project one document is attached to. */
-    setDocumentLinks: (id: string, links: DocumentLink[]): Promise<DocumentLink[]> =>
+    setDocumentLinks: (
+      id: string,
+      links: DocumentLink[],
+    ): Promise<DocumentLink[]> =>
       request(`/api/documents/${id}/links`, {
         method: "PUT",
         body: JSON.stringify({ links }),
       }),
     /** Documents attached to one skill or project. */
-    linkedTo: (targetType: DocumentLinksRequest["targetType"], targetId: string): Promise<DocumentSummary[]> =>
-      request(`/api/documents/links?targetType=${targetType}&targetId=${targetId}`),
+    linkedTo: (
+      targetType: DocumentLinksRequest["targetType"],
+      targetId: string,
+    ): Promise<DocumentSummary[]> =>
+      request(
+        `/api/documents/links?targetType=${targetType}&targetId=${targetId}`,
+      ),
     setLinkedTo: (req: DocumentLinksRequest): Promise<DocumentSummary[]> =>
       request("/api/documents/links", {
         method: "PUT",
@@ -336,8 +392,11 @@ export const apiClient = {
   },
   assets: {
     /** Research sources (stock sites, library, AI web) with availability for this user. */
-    sources: (): Promise<ResearchSourceInfo[]> => request("/api/assets/sources"),
-    suggestQueries: (req: AssetQuerySuggestRequest): Promise<AssetQuerySuggestResponse> =>
+    sources: (): Promise<ResearchSourceInfo[]> =>
+      request("/api/assets/sources"),
+    suggestQueries: (
+      req: AssetQuerySuggestRequest,
+    ): Promise<AssetQuerySuggestResponse> =>
       request("/api/assets/suggest-queries", {
         method: "POST",
         body: JSON.stringify(req),
@@ -348,18 +407,24 @@ export const apiClient = {
         body: JSON.stringify(req),
       }),
     /** Ready-to-paste prompts for many required assets at once — no image generated, no graphicsStyle/referenceImages. */
-    imagePrompts: (req: AssetPromptBatchRequest): Promise<AssetPromptBatchResponse> =>
+    imagePrompts: (
+      req: AssetPromptBatchRequest,
+    ): Promise<AssetPromptBatchResponse> =>
       request("/api/assets/image-prompts", {
         method: "POST",
         body: JSON.stringify(req),
       }),
-    splitLayers: (req: AssetSplitLayersRequest): Promise<AssetSplitLayersResponse> =>
+    splitLayers: (
+      req: AssetSplitLayersRequest,
+    ): Promise<AssetSplitLayersResponse> =>
       request("/api/assets/split-layers", {
         method: "POST",
         body: JSON.stringify(req),
       }),
     savedImagePrompts: (videoId: string): Promise<AssetPromptRecord[]> =>
-      request(`/api/assets/image-prompts?videoId=${encodeURIComponent(videoId)}`),
+      request(
+        `/api/assets/image-prompts?videoId=${encodeURIComponent(videoId)}`,
+      ),
     selections: (videoId: string): Promise<SceneResource[]> =>
       request(`/api/assets/selections?videoId=${videoId}`),
     /** Pick (or with candidate null, clear) the asset for one required asset of a scene. */
@@ -369,7 +434,9 @@ export const apiClient = {
         body: JSON.stringify(req),
       }),
     library: {
-      list: (params: { q?: string; type?: LibraryMediaType } = {}): Promise<LibraryAsset[]> => {
+      list: (
+        params: { q?: string; type?: LibraryMediaType } = {},
+      ): Promise<LibraryAsset[]> => {
         const query = new URLSearchParams();
         if (params.q) query.set("q", params.q);
         if (params.type) query.set("type", params.type);
@@ -410,12 +477,19 @@ export const apiClient = {
   },
   /** AI training: skills learned from videos and documents, one version per run. */
   training: {
-    sources: (): Promise<TrainingSourceList[]> => request("/api/training/sources"),
+    sources: (): Promise<TrainingSourceList[]> =>
+      request("/api/training/sources"),
     run: (req: SkillTrainingRequest): Promise<SkillTrainingResult> =>
-      request("/api/training/run", { method: "POST", body: JSON.stringify(req) }),
+      request("/api/training/run", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
     versions: (skillId: string): Promise<SkillVersion[]> =>
       request(`/api/training/skills/${skillId}/versions`),
-    restore: (skillId: string, versionId: string): Promise<SkillTrainingResult> =>
+    restore: (
+      skillId: string,
+      versionId: string,
+    ): Promise<SkillTrainingResult> =>
       request(`/api/training/skills/${skillId}/versions/${versionId}/restore`, {
         method: "POST",
       }),
@@ -424,6 +498,47 @@ export const apiClient = {
       const formData = new FormData();
       formData.set("file", file);
       return requestUpload("/api/training/images", formData);
+    },
+  },
+  /** Voice library: reusable voices cloned from one reference sample each. */
+  voiceover: {
+    list: (): Promise<VoiceProfile[]> => request("/api/voiceover/profiles"),
+    create: (name: string, sample: File): Promise<VoiceProfile> => {
+      const formData = new FormData();
+      formData.set("name", name);
+      formData.set("sample", sample);
+      return requestUpload("/api/voiceover/profiles", formData);
+    },
+    delete: (id: string): Promise<void> =>
+      request(`/api/voiceover/profiles/${id}`, { method: "DELETE" }),
+    /** Reads `text` aloud in this voice; the result is a playable WAV blob. */
+    preview: (id: string, text: string): Promise<Blob> =>
+      requestBlob(`/api/voiceover/profiles/${id}/preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      }),
+    /** Ready-made voices the user can add to their library with one click. */
+    presets: {
+      list: (): Promise<VoicePreset[]> => request("/api/voiceover/presets"),
+      install: (id: string): Promise<VoiceProfile> =>
+        request(`/api/voiceover/presets/${id}/install`, { method: "POST" }),
+      /** Reads `text` aloud in a catalog voice, before installing it. */
+      preview: (id: string, text: string): Promise<Blob> =>
+        requestBlob(`/api/voiceover/presets/${id}/preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        }),
+    },
+    /** Isolates the vocal track from a song; the result is a playable WAV blob, not saved anywhere yet. */
+    separateVocals: (song: File): Promise<Blob> => {
+      const formData = new FormData();
+      formData.set("song", song);
+      return requestBlob("/api/voiceover/separate-vocals", {
+        method: "POST",
+        body: formData,
+      });
     },
   },
   projects: {

@@ -1,6 +1,6 @@
 import { CHARACTER_ROSTER_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
-import type { ProviderKey } from "../../../services/ai/providers/index.js";
+import type { AiEffort, ProviderKey } from "../../../services/ai/providers/index.js";
 import {
   defineTask,
   promptOf,
@@ -11,6 +11,7 @@ export interface ExtractCharactersInput {
   scriptText: string;
   provider: ProviderKey;
   model?: string;
+  effort?: AiEffort;
 }
 
 export interface CharacterRosterEntry {
@@ -106,7 +107,7 @@ export const extractCharactersTask = defineTask<
       model: input.model ?? defaultModelFor(input.provider),
       system: promptOf(ctx, this, "system"),
       text: input.scriptText,
-      effort: "low",
+      effort: input.effort ?? "low",
       schema: CHARACTER_ROSTER_SCHEMA,
       schemaName: "character_roster",
     });
