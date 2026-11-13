@@ -1839,7 +1839,7 @@
         "toScene": "To scene",
         "button": "Export to CapCut",
         "working": "Exporting… (can take a minute)",
-        "done": "Created project “{name}” ({duration}). Quit CapCut completely and reopen it to see it."
+        "done": "Created project “{name}” ({duration}). Quit CapCut completely and reopen it to see it. When exporting the video in CapCut, pick 1080p (it may default to 480p)."
       },
       "table": {
         "scene": "Scene",

@@ -1857,7 +1857,7 @@
         "toScene": "Đến cảnh",
         "button": "Xuất sang CapCut",
         "working": "Đang xuất… (có thể mất một phút)",
-        "done": "Đã tạo dự án “{name}” ({duration}). Tắt hẳn CapCut rồi mở lại để thấy dự án."
+        "done": "Đã tạo dự án “{name}” ({duration}). Tắt hẳn CapCut rồi mở lại để thấy dự án. Khi xuất video trong CapCut, chọn độ phân giải 1080p (CapCut có thể để mặc định 480p)."
       },
       "table": {
         "scene": "Cảnh",
