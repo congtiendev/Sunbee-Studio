@@ -36,6 +36,7 @@ import {
   setSceneResource,
   updateLibraryAsset,
 } from "./repo.js";
+import { installSoundPack, listSoundPacks } from "./sound-effects/install.js";
 import { imagePromptTask } from "./tasks/image-prompt.js";
 import { searchQueryTask } from "./tasks/search-query.js";
 import { splitLayersTask } from "./tasks/split-layers.js";
@@ -352,6 +353,7 @@ router.get("/library", requireAuth, (req, res) => {
     searchLibrary(req.user!.id, isAdmin(req.user!), {
       query: (req.query.q as string | undefined) ?? "",
       mediaType: type === "image" || type === "video" || type === "audio" ? type : undefined,
+      category: (req.query.category as string | undefined) || undefined,
       limit: 500,
     }),
   );
@@ -474,6 +476,24 @@ router.delete("/library/:id", requireAuth, async (req, res) => {
   const fileId = deleteLibraryAsset(req.user!.id, isAdmin(req.user!), req.params.id as string);
   if (fileId) await deleteFile(req.user!.id, isAdmin(req.user!), fileId);
   res.json({ ok: true });
+});
+
+// ---------- sound-effect packs (ready-made, installed into the library) ----------
+
+router.get("/sound-packs", requireAuth, async (req, res) => {
+  try {
+    res.json(await listSoundPacks(req.user!.id));
+  } catch (err) {
+    res.status(500).json({ error: errorMessage(err) });
+  }
+});
+
+router.post("/sound-packs/:id/install", requireAuth, async (req, res) => {
+  try {
+    res.json(await installSoundPack(req.user!.id, req.params.id as string));
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
 });
 
 export default router;

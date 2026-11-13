@@ -6,6 +6,7 @@ import {
   FolderIcon,
   GearIcon,
   LayoutGridIcon,
+  SoundIcon,
   SparkIcon,
   UploadIcon,
 } from "@/icons";
@@ -57,6 +58,11 @@ export const navSections: NavSection[] = [
         icon: <BrainIcon className="size-6" />,
         key: "training",
         path: paths.libraryTraining,
+      },
+      {
+        icon: <SoundIcon className="size-6" />,
+        key: "soundEffects",
+        path: paths.librarySoundEffects,
       },
     ],
   },

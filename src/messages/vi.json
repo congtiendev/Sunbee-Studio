@@ -148,7 +148,8 @@
       "documents": "Tài liệu",
       "skills": "Skill (phong cách AI)",
       "training": "Huấn luyện AI",
-      "voices": "Giọng nói"
+      "voices": "Giọng nói",
+      "soundEffects": "Hiệu ứng âm thanh"
     }
   },
   "header": {
@@ -2204,6 +2205,27 @@
       "working": "Đang xử lý…",
       "workingHint": "Có thể mất vài phút trên máy này.",
       "useThisButton": "Dùng đoạn này"
+    }
+  },
+  "soundEffects": {
+    "pageTitle": "Hiệu ứng âm thanh",
+    "pageDescription": "Thêm các gói hiệu ứng âm thanh có sẵn (CC0, dùng thương mại được) hoặc tự tải lên, chia sẵn theo danh mục.",
+    "deleteButton": "Xoá",
+    "deleteTitle": "Xoá âm thanh này?",
+    "deleteDescription": "\"{name}\" sẽ bị xoá.",
+    "packs": {
+      "title": "Gói có sẵn",
+      "empty": "Hiện chưa có gói nào.",
+      "soundCount": "{count, plural, other {# âm thanh}}",
+      "folderCount": "{count, plural, other {# danh mục}}",
+      "installButton": "Thêm",
+      "installedBadge": "Đã thêm"
+    },
+    "library": {
+      "title": "Âm thanh của bạn",
+      "empty": "Chưa có âm thanh nào — thêm một gói có sẵn ở trên, hoặc tự tải lên ở Kho media.",
+      "allCategories": "Tất cả ({count})",
+      "uncategorized": "Chưa phân loại"
     }
   }
 }

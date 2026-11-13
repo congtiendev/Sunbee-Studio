@@ -147,7 +147,8 @@
       "documents": "Documents",
       "skills": "Skills",
       "training": "AI training",
-      "voices": "Voices"
+      "voices": "Voices",
+      "soundEffects": "Sound Effects"
     }
   },
   "header": {
@@ -2130,6 +2131,27 @@
       "working": "Working…",
       "workingHint": "This can take a few minutes on this machine.",
       "useThisButton": "Use this clip"
+    }
+  },
+  "soundEffects": {
+    "pageTitle": "Sound Effects",
+    "pageDescription": "Add ready-made sound effect packs (CC0, free for commercial use) or your own uploads, organized by category.",
+    "deleteButton": "Delete",
+    "deleteTitle": "Delete this sound?",
+    "deleteDescription": "\"{name}\" will be deleted.",
+    "packs": {
+      "title": "Ready-made packs",
+      "empty": "No packs available right now.",
+      "soundCount": "{count, plural, one {# sound} other {# sounds}}",
+      "folderCount": "{count, plural, one {# folder} other {# folders}}",
+      "installButton": "Add",
+      "installedBadge": "Added"
+    },
+    "library": {
+      "title": "Your sounds",
+      "empty": "No sounds yet — add a ready-made pack above, or upload your own in Media Library.",
+      "allCategories": "All ({count})",
+      "uncategorized": "Uncategorized"
     }
   }
 }

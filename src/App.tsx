@@ -13,6 +13,7 @@ import ProfilePage from "@/pages/main/profile";
 import DocumentsPage from "@/pages/main/library/documents";
 import MediaLibraryPage from "@/pages/main/library/media";
 import SkillsPage from "@/pages/main/library/skills";
+import SoundEffectsPage from "@/pages/main/library/sound-effects";
 import TrainingPage from "@/pages/main/library/training";
 import ProjectsPage from "@/pages/main/projects";
 import ProjectDetailPage from "@/pages/main/projects/detail";
@@ -56,6 +57,10 @@ export default function App() {
         <Route path={paths.libraryDocuments} element={<DocumentsPage />} />
         <Route path={paths.librarySkills} element={<SkillsPage />} />
         <Route path={paths.libraryTraining} element={<TrainingPage />} />
+        <Route
+          path={paths.librarySoundEffects}
+          element={<SoundEffectsPage />}
+        />
 
         {/* System */}
         <Route path={paths.settings} element={<SettingsPage />} />

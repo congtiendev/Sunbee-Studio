@@ -15,6 +15,7 @@ export const paths = {
   libraryDocuments: "/library/documents",
   librarySkills: "/library/skills",
   libraryTraining: "/library/training",
+  librarySoundEffects: "/library/sound-effects",
   settings: "/settings",
   databaseAdmin: "/database-admin",
   profile: "/profile",

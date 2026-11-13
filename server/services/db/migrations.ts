@@ -520,6 +520,21 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    id: 29,
+    name: "asset_category",
+    up: (db) => {
+      // Folder-like grouping for library assets, mainly for sound-effect
+      // packs (see server/modules/assets/sound-effects/) — a pack installs
+      // as many assets sharing one category + source_pack_id (so a second
+      // install of the same pack is a no-op instead of duplicating rows).
+      db.exec(`
+        ALTER TABLE assets ADD COLUMN category TEXT;
+        ALTER TABLE assets ADD COLUMN source_pack_id TEXT;
+        CREATE INDEX idx_assets_source_pack ON assets(user_id, source_pack_id);
+      `);
+    },
+  },
 ];
 
 export function runNumberedMigrations(db: Database.Database): void {

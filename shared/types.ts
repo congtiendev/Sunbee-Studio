@@ -845,12 +845,34 @@ export interface LibraryAsset {
   fileId: string;
   mediaType: LibraryMediaType;
   name: string;
+  /** Folder-like grouping, mainly used for sound effects (e.g. "whooshes"); free-form, unset for most assets. */
+  category?: string;
   tags: string[];
   description: string;
   mime: string;
   size: number;
   createdAt: string;
   ownerEmail?: string;
+  /** The catalog pack (see `SoundEffectPack`) this was installed from, if any. */
+  sourcePackId?: string;
+}
+
+/**
+ * A ready-made sound-effect pack listed in the catalog
+ * (`server/modules/assets/sound-effects/`) that the user can add to their
+ * library with one click — a whole category's worth of sounds at once.
+ */
+export interface SoundEffectPack {
+  /** `sfxkit:<category>` or `kenney:<slug>` — also what `POST /sound-packs/:id/install` takes. */
+  id: string;
+  title: string;
+  description?: string;
+  /** How many sounds this pack adds. */
+  soundCount: number;
+  source: "SFX Kit (Wyzowl)" | "Kenney.nl";
+  license: string;
+  /** Whether the caller already installed this pack (at least one asset with this `sourcePackId`). */
+  installed: boolean;
 }
 
 /** The asset picked for one required asset of one scene of a video. */
