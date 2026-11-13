@@ -23,7 +23,13 @@ export default defineConfig(({ mode }) => {
         "@shared": path.resolve(import.meta.dirname, "./shared"),
       },
     },
+    // data/ is the backend's runtime data (DB, uploads, caches — and the voice
+    // engine's Python venv, which ships its own HTML pages and tsconfig.json).
+    // Vite must neither crawl it for dependencies nor watch it: a pip install
+    // there would otherwise reload the app over and over / blank it.
+    optimizeDeps: { entries: ["index.html"] },
     server: {
+      watch: { ignored: ["**/data/**", "**/dist/**", "**/dist-electron/**", "**/release/**"] },
       proxy: {
         // Voice preview/separate-vocals can cold-start a local model for
         // minutes on first use — the proxy's own default timeout would cut
