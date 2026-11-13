@@ -7,6 +7,7 @@ import {
   GearIcon,
   LayoutGridIcon,
   MicrophoneIcon,
+  PlayIcon,
   SoundIcon,
   SparkIcon,
   UploadIcon,
@@ -34,6 +35,11 @@ export const navSections: NavSection[] = [
         path: paths.projects,
         // A project's detail page and the video studio live under Projects.
         activePaths: [paths.projectDetail, paths.studio],
+      },
+      {
+        icon: <PlayIcon className="size-6" />,
+        key: "videoRender",
+        path: paths.videoRender,
       },
     ],
   },

@@ -26,6 +26,32 @@ export async function writeScriptFromTemplate(
   caller: Caller,
   req: ScriptFromTemplateRequest,
 ): Promise<ScriptFromTemplateResponse> {
+  const { templateId, provider, scriptText, scenes, resources, style } =
+    await generateScriptFromTemplate(caller, req);
+  const version = saveScriptVersion(
+    caller.id,
+    "template",
+    undefined,
+    scriptText,
+    [],
+    "analyzed",
+    { scenes, resources, style },
+    req.videoId,
+    {
+      templateSourceId: templateId,
+      styleTemplateId: req.styleTemplateId,
+      provider,
+      model: req.model,
+      language: req.language ?? "vi",
+    },
+  );
+  // Written and split in one go: it's the version the video's later steps work from.
+  if (req.videoId) updateVideoPipeline(req.videoId, { scriptVersionId: version.id });
+  return { scriptText, scenes: version.scenes, resources, style, versionId: version.id };
+}
+
+/** The template source's AI work alone — nothing saved (the video-render module keeps the script in its own project). */
+export async function generateScriptFromTemplate(caller: Caller, req: ScriptFromTemplateRequest) {
   const provider = req.provider ?? "claude";
   const ctx = taskContextFor(caller.id);
   if (!hasProviderKey(ctx, provider)) throw new MissingApiKeyError(provider);
@@ -83,30 +109,12 @@ export async function writeScriptFromTemplate(
     ...scene,
     index: i + 1,
   }));
-  const version = saveScriptVersion(
-    caller.id,
-    "template",
-    undefined,
-    scriptText,
-    [],
-    "analyzed",
-    { scenes, resources: analysis.resources, style: analysis.style },
-    req.videoId,
-    {
-      templateSourceId: template.id,
-      styleTemplateId: req.styleTemplateId,
-      provider,
-      model: req.model,
-      language: req.language ?? "vi",
-    },
-  );
-  // Written and split in one go: it's the version the video's later steps work from.
-  if (req.videoId) updateVideoPipeline(req.videoId, { scriptVersionId: version.id });
   return {
+    templateId: template.id,
+    provider,
     scriptText,
-    scenes: version.scenes,
+    scenes,
     resources: analysis.resources,
     style: analysis.style,
-    versionId: version.id,
   };
 }

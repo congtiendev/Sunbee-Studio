@@ -175,6 +175,19 @@
     }
   }
 
+  /* "Now playing" bars on a sound row (sound-effects page). */
+  --animate-equalizer: equalizer 0.9s ease-in-out infinite;
+
+  @keyframes equalizer {
+    0%,
+    100% {
+      transform: scaleY(0.3);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
   --animate-shimmer: shimmer 1.8s ease-in-out infinite;
 
   @keyframes shimmer {

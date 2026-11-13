@@ -1,0 +1,18 @@
+Sunbee Studio — Remotion renderer
+
+This directory contains code adapted from video-shotcraft
+(https://github.com/Vincentwei1021/video-shotcraft, commit
+6700db2ba80572ebc777b99d72049679fed9840c), licensed under the Apache
+License, Version 2.0. A copy of the license is at
+vendor/video-shotcraft/LICENSE.
+
+Adapted (modified) files, each marked at its top:
+- src/motion.ts        — from demos/_fixtures/Polish.tsx (easing, ramp)
+- src/caption.tsx      — the blur-slide word reveal (demos/typography/blur-slide)
+- src/shots/shotcraft.tsx
+    blur-slide, marker-underline-title, text-as-mask, crash-zoom-punch,
+    jump-cut-punch-in (rhythm-interrupt-moves), pull-back-isolation
+    (tension-camera-moves) — rebuilt as parameterised shots over the clip's
+    own picture and text instead of the demos' fixed layouts.
+- src/transitions.tsx  — whip-pan (shot-transitions) and light-leak-burn
+    (transition-hidden-cut), split into the halves either side of a cut.

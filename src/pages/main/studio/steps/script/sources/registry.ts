@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { ScriptStepState } from "../use-script-step";
+import type { ScriptSourceState } from "../source-state";
 import DocumentPanel from "./document-panel";
 import IdeaPanel from "./idea-panel";
 import LinkPanel from "./link-panel";
@@ -14,7 +14,7 @@ import UploadPanel from "./upload-panel";
 export type ScriptSourceKey = "link" | "upload" | "document" | "idea" | "template" | "import";
 
 export interface ScriptSourcePanelProps {
-  step: ScriptStepState;
+  step: ScriptSourceState;
 }
 
 export interface ScriptSourceDefinition {

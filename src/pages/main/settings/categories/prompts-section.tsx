@@ -20,7 +20,7 @@ import {
   VIDEO_STUDIO_STEPS,
   type PromptGroup,
 } from "@/pages/main/studio/steps/registry";
-import { BrainIcon, type IconProps } from "@/icons";
+import { BrainIcon, PlayIcon, type IconProps } from "@/icons";
 import type {
   LocalizedText,
   PromptScope,
@@ -44,6 +44,7 @@ interface PromptTab {
 /** Features with AI tasks of their own (server: `featureModules` in `server/modules/index.ts`). */
 const FEATURE_PROMPT_TABS: PromptTab[] = [
   { key: "training", icon: BrainIcon, labelKey: "sidebar.items.training" },
+  { key: "videoRender", icon: PlayIcon, labelKey: "sidebar.items.videoRender" },
 ];
 
 const PROMPT_TABS: PromptTab[] = [

@@ -96,6 +96,14 @@ export function countAssetsBySourcePack(userId: string, sourcePackId: string): n
   ).n;
 }
 
+/** The user's asset saved from `sourcePackId` (one system sound = one source id), if any. */
+export function findAssetIdBySourcePack(userId: string, sourcePackId: string): string | null {
+  const row = getDb()
+    .prepare("SELECT id FROM assets WHERE user_id = ? AND source_pack_id = ? LIMIT 1")
+    .get(userId, sourcePackId) as { id: string } | undefined;
+  return row?.id ?? null;
+}
+
 export function getLibraryAsset(userId: string, isAdmin: boolean, id: string): LibraryAsset | null {
   const row = getDb().prepare(`${ASSET_SELECT} WHERE a.id = ?`).get(id) as AssetRow | undefined;
   if (!row || (!isAdmin && row.user_id !== userId)) return null;

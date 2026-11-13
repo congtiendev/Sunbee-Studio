@@ -682,6 +682,88 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    id: 33,
+    name: "video_render_tables",
+    up: (db) => {
+      // The standalone video-render tool's timeline for a video (one current
+      // manifest per video, unlike script's versioned drafts — see
+      // server/modules/video-render/) and its render output history
+      // (append-only; the rendered file itself lives in the files table,
+      // kind "render").
+      db.exec(`
+        CREATE TABLE edit_plans (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          video_id TEXT NOT NULL UNIQUE,
+          script_version_id TEXT NOT NULL,
+          manifest_json TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE video_renders (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          video_id TEXT NOT NULL,
+          file_id TEXT NOT NULL REFERENCES files(id),
+          manifest_json TEXT NOT NULL,
+          duration_ms INTEGER NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX idx_video_renders_video ON video_renders(video_id, created_at);
+      `);
+    },
+  },
+  {
+    id: 34,
+    name: "render_projects",
+    up: (db) => {
+      // The video-render module became self-contained: its own projects
+      // (script, scenes, images, audio) instead of a timeline built from a
+      // Video Studio video. Migration 33's tables only ever held test data.
+      db.exec(`
+        DROP TABLE IF EXISTS edit_plans;
+        DROP TABLE IF EXISTS video_renders;
+
+        CREATE TABLE render_projects (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          name TEXT NOT NULL,
+          frame_ratio TEXT NOT NULL,
+          source_mode TEXT NOT NULL DEFAULT 'script',
+          idea_text TEXT NOT NULL DEFAULT '',
+          target_duration_sec INTEGER,
+          script_text TEXT NOT NULL DEFAULT '',
+          scenes_json TEXT NOT NULL DEFAULT '[]',
+          audio_json TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        CREATE INDEX idx_render_projects_user ON render_projects(user_id, updated_at);
+
+        CREATE TABLE render_outputs (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          project_id TEXT NOT NULL REFERENCES render_projects(id) ON DELETE CASCADE,
+          file_id TEXT NOT NULL REFERENCES files(id),
+          manifest_json TEXT NOT NULL,
+          duration_ms INTEGER NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX idx_render_outputs_project ON render_outputs(project_id, created_at);
+      `);
+    },
+  },
+  {
+    id: 35,
+    name: "render_project_source_options",
+    up: (db) => {
+      // The Video Studio's script sources (link, upload, document, template…)
+      // came to the video-render module; each project remembers its inputs.
+      db.exec(`ALTER TABLE render_projects ADD COLUMN source_options_json TEXT NOT NULL DEFAULT '{}';`);
+    },
+  },
 ];
 
 export function runNumberedMigrations(db: Database.Database): void {
@@ -692,6 +774,7 @@ export function runNumberedMigrations(db: Database.Database): void {
       applied_at TEXT NOT NULL
     );
   `);
+  renumberMovedMigrations(db);
   const applied = new Set(
     (db.prepare("SELECT id FROM schema_migrations").all() as { id: number }[]).map(
       (row) => row.id,
@@ -707,4 +790,36 @@ export function runNumberedMigrations(db: Database.Database): void {
       record.run(migration.id, migration.name, new Date().toISOString());
     })();
   }
+}
+
+/**
+ * Two branches once shipped different migrations under the same ids (the
+ * video-render ones were 30–32 on feature/sound-effects-module, 33–35 here).
+ * A database that ran them under their old ids would otherwise skip this
+ * branch's 30–32 and re-run 33–35 on tables it already has. So a record whose
+ * name belongs to a migration with another id is moved to that id first —
+ * freeing its old id for the migration that really owns it.
+ */
+function renumberMovedMigrations(db: Database.Database): void {
+  const idByName = new Map(MIGRATIONS.map((m) => [m.name, m.id]));
+  const rows = db.prepare("SELECT id, name, applied_at FROM schema_migrations").all() as {
+    id: number;
+    name: string;
+    applied_at: string;
+  }[];
+  const moved = rows.filter((row) => {
+    const id = idByName.get(row.name);
+    return id !== undefined && id !== row.id;
+  });
+  if (moved.length === 0) return;
+  const kept = new Set(rows.filter((row) => !moved.includes(row)).map((row) => row.id));
+  db.transaction(() => {
+    const remove = db.prepare("DELETE FROM schema_migrations WHERE id = ?");
+    const insert = db.prepare("INSERT INTO schema_migrations (id, name, applied_at) VALUES (?, ?, ?)");
+    for (const row of moved) remove.run(row.id);
+    for (const row of moved) {
+      const id = idByName.get(row.name)!;
+      if (!kept.has(id)) insert.run(id, row.name, row.applied_at);
+    }
+  })();
 }
