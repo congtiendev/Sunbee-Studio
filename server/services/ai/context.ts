@@ -55,7 +55,8 @@ function compactScenes(record: ScriptAnalysisRecord) {
     shotSize: scene.shotSize,
     cameraMovement: scene.cameraMovement,
     heroMoment: scene.heroMoment,
-    requiredAssets: scene.requiredAssets,
+    // Ids are bookkeeping, not something to imitate.
+    requiredAssets: scene.requiredAssets.map(({ id: _id, ...asset }) => asset),
   }));
 }
 

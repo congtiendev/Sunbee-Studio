@@ -5,6 +5,7 @@ import type {
   ScriptAnalyzeRequest,
   ScriptAnalyzeResponse,
   ScriptApproveRequest,
+  ScriptNarrationRequest,
   User,
 } from "../../../shared/types.js";
 import {
@@ -19,9 +20,11 @@ import {
 } from "../../../shared/script-cost-estimate.js";
 import { chunkScriptText, mergeAnalyzeResults, splitFramesInto } from "./chunking.js";
 import { loadScriptContext } from "./context-loader.js";
-import { getScriptAnalysisById, saveScriptVersion } from "./repo.js";
+import { updateVideoPipeline } from "../../services/db/videos-repo.js";
+import { getScriptAnalysisById, saveScriptVersion, updateAnalyzedScenes } from "./repo.js";
 import { analyzeScriptTask } from "./tasks/analyze.js";
 import { extractCharactersTask } from "./tasks/extract-characters.js";
+import { extractNarrationTask } from "./tasks/extract-narration.js";
 
 type Caller = Pick<User, "id" | "role">;
 
@@ -126,7 +129,9 @@ export async function analyzeScriptForUser(
       language: req.language,
     },
   );
-  return { ...result, characterRoster, objectRoster, versionId: version.id };
+  // A fresh analysis becomes the version the video's later steps work from.
+  if (req.videoId) updateVideoPipeline(req.videoId, { scriptVersionId: version.id });
+  return { ...result, scenes: version.scenes, characterRoster, objectRoster, versionId: version.id };
 }
 
 /**
@@ -148,7 +153,7 @@ export function approveScriptVersion(
     throw new Error("Phiên bản cần có ít nhất một cảnh.");
   }
   const scenes = req.scenes.map((scene, i) => ({ ...scene, index: i + 1 }));
-  return saveScriptVersion(
+  const approved = saveScriptVersion(
     caller.id,
     base.sourceType,
     base.sourceUrl,
@@ -168,4 +173,58 @@ export function approveScriptVersion(
       language: base.language,
     },
   );
+  // Same scene/asset ids as the base, so the video's picks carry over.
+  if (base.videoId) updateVideoPipeline(base.videoId, { scriptVersionId: approved.id });
+  return approved;
+}
+
+/** Scenes per "extract narration" request; batches run in parallel. */
+const NARRATION_SCENES_PER_CALL = 25;
+
+/**
+ * Fills in every scene's `narration` of an analyzed version from its script
+ * text, in place: same scenes, ids and picks (a fresh analysis would make
+ * new ones and lose the picks). For versions analyzed before narration
+ * existed, or whose narration no longer matches the script.
+ */
+export async function extractNarrationForVersion(
+  caller: Caller,
+  req: ScriptNarrationRequest,
+): Promise<ScriptAnalysisRecord> {
+  const isAdmin = caller.role === "admin";
+  const base = getScriptAnalysisById(caller.id, isAdmin, req.versionId);
+  if (!base || base.kind !== "analyzed") throw new Error("Không tìm thấy bản phân tích này.");
+  if (base.scenes.length === 0) return base;
+  const provider = req.provider ?? "claude";
+  const ctx = taskContextFor(caller.id);
+  if (!hasProviderKey(ctx, provider)) throw new MissingApiKeyError(provider);
+
+  const batches: ScriptAnalysisRecord["scenes"][] = [];
+  for (let i = 0; i < base.scenes.length; i += NARRATION_SCENES_PER_CALL) {
+    batches.push(base.scenes.slice(i, i + NARRATION_SCENES_PER_CALL));
+  }
+  const results = await Promise.all(
+    batches.map((scenes, i) =>
+      runTask(
+        extractNarrationTask,
+        {
+          scriptText: base.scriptText,
+          scenes,
+          previousSceneContent: i > 0 ? batches[i - 1]!.at(-1)?.content : undefined,
+          provider,
+          model: req.model,
+          effort: req.effort,
+        },
+        ctx,
+      ),
+    ),
+  );
+  const narration = new Map(results.flatMap((result) => result.scenes.map((s) => [s.index, s.narration] as const)));
+  const scenes = base.scenes.map((scene) => ({
+    ...scene,
+    narration: narration.get(scene.index)?.trim() ?? scene.narration ?? "",
+  }));
+  const updated = updateAnalyzedScenes(caller.id, isAdmin, base.id, scenes);
+  if (!updated) throw new Error("Không lưu được lời đọc.");
+  return updated;
 }

@@ -1,5 +1,6 @@
 import { CheckIcon, XIcon } from "@/icons";
 import { cn } from "@/utils";
+import { checkNarration } from "@shared/narration";
 import type { ScriptAnalyzeResult } from "@shared/types";
 
 export interface ScriptChecklistItem {
@@ -10,9 +11,22 @@ export interface ScriptChecklistItem {
 
 const MIN_SANE_SCENE_DURATION_SEC = 1;
 const MAX_SANE_SCENE_DURATION_SEC = 60;
+/** Share of the script's spoken words the scenes' narration must cover (a few words lost to punctuation quirks are fine). */
+const MIN_NARRATION_COVERAGE = 0.9;
+
+/** The voiceover reads each scene's narration: all scenes have it and it matches the script. */
+function narrationReady(result: ScriptAnalyzeResult, scriptText: string): boolean {
+  const check = checkNarration(scriptText, result.scenes);
+  return (
+    check.missing.length === 0 &&
+    check.mismatched.length === 0 &&
+    check.coverage >= MIN_NARRATION_COVERAGE
+  );
+}
 
 export function computeScriptChecklist(
   result: ScriptAnalyzeResult,
+  scriptText?: string,
 ): ScriptChecklistItem[] {
   const sceneCount = result.scenes.length;
   const avgDuration =
@@ -47,6 +61,15 @@ export function computeScriptChecklist(
       label: "scenesHaveAssets",
       passed: result.scenes.every((s) => s.requiredAssets.length > 0),
     },
+    ...(scriptText !== undefined
+      ? [
+          {
+            id: "narration",
+            label: "narrationMatches",
+            passed: narrationReady(result, scriptText),
+          },
+        ]
+      : []),
   ];
 }
 

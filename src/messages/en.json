@@ -1217,7 +1217,8 @@
           "document": "From document",
           "idea": "From an idea",
           "template": "From template"
-        }
+        },
+        "inUse": "In use"
       },
       "sourceTitle": "Script source",
       "fromLink": "From a video link",
@@ -1282,7 +1283,8 @@
         "hasScenes": "Has at least one scene",
         "sceneDurationSane": "Average scene duration looks reasonable",
         "resourcesFilled": "Resources (shots, voiceover, images) are filled in",
-        "scenesHaveAssets": "Every scene lists the assets it needs"
+        "scenesHaveAssets": "Every scene lists the assets it needs",
+        "narrationMatches": "Every scene has narration that matches the script"
       },
       "scenesTitle": "Scene breakdown",
       "scenesCount": "{count, plural, one {# scene} other {# scenes}}",
@@ -1409,6 +1411,13 @@
         "button": "Train a skill from this video",
         "buttonHint": "Open AI training with this video picked, to learn its voice and style",
         "needsScript": "Load or paste a script first to analyze it."
+      },
+      "sceneNarration": "Narration (spoken words)",
+      "sceneNarrationPlaceholder": "The exact words the voice reads in this scene",
+      "narration": {
+        "hint": "Some scenes have no narration yet, or it doesn't match the script. The voiceover reads exactly this text — extract it from the script (scenes and picked images stay as they are).",
+        "extract": "Extract narration",
+        "extracting": "Extracting narration…"
       }
     },
     "skills": {
@@ -1780,6 +1789,116 @@
       "notFound": "This video doesn't exist or was deleted.",
       "goToProjects": "Go to projects",
       "switchVideo": "Other videos in this category"
+    },
+    "editPlan": {
+      "title": "Edit plan",
+      "description": "Every scene laid out shot by shot: the shot's background, its cutouts above it, sprite sheets played frame by frame, the camera move of each shot, and subtitles from the narration.",
+      "refresh": "Rebuild",
+      "stats": {
+        "duration": "Length",
+        "scenes": "Scenes",
+        "shots": "Shots",
+        "images": "Images placed",
+        "subtitles": "Subtitle lines"
+      },
+      "estimatedTiming": "No voiceover yet: each shot lasts its planned length. Once a voice is picked, timing will follow the real audio.",
+      "warningsTitle": "Still missing before the video is complete",
+      "andMore": "…and {count} more",
+      "warnings": {
+        "noNarration": {
+          "title": "{count, plural, one {# scene has} other {# scenes have}} no narration yet — no subtitles for them",
+          "hint": "Open step 1 and click “Extract narration” (scenes and picked images stay as they are).",
+          "item": ""
+        },
+        "missingPick": {
+          "title": "{count, plural, one {# image} other {# images}} not picked yet",
+          "item": "Scene {scene}, shot {shot}: {detail}"
+        },
+        "noBackground": {
+          "title": "{count, plural, one {# shot has} other {# shots have}} no background",
+          "item": "Scene {scene}, shot {shot}"
+        },
+        "spriteGrid": {
+          "title": "{count, plural, one {# sprite sheet} other {# sprite sheets}} with an unknown grid (used as one image)",
+          "item": "Scene {scene}: {detail}"
+        },
+        "downloadFailed": {
+          "title": "{count, plural, one {# image} other {# images}} couldn't be downloaded",
+          "item": "Scene {scene}: {detail}"
+        },
+        "skippedMedia": {
+          "title": "{count, plural, one {# video/audio asset} other {# video/audio assets}} not placed yet (pictures only for now)",
+          "item": "Scene {scene}: {detail}"
+        }
+      },
+      "export": {
+        "title": "Export to CapCut",
+        "description": "Writes a new project into CapCut's draft folder (existing projects are never touched). Leave the range empty for the whole video, or export only the scenes that have their pictures.",
+        "fromScene": "From scene",
+        "toScene": "To scene",
+        "button": "Export to CapCut",
+        "working": "Exporting… (can take a minute)",
+        "done": "Created project “{name}” ({duration}). Quit CapCut completely and reopen it to see it."
+      },
+      "table": {
+        "scene": "Scene",
+        "time": "Time",
+        "shots": "Shots",
+        "images": "Images",
+        "subtitles": "Subtitles"
+      },
+      "skill": {
+        "label": "Editing skill",
+        "analysisOption": "The one the script was analyzed with",
+        "fromAnalysis": "From analysis: {name}",
+        "defaultRecipe": "default recipe",
+        "learn": "Learn from a sample video",
+        "hint": "The recipe below is what the CapCut export does: keyframed pops/fades, when each element comes on, subtitles, music level. Edit it and save it into the skill.",
+        "noRecipe": "This skill has no recipe yet — the default is used. Learn one from a sample video, or adjust below and save."
+      },
+      "recipe": {
+        "camera": "Camera",
+        "intensity": "Move size",
+        "revealMode": "Elements appear",
+        "revealAnimation": "Element effect",
+        "revealMs": "Effect (ms)",
+        "leadMs": "After the cut (ms)",
+        "textAnimation": "Text effect",
+        "textMs": "Text effect (ms)",
+        "musicDb": "Music vs voice (dB)",
+        "subtitles": "Subtitles",
+        "save": "Save into the skill",
+        "needsSkill": "Pick an editing skill to save a recipe.",
+        "options": {
+          "none": "None",
+          "fromShots": "Per shot (zoom/pan…)",
+          "together": "All at the cut",
+          "sequential": "One by one",
+          "pop": "Pop",
+          "fade": "Fade"
+        },
+        "holdDrift": "Hold drift (0–0.1)",
+        "spriteMs": "Sprite frame (ms)"
+      },
+      "learn": {
+        "title": "Learn an editing style",
+        "description": "Paste a sample video link (YouTube, TikTok…). Sunbee downloads it, measures cuts, reveals and music, and has the AI read its frames — about a minute — then saves an editing skill with its recipe.",
+        "url": "Video link",
+        "name": "Skill name",
+        "namePlaceholder": "e.g. My channel – Editing",
+        "working": "Downloading, measuring and analyzing… (about a minute)",
+        "submit": "Learn",
+        "cancel": "Cancel",
+        "close": "Close",
+        "done": "Created “{name}” and picked it for this video.",
+        "facts": {
+          "pacing": "Shots last {mean}s on average, {cuts} cuts a minute",
+          "reveals": "{reveals} elements appear a minute between cuts",
+          "pauses": "{pct}% of cuts fall in a pause of the voice (random: {baseline}%)",
+          "music": "Music runs under the voice, about {db} dB lower",
+          "noMusic": "No background music under the voice"
+        }
+      }
     }
   },
   "databaseAdmin": {

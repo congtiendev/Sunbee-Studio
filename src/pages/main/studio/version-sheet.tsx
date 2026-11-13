@@ -38,17 +38,24 @@ export default function VersionSheet({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // The analyzed version the video's later steps work from.
+  const [workingVersionId, setWorkingVersionId] = useState<string | undefined>();
 
   useEffect(() => {
     if (!open) return;
     let active = true;
     setLoading(true);
     setError(null);
-    Promise.all([apiClient.script.history(videoId), apiClient.templates.list()])
-      .then(([data, allTemplates]) => {
+    Promise.all([
+      apiClient.script.history(videoId),
+      apiClient.templates.list(),
+      apiClient.videos.get(videoId),
+    ])
+      .then(([data, allTemplates, video]) => {
         if (!active) return;
         setRows(data);
         setTemplates(allTemplates);
+        setWorkingVersionId(video.scriptVersionId);
       })
       .catch((err) => {
         if (active) setError(err instanceof Error ? err.message : String(err));
@@ -146,6 +153,11 @@ export default function VersionSheet({
                       {row.approved && (
                         <Badge variant="light" color="success" size="sm">
                           {t("approve.approvedBadge")}
+                        </Badge>
+                      )}
+                      {row.id === workingVersionId && (
+                        <Badge variant="light" color="primary" size="sm">
+                          {t("history.inUse")}
                         </Badge>
                       )}
                     </div>

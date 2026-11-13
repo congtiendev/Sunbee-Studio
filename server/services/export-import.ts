@@ -254,6 +254,7 @@ export function importBundle(
         instructions: template.instructions,
         graphicsStyle: template.graphicsStyle,
         editingStyle: template.editingStyle,
+        editRecipe: template.editRecipe,
         origin: template.origin,
         skillMd: template.skillMd,
       }).id;

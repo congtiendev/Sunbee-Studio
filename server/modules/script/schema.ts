@@ -27,6 +27,7 @@ const CAMERA_MOVEMENTS = [
   "tracking",
 ] as const;
 
+import { randomUUID } from "node:crypto";
 import type { RequiredAsset, SceneShot, ScriptScene } from "../../../shared/types.js";
 
 const REQUIRED_ASSET_TYPES = ["image", "video", "audio", "graphic"] as const;
@@ -142,10 +143,51 @@ export function normalizeShots(shots: SceneShot[] | undefined): SceneShot[] {
   return [...(shots ?? [])].sort((a, b) => a.order - b.order);
 }
 
+/**
+ * What a scene's `narration` is — repeated in the JSON schema itself, so it
+ * holds even when a user overrides the task's prompt. The voiceover is
+ * synthesized from it word for word, so it must be exactly the spoken text.
+ */
+export const NARRATION_RULE =
+  "LỜI ĐỌC (`narration` của mỗi cảnh): chép NGUYÊN VĂN, đúng từng chữ, phần lời trong kịch bản sẽ được ĐỌC THÀNH TIẾNG trong cảnh đó (lời dẫn chuyện và lời thoại) — giọng đọc AI sẽ đọc đúng chuỗi này. " +
+  "Không tóm tắt, không viết lại, không thêm chữ; bỏ ra ngoài mọi ghi chú hình ảnh/chỉ dẫn dựng (vd. phần trong [ngoặc vuông], \"(cắt cảnh)\", mô tả hành động không được đọc). " +
+  "Lời đọc của các cảnh nối tiếp nhau theo đúng thứ tự kịch bản: ghép lại phải ra toàn bộ phần lời của kịch bản, không sót, không lặp. Cảnh không có lời (chỉ hình) để chuỗi rỗng.";
+
+const NARRATION_FIELD = {
+  type: "string",
+  description:
+    "Exact words spoken aloud in this scene, copied verbatim from the script (narration and dialogue only, no visual notes). Consecutive scenes' narration joined in order must reproduce the script's spoken text. Empty for a scene with no speech.",
+} as const;
+
+/**
+ * Gives every scene and required asset a permanent `id` (kept as-is when
+ * present, a fresh one when missing or duplicated). Picks, prompts and
+ * timelines refer to assets by this id, never by position — positions shift
+ * whenever scenes are renumbered or an asset list is re-planned.
+ */
+export function ensureSceneIds(scenes: ScriptScene[]): ScriptScene[] {
+  const seen = new Set<string>();
+  const fresh = (id: string | undefined) => {
+    const value = id && !seen.has(id) ? id : randomUUID();
+    seen.add(value);
+    return value;
+  };
+  return scenes.map((scene) => ({
+    ...scene,
+    id: fresh(scene.id),
+    requiredAssets: (scene.requiredAssets ?? []).map((asset) => ({ ...asset, id: fresh(asset.id) })),
+  }));
+}
+
+/** Required assets as shown to an AI: without ids (bookkeeping it can't use, and would only cost tokens). */
+export function assetsForPrompt(assets: RequiredAsset[]): Omit<RequiredAsset, "id">[] {
+  return assets.map(({ id: _id, ...asset }) => asset);
+}
+
 export function withAssetLayers<T extends { scenes: ScriptScene[] }>(result: T): T {
   return {
     ...result,
-    scenes: result.scenes.map((scene) => {
+    scenes: ensureSceneIds(result.scenes).map((scene) => {
       const shots = normalizeShots(scene.shots);
       const orders = new Set(shots.map((shot) => shot.order));
       return {
@@ -169,6 +211,7 @@ export const SCRIPT_ANALYSIS_SCHEMA = {
         properties: {
           index: { type: "integer" },
           content: { type: "string" },
+          narration: NARRATION_FIELD,
           visualDescription: { type: "string" },
           estimatedDurationSec: { type: "integer" },
           narrativeRole: { type: "string", enum: NARRATIVE_ROLES },
@@ -196,6 +239,7 @@ export const SCRIPT_ANALYSIS_SCHEMA = {
         required: [
           "index",
           "content",
+          "narration",
           "visualDescription",
           "estimatedDurationSec",
           "narrativeRole",

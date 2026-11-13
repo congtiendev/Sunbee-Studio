@@ -222,8 +222,7 @@ export function saveAssetPrompt(
 interface SceneResourceRow {
   id: string;
   video_id: string;
-  scene_index: number;
-  asset_index: number;
+  asset_id: string;
   asset_description: string;
   candidate_json: string;
   created_at: string;
@@ -233,29 +232,29 @@ function rowToSceneResource(row: SceneResourceRow): SceneResource {
   return {
     id: row.id,
     videoId: row.video_id,
-    sceneIndex: row.scene_index,
-    assetIndex: row.asset_index,
+    assetId: row.asset_id,
     assetDescription: row.asset_description,
     candidate: JSON.parse(row.candidate_json) as AssetCandidate,
     createdAt: row.created_at,
   };
 }
 
+/** Every pick of a video, keyed by asset id (picks of other script versions' assets included — they come back if that version is selected again). */
 export function listSceneResources(videoId: string): SceneResource[] {
   return (
     getDb()
       .prepare(
-        `SELECT id, video_id, scene_index, asset_index, asset_description, candidate_json, created_at
-         FROM scene_resources WHERE video_id = ? ORDER BY scene_index, asset_index`,
+        `SELECT id, video_id, asset_id, asset_description, candidate_json, created_at
+         FROM scene_resources WHERE video_id = ? ORDER BY created_at`,
       )
       .all(videoId) as SceneResourceRow[]
   ).map(rowToSceneResource);
 }
 
-/** Drops every pick of the given scenes — after their asset lists were rewritten, the old positions mean other assets. */
-export function clearSceneResources(videoId: string, sceneIndexes: number[]): void {
-  const remove = getDb().prepare("DELETE FROM scene_resources WHERE video_id = ? AND scene_index = ?");
-  for (const index of sceneIndexes) remove.run(videoId, index);
+/** Drops the picks of assets that no longer exist (re-planned away). */
+export function clearSceneResources(videoId: string, assetIds: string[]): void {
+  const remove = getDb().prepare("DELETE FROM scene_resources WHERE video_id = ? AND asset_id = ?");
+  for (const id of assetIds) remove.run(videoId, id);
 }
 
 /** Sets (or, with a null candidate, clears) the pick for one required asset. */
@@ -263,40 +262,35 @@ export function setSceneResource(
   userId: string,
   input: {
     videoId: string;
-    sceneIndex: number;
-    assetIndex: number;
+    assetId: string;
     assetDescription: string;
     candidate: AssetCandidate | null;
   },
 ): SceneResource | null {
   const db = getDb();
   if (!input.candidate) {
-    db.prepare(
-      "DELETE FROM scene_resources WHERE video_id = ? AND scene_index = ? AND asset_index = ?",
-    ).run(input.videoId, input.sceneIndex, input.assetIndex);
+    db.prepare("DELETE FROM scene_resources WHERE video_id = ? AND asset_id = ?").run(
+      input.videoId,
+      input.assetId,
+    );
     return null;
   }
   const row: SceneResourceRow = {
     id: randomUUID(),
     video_id: input.videoId,
-    scene_index: input.sceneIndex,
-    asset_index: input.assetIndex,
+    asset_id: input.assetId,
     asset_description: input.assetDescription,
     candidate_json: JSON.stringify(input.candidate),
     created_at: new Date().toISOString(),
   };
   db.prepare(
-    `INSERT INTO scene_resources (id, user_id, video_id, scene_index, asset_index, asset_description, source_key, candidate_json, created_at)
-     VALUES (@id, @userId, @video_id, @scene_index, @asset_index, @asset_description, @sourceKey, @candidate_json, @created_at)
-     ON CONFLICT (video_id, scene_index, asset_index) DO UPDATE SET
+    `INSERT INTO scene_resources (id, user_id, video_id, asset_id, asset_description, source_key, candidate_json, created_at)
+     VALUES (@id, @userId, @video_id, @asset_id, @asset_description, @sourceKey, @candidate_json, @created_at)
+     ON CONFLICT (video_id, asset_id) DO UPDATE SET
        asset_description = excluded.asset_description,
        source_key = excluded.source_key,
        candidate_json = excluded.candidate_json,
        created_at = excluded.created_at`,
   ).run({ ...row, userId, sourceKey: input.candidate.sourceKey });
-  return (
-    listSceneResources(input.videoId).find(
-      (r) => r.sceneIndex === input.sceneIndex && r.assetIndex === input.assetIndex,
-    ) ?? null
-  );
+  return listSceneResources(input.videoId).find((r) => r.assetId === input.assetId) ?? null;
 }

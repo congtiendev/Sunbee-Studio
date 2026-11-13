@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useTranslations } from "@/i18n";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/icons";
+import { apiClient } from "@/lib/api-client";
 import { pathParams } from "@/lib/paths";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
@@ -58,10 +59,31 @@ export default function VideoWorkspace({ videoId }: { videoId: string }) {
   const canGoNext =
     !activeStep.requiresCompletion || completedSteps.has(activeStep.key);
 
-  const markStepComplete = (key: VideoStudioStepKey) =>
-    setCompletedSteps((prev) =>
-      prev.has(key) ? prev : new Set(prev).add(key),
-    );
+  // Finished steps are saved on the video, so a reload doesn't lock "Next" again.
+  useEffect(() => {
+    let active = true;
+    apiClient.videos
+      .get(videoId)
+      .then((video) => {
+        const saved = (video.completedSteps ?? []).filter((key): key is VideoStudioStepKey =>
+          VIDEO_STUDIO_STEPS.some((step) => step.key === key),
+        );
+        if (active && saved.length) setCompletedSteps((prev) => new Set([...prev, ...saved]));
+      })
+      .catch(() => {
+        // Without it the steps still work; they just start unfinished.
+      });
+    return () => {
+      active = false;
+    };
+  }, [videoId]);
+
+  const markStepComplete = (key: VideoStudioStepKey) => {
+    if (completedSteps.has(key)) return;
+    const next = new Set(completedSteps).add(key);
+    setCompletedSteps(next);
+    void apiClient.videos.update(videoId, { completedSteps: [...next] }).catch(() => undefined);
+  };
 
   const save = async () => {
     if (saveHandle?.dirty && !saveHandle.saving) await saveHandle.save();

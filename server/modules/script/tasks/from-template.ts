@@ -19,7 +19,7 @@ import {
   promptOf,
   providerFor,
 } from "../../../services/ai/task.js";
-import { SCRIPT_ANALYSIS_SCHEMA, withAssetLayers } from "../schema.js";
+import { NARRATION_RULE, SCRIPT_ANALYSIS_SCHEMA, withAssetLayers } from "../schema.js";
 
 export interface ScriptFromTemplateInput {
   template: ScriptAnalysisRecord;
@@ -60,7 +60,8 @@ const DEFAULT_SYSTEM_PROMPT =
   "- Nội dung phải hoàn toàn thuộc về chủ đề mới: KHÔNG sao chép câu chữ, nhân vật, sản phẩm hay chi tiết riêng của mẫu. Nếu có tài liệu tham khảo, lấy thông tin/số liệu từ đó, không bịa.\n" +
   "- scriptText là toàn bộ kịch bản liền mạch (lời thoại/lời dẫn, có thể kèm ghi chú hình ảnh trong ngoặc vuông); content của từng cảnh là phần tương ứng của scriptText.\n" +
   "- requiredAssets của mỗi cảnh liệt kê tài nguyên cần chuẩn bị cho chủ đề mới; resources và style tóm tắt cho video mới. Chọn đúng `source` cho từng tài nguyên: NHÂN VẬT cụ thể và VẬT PHẨM/ảnh ghép có chi tiết riêng (bản đồ có ghim, biểu đồ số liệu riêng...) hầu như không có sẵn trên mạng → `generate`; BỐI CẢNH/NỀN chung chung (văn phòng, thiên nhiên, thành phố, b-roll không cần đúng y hệt) → `stock` (tìm trên mạng); `provided` chỉ khi rõ ràng là tài sản riêng của người dùng.\n" +
-  "- characters của mỗi cảnh: danh sách nhân vật (người/con vật có vai trò riêng) xuất hiện trong cảnh đó cho CHỦ ĐỀ MỚI (không phải nhân vật của mẫu), mỗi người gồm `name` (tên/định danh ngắn gọn) và `action` (hành động cụ thể đang làm trong cảnh). Dùng đúng một tên nhất quán cho cùng một nhân vật xuyên suốt kịch bản mới. Cảnh không có ai xuất hiện thì để mảng rỗng.";
+  "- characters của mỗi cảnh: danh sách nhân vật (người/con vật có vai trò riêng) xuất hiện trong cảnh đó cho CHỦ ĐỀ MỚI (không phải nhân vật của mẫu), mỗi người gồm `name` (tên/định danh ngắn gọn) và `action` (hành động cụ thể đang làm trong cảnh). Dùng đúng một tên nhất quán cho cùng một nhân vật xuyên suốt kịch bản mới. Cảnh không có ai xuất hiện thì để mảng rỗng.\n" +
+  NARRATION_RULE;
 
 function totalDuration(record: ScriptAnalysisRecord): number {
   return record.scenes.reduce(

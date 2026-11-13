@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { BrainIcon, ClockIcon } from "@/icons";
+import { apiClient } from "@/lib/api-client";
 import { trainingUrl } from "@/lib/paths";
 import { Link } from "react-router";
 import { useTranslations } from "@/i18n";
@@ -116,7 +117,10 @@ export default function ScriptStep({
   const source =
     SCRIPT_SOURCES.find((s) => s.key === step.mode) ?? SCRIPT_SOURCES[0]!;
   const SourcePanel = source.Panel;
-  const checklist = step.result ? computeScriptChecklist(step.result) : null;
+  const checklist = step.result
+    ? computeScriptChecklist(step.result, step.resultVersion?.scriptText)
+    : null;
+  const narrationMissing = checklist?.some((item) => item.id === "narration" && !item.passed) ?? false;
 
   return (
     <div className="min-w-0">
@@ -142,7 +146,15 @@ export default function ScriptStep({
           onOpenChange={setVersionSheetOpen}
           videoId={videoId}
           currentVersionId={step.currentVersionId}
-          onSelect={step.loadVersion}
+          onSelect={(record) => {
+            void step.loadVersion(record);
+            // Opening an analyzed version makes it the one later steps work from.
+            if (record.kind === "analyzed" && record.scenes.length > 0) {
+              void apiClient.videos
+                .update(videoId, { scriptVersionId: record.id })
+                .catch(() => undefined);
+            }
+          }}
         />
 
         <RadioGroup
@@ -268,8 +280,25 @@ export default function ScriptStep({
                   sceneDurationSane: t("checklist.sceneDurationSane"),
                   resourcesFilled: t("checklist.resourcesFilled"),
                   scenesHaveAssets: t("checklist.scenesHaveAssets"),
+                  narrationMatches: t("checklist.narrationMatches"),
                 }}
               />
+              {narrationMissing && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+                  <p className="min-w-0 flex-1 text-sm text-amber-800 dark:text-amber-300">
+                    {t("narration.hint")}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={step.busy}
+                    onClick={() => void step.extractNarration()}
+                  >
+                    {step.extractingNarration ? t("narration.extracting") : t("narration.extract")}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

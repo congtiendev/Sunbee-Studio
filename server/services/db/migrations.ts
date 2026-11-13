@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type Database from "better-sqlite3";
 
 /**
@@ -517,6 +518,152 @@ const MIGRATIONS: Migration[] = [
         DROP TABLE voice_profiles;
         ALTER TABLE voice_profiles_new RENAME TO voice_profiles;
         CREATE INDEX idx_voice_profiles_user ON voice_profiles(user_id);
+      `);
+    },
+  },
+  {
+    id: 29,
+    name: "stable_scene_asset_ids",
+    up: (db) => {
+      // Scenes and required assets get a permanent `id` (inside scenes_json),
+      // and asset picks are keyed by that id instead of (scene index, asset
+      // index) — positions shift whenever scenes are renumbered (approve) or
+      // an asset list is re-planned (split layers), silently re-attaching
+      // picks to the wrong asset. Self-contained on purpose (no app imports):
+      // a shipped migration must not change when app code does.
+      type Asset = { id?: string };
+      type Scene = { id?: string; index?: number; requiredAssets?: Asset[] };
+      const rows = db.prepare("SELECT id, video_id, kind, created_at, scenes_json FROM script_analyses").all() as {
+        id: string;
+        video_id: string | null;
+        kind: string;
+        created_at: string;
+        scenes_json: string;
+      }[];
+      const save = db.prepare("UPDATE script_analyses SET scenes_json = ? WHERE id = ?");
+      const parsed = new Map<string, Scene[]>();
+      for (const row of rows) {
+        let scenes: Scene[];
+        try {
+          scenes = JSON.parse(row.scenes_json) as Scene[];
+        } catch {
+          continue;
+        }
+        if (!Array.isArray(scenes)) continue;
+        let changed = false;
+        for (const scene of scenes) {
+          if (!scene.id) {
+            scene.id = randomUUID();
+            changed = true;
+          }
+          for (const asset of scene.requiredAssets ?? []) {
+            if (!asset.id) {
+              asset.id = randomUUID();
+              changed = true;
+            }
+          }
+        }
+        if (changed) save.run(JSON.stringify(scenes), row.id);
+        parsed.set(row.id, scenes);
+      }
+
+      // A pick meant the asset at that position of the video's newest
+      // analyzed version (what the Assets step showed); picks whose position
+      // no longer exists there are dropped.
+      const newestAnalyzed = new Map<string, Scene[]>();
+      for (const row of [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at))) {
+        if (row.kind !== "analyzed" || !row.video_id || newestAnalyzed.has(row.video_id)) continue;
+        const scenes = parsed.get(row.id);
+        if (scenes) newestAnalyzed.set(row.video_id, scenes);
+      }
+      db.exec(`
+        CREATE TABLE scene_resources_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id),
+          video_id TEXT NOT NULL,
+          asset_id TEXT NOT NULL,
+          asset_description TEXT NOT NULL DEFAULT '',
+          source_key TEXT NOT NULL,
+          candidate_json TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          UNIQUE (video_id, asset_id)
+        );
+      `);
+      const picks = db
+        .prepare("SELECT id, user_id, video_id, scene_index, asset_index, asset_description, source_key, candidate_json, created_at FROM scene_resources")
+        .all() as {
+        id: string;
+        user_id: string;
+        video_id: string;
+        scene_index: number;
+        asset_index: number;
+        asset_description: string;
+        source_key: string;
+        candidate_json: string;
+        created_at: string;
+      }[];
+      const insert = db.prepare(
+        `INSERT OR IGNORE INTO scene_resources_new (id, user_id, video_id, asset_id, asset_description, source_key, candidate_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      );
+      for (const pick of picks) {
+        const scene = newestAnalyzed.get(pick.video_id)?.find((s) => s.index === pick.scene_index);
+        const assetId = scene?.requiredAssets?.[pick.asset_index]?.id;
+        if (!assetId) continue;
+        insert.run(
+          pick.id,
+          pick.user_id,
+          pick.video_id,
+          assetId,
+          pick.asset_description,
+          pick.source_key,
+          pick.candidate_json,
+          pick.created_at,
+        );
+      }
+      db.exec(`
+        DROP TABLE scene_resources;
+        ALTER TABLE scene_resources_new RENAME TO scene_resources;
+        CREATE INDEX idx_scene_resources_video ON scene_resources(video_id);
+      `);
+    },
+  },
+  {
+    id: 30,
+    name: "video_pipeline_fields",
+    up: (db) => {
+      // What a video needs to run its pipeline without the user re-picking
+      // things each time: the script version every later step works from
+      // (instead of "whatever is newest"), the target length, the narration
+      // voice, its own graphics skill (NULL = the user's default, "" = none),
+      // and which steps are done ({"completed": [...]}).
+      db.exec(`
+        ALTER TABLE videos ADD COLUMN script_version_id TEXT;
+        ALTER TABLE videos ADD COLUMN target_duration_sec INTEGER;
+        ALTER TABLE videos ADD COLUMN voice_profile_id TEXT;
+        ALTER TABLE videos ADD COLUMN graphics_skill_id TEXT;
+        ALTER TABLE videos ADD COLUMN steps_json TEXT;
+      `);
+      // Existing videos keep working from what the Assets step used so far.
+      db.exec(`
+        UPDATE videos SET script_version_id = (
+          SELECT sa.id FROM script_analyses sa
+          WHERE sa.video_id = videos.id AND sa.kind = 'analyzed'
+          ORDER BY sa.created_at DESC LIMIT 1
+        );
+      `);
+    },
+  },
+  {
+    id: 31,
+    name: "edit_recipes",
+    up: (db) => {
+      // An editing skill's numeric recipe for the timeline builder (JSON,
+      // see shared/edit-recipe.ts), and the editing skill a video's edit
+      // plan follows (NULL = the one its script was analyzed with).
+      db.exec(`
+        ALTER TABLE style_templates ADD COLUMN edit_recipe_json TEXT;
+        ALTER TABLE videos ADD COLUMN edit_skill_id TEXT;
       `);
     },
   },

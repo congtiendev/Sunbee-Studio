@@ -11,6 +11,7 @@ import type {
 } from "../../../shared/types.js";
 import { getDb } from "../../services/db/client.js";
 import { touchVideo } from "../../services/db/videos-repo.js";
+import { ensureSceneIds } from "./schema.js";
 
 interface ScriptAnalysisRow {
   id: string;
@@ -105,7 +106,8 @@ export function saveScriptVersion(
     scriptText,
     frames,
     kind,
-    scenes: result?.scenes ?? [],
+    // Every write path (analyze, template, approve, import…) gets its ids here.
+    scenes: ensureSceneIds(result?.scenes ?? []),
     resources: result?.resources ?? EMPTY_RESOURCES,
     style: result?.style,
     characterRoster: options.characterRoster,
@@ -200,7 +202,7 @@ export function updateAnalyzedScenes(
 ): ScriptAnalysisRecord | null {
   const existing = getScriptAnalysisById(userId, isAdmin, id);
   if (!existing || existing.kind !== "analyzed") return null;
-  const scenesJson = JSON.stringify(scenes);
+  const scenesJson = JSON.stringify(ensureSceneIds(scenes));
   const result = isAdmin
     ? getDb()
         .prepare(`UPDATE script_analyses SET scenes_json = ? WHERE id = ?`)
@@ -303,15 +305,23 @@ export function listScriptAnalysesLight(
   }));
 }
 
+/** A video's versions, newest first — all of them for an admin (who may open anyone's video), else the user's own. */
 export function listVersionsForVideo(
   userId: string,
+  isAdmin: boolean,
   videoId: string,
 ): ScriptAnalysisRecord[] {
-  const rows = getDb()
-    .prepare(
-      `${SELECT_BASE} WHERE sa.video_id = ? AND sa.user_id = ? ORDER BY sa.created_at DESC`,
-    )
-    .all(videoId, userId) as ScriptAnalysisRow[];
+  const rows = (
+    isAdmin
+      ? getDb()
+          .prepare(`${SELECT_BASE} WHERE sa.video_id = ? ORDER BY sa.created_at DESC`)
+          .all(videoId)
+      : getDb()
+          .prepare(
+            `${SELECT_BASE} WHERE sa.video_id = ? AND sa.user_id = ? ORDER BY sa.created_at DESC`,
+          )
+          .all(videoId, userId)
+  ) as ScriptAnalysisRow[];
 
   return rows.map(rowToRecord);
 }

@@ -8,6 +8,7 @@ import type {
   FetchTranscriptRequest,
   ScriptAnalyzeRequest,
   ScriptApproveRequest,
+  ScriptNarrationRequest,
   ScriptFromDocumentRequest,
   ScriptFromIdeaRequest,
   ScriptFromTemplateRequest,
@@ -22,7 +23,7 @@ import {
   saveScriptVersion,
   updateDraftScriptText,
 } from "./repo.js";
-import { analyzeScriptForUser, approveScriptVersion } from "./service.js";
+import { analyzeScriptForUser, approveScriptVersion, extractNarrationForVersion } from "./service.js";
 import { writeScriptFromDocuments } from "./sources/document.js";
 import { writeScriptFromIdea } from "./sources/idea.js";
 import { fetchScriptFromLink } from "./sources/link.js";
@@ -306,6 +307,15 @@ router.post("/approve", requireAuth, (req, res) => {
 });
 
 /** Analyzed versions (light summaries) to pick as skill examples or video templates. */
+/** POST /api/script/narration — fill in each scene's narration of a version, in place. */
+router.post("/narration", requireAuth, async (req, res) => {
+  try {
+    res.json(await extractNarrationForVersion(req.user!, req.body as ScriptNarrationRequest));
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
+});
+
 router.get("/analyzed", requireAuth, (req, res) => {
   res.json(
     listAnalyzedSummaries(req.user!.id, {
@@ -317,7 +327,7 @@ router.get("/analyzed", requireAuth, (req, res) => {
 router.get("/history", requireAuth, requireVideoAccess, (req, res) => {
   const videoId = req.query.videoId;
   if (typeof videoId === "string" && videoId) {
-    res.json(listVersionsForVideo(req.user!.id, videoId));
+    res.json(listVersionsForVideo(req.user!.id, req.user!.role === "admin", videoId));
     return;
   }
   // No videoId: a dashboard/admin-style list across every video, so only the

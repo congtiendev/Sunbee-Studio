@@ -81,7 +81,7 @@ interface PromptGroup {
   description: string;
   category: "character" | "background";
   sceneContext: string;
-  slots: { sceneIndex: number; assetIndex: number }[];
+  slots: { sceneIndex: number; assetIndex: number; assetId: string }[];
   /** Roster characters/objects this request's description names — their reference photos (if any) ground the generated prompt. */
   entries: (RecurringCharacter | RecurringObject)[];
   prompt?: string;
@@ -125,7 +125,7 @@ function groupRequiredAssets(
       if (!normalized) return;
       const existing = byNormalized.get(normalized);
       if (existing) {
-        existing.slots.push({ sceneIndex: scene.index, assetIndex });
+        existing.slots.push({ sceneIndex: scene.index, assetIndex, assetId: asset.id });
         return;
       }
       const entries = [
@@ -142,7 +142,7 @@ function groupRequiredAssets(
         description: asset.description,
         category: entries.length > 0 ? "character" : "background",
         sceneContext: sceneContextOf(scene, characterRoster, objectRoster),
-        slots: [{ sceneIndex: scene.index, assetIndex }],
+        slots: [{ sceneIndex: scene.index, assetIndex, assetId: asset.id }],
         entries,
         layer: asset.layer,
         layerChosen: Boolean(asset.layer),
@@ -350,10 +350,9 @@ export default function BatchPromptDialog({
       active = false;
     };
   }, [videoId, applySavedPrompts]);
-  /** Real picks by slot ("sceneIndex:assetIndex") — the source of truth for what already has an image. */
+  /** Real picks by asset id — the source of truth for what already has an image. */
   const pickedBySlot = useMemo(
-    () =>
-      new Map(selections.map((s) => [`${s.sceneIndex}:${s.assetIndex}`, s])),
+    () => new Map(selections.map((s) => [s.assetId, s])),
     [selections],
   );
   /**
@@ -366,7 +365,7 @@ export default function BatchPromptDialog({
     const map = new Map<string, string>();
     for (const group of groups) {
       const picks = group.slots.map((slot) =>
-        pickedBySlot.get(`${slot.sceneIndex}:${slot.assetIndex}`),
+        pickedBySlot.get(slot.assetId),
       );
       if (picks.length > 0 && picks.every((pick) => pick)) {
         const candidate = picks[0]!.candidate;
@@ -840,8 +839,7 @@ export default function BatchPromptDialog({
     for (const slot of group.slots) {
       await apiClient.assets.select({
         videoId,
-        sceneIndex: slot.sceneIndex,
-        assetIndex: slot.assetIndex,
+        assetId: slot.assetId,
         assetDescription: group.description,
         candidate,
       });

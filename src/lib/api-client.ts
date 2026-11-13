@@ -43,6 +43,8 @@ import type {
   ScriptAnalysisRecord,
   ScriptAnalysisSummary,
   ScriptApproveRequest,
+  ScriptNarrationRequest,
+  VideoUpdateRequest,
   ScriptAnalyzeRequest,
   ScriptAnalyzeResponse,
   ScriptFromDocumentRequest,
@@ -62,6 +64,13 @@ import type {
   VoicePreset,
   VoiceProfile,
 } from "@shared/types";
+import type {
+  CapcutExportRequest,
+  CapcutExportResponse,
+  EditPlanResponse,
+  EditStyleLearnRequest,
+  EditStyleLearnResponse,
+} from "@shared/edit-plan";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(path, {
@@ -328,6 +337,12 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(req),
       }),
+    /** Fills in each scene's narration of an analyzed version in place (same scenes, ids and picks). */
+    narration: (req: ScriptNarrationRequest): Promise<ScriptAnalysisRecord> =>
+      request("/api/script/narration", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
     analyzed: (approvedOnly = false): Promise<ScriptAnalysisSummary[]> =>
       request(`/api/script/analyzed${approvedOnly ? "?approved=1" : ""}`),
     /** Auto-save / manual save of hand-edited text, outside analyze/approve. */
@@ -389,6 +404,27 @@ export const apiClient = {
         body: JSON.stringify(req),
       }),
     fileUrl: (fileId: string): string => `/api/files/${fileId}`,
+  },
+  editPlan: {
+    /** The video laid out as a timeline (optionally only scenes fromScene..toScene), with what's missing. */
+    timeline: (videoId: string, range: { fromScene?: number; toScene?: number } = {}): Promise<EditPlanResponse> => {
+      const query = new URLSearchParams({ videoId });
+      if (range.fromScene) query.set("fromScene", String(range.fromScene));
+      if (range.toScene) query.set("toScene", String(range.toScene));
+      return request(`/api/edit-plan/timeline?${query.toString()}`);
+    },
+    /** Writes it as a new CapCut project (shown after CapCut is quit and reopened). */
+    exportCapcut: (req: CapcutExportRequest): Promise<CapcutExportResponse> =>
+      request("/api/edit-plan/capcut", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
+    /** An editing skill learned from a sample video link (download, measure, AI read — about a minute). */
+    learnStyle: (req: EditStyleLearnRequest): Promise<EditStyleLearnResponse> =>
+      request("/api/edit-plan/learn-style", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
   },
   assets: {
     /** Research sources (stock sites, library, AI web) with availability for this user. */
@@ -585,6 +621,12 @@ export const apiClient = {
       request("/api/videos", {
         method: "POST",
         body: JSON.stringify({ categoryId, name }),
+      }),
+    /** Any subset of the video's settings (`null` clears one); returns the updated video. */
+    update: (id: string, patch: VideoUpdateRequest): Promise<VideoSummary> =>
+      request(`/api/videos/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
       }),
     setFrameRatio: (id: string, frameRatio: FrameRatio): Promise<void> =>
       request(`/api/videos/${id}`, {

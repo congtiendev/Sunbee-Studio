@@ -2,6 +2,7 @@ import { analyzeScriptTask } from "./analyze.js";
 import { cleanCaptionsTask } from "./clean-captions.js";
 import { describeFramesTask } from "./describe-frames.js";
 import { extractCharactersTask } from "./extract-characters.js";
+import { extractNarrationTask } from "./extract-narration.js";
 import { scriptFromDocumentTask } from "./from-document.js";
 import { scriptFromIdeaTask } from "./from-idea.js";
 import { scriptFromTemplateTask } from "./from-template.js";
@@ -17,6 +18,7 @@ export const scriptTasks = [
   scriptFromTemplateTask,
   extractCharactersTask,
   analyzeScriptTask,
+  extractNarrationTask,
 ];
 
 export {
@@ -24,6 +26,7 @@ export {
   cleanCaptionsTask,
   describeFramesTask,
   extractCharactersTask,
+  extractNarrationTask,
   scriptFromDocumentTask,
   scriptFromIdeaTask,
   scriptFromTemplateTask,

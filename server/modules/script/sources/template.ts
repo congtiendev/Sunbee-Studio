@@ -11,6 +11,7 @@ import {
 } from "../../../services/ai/task.js";
 import type { Caller } from "../../../services/skills/skills.js";
 import { loadScriptContext } from "../context-loader.js";
+import { updateVideoPipeline } from "../../../services/db/videos-repo.js";
 import { getScriptAnalysisById, saveScriptVersion } from "../repo.js";
 import { scriptFromTemplateTask } from "../tasks/from-template.js";
 
@@ -99,9 +100,11 @@ export async function writeScriptFromTemplate(
       language: req.language ?? "vi",
     },
   );
+  // Written and split in one go: it's the version the video's later steps work from.
+  if (req.videoId) updateVideoPipeline(req.videoId, { scriptVersionId: version.id });
   return {
     scriptText,
-    scenes,
+    scenes: version.scenes,
     resources: analysis.resources,
     style: analysis.style,
     versionId: version.id,

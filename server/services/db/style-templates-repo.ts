@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { SkillInput, SkillOrigin, SkillType, StyleTemplate } from "../../../shared/types.js";
+import { normalizeEditRecipe } from "../../../shared/edit-recipe.js";
 import { getDb } from "./client.js";
 
 /**
@@ -21,6 +22,7 @@ interface StyleTemplateRow {
   instructions: string;
   graphics_style: string | null;
   editing_style: string | null;
+  edit_recipe_json: string | null;
   reference_image_files_json: string | null;
   origin: SkillOrigin;
   skill_md: string | null;
@@ -44,6 +46,7 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
     instructions: row.instructions,
     graphicsStyle: row.graphics_style ?? undefined,
     editingStyle: row.editing_style ?? undefined,
+    editRecipe: row.edit_recipe_json ? normalizeEditRecipe(JSON.parse(row.edit_recipe_json)) : undefined,
     referenceImageFileIds: row.reference_image_files_json ? JSON.parse(row.reference_image_files_json) : [],
     origin: row.origin,
     skillMd: row.skill_md ?? undefined,
@@ -55,7 +58,7 @@ function rowToTemplate(row: StyleTemplateRow): StyleTemplate {
 const SELECT_BASE = `
   SELECT st.id, st.name, st.created_at, st.updated_at, st.type, st.genre, st.style_tags_json,
          st.pacing_json, st.tone_description, st.resource_inventory_json, st.description,
-         st.instructions, st.graphics_style, st.editing_style, st.reference_image_files_json, st.origin, st.skill_md,
+         st.instructions, st.graphics_style, st.editing_style, st.edit_recipe_json, st.reference_image_files_json, st.origin, st.skill_md,
          st.user_id, u.email AS owner_email
   FROM style_templates st
   LEFT JOIN users u ON u.id = st.user_id
@@ -90,9 +93,9 @@ export function saveTemplate(userId: string, template: SkillInput): StyleTemplat
     .prepare(
       `INSERT INTO style_templates (id, name, created_at, updated_at, type, genre, style_tags_json, pacing_json,
          tone_description, resource_inventory_json, description, instructions, graphics_style, editing_style,
-         reference_image_files_json, origin, skill_md, user_id)
+         edit_recipe_json, reference_image_files_json, origin, skill_md, user_id)
        VALUES (@id, @name, @now, @now, @type, @genre, @styleTagsJson, @pacingJson, @toneDescription,
-         @resourceInventoryJson, @description, @instructions, @graphicsStyle, @editingStyle, NULL, @origin, @skillMd, @userId)`,
+         @resourceInventoryJson, @description, @instructions, @graphicsStyle, @editingStyle, @editRecipeJson, NULL, @origin, @skillMd, @userId)`,
     )
     .run({
       id,
@@ -108,6 +111,7 @@ export function saveTemplate(userId: string, template: SkillInput): StyleTemplat
       instructions: template.instructions ?? "",
       graphicsStyle: template.graphicsStyle ?? null,
       editingStyle: template.editingStyle ?? null,
+      editRecipeJson: template.editRecipe ? JSON.stringify(normalizeEditRecipe(template.editRecipe)) : null,
       origin: template.origin ?? "app",
       skillMd: template.skillMd ?? null,
       userId,
@@ -130,7 +134,7 @@ export function updateTemplate(
          style_tags_json = @styleTagsJson, pacing_json = @pacingJson, tone_description = @toneDescription,
          resource_inventory_json = @resourceInventoryJson, description = @description,
          instructions = @instructions, graphics_style = @graphicsStyle, editing_style = @editingStyle,
-         origin = @origin, skill_md = @skillMd
+         edit_recipe_json = @editRecipeJson, origin = @origin, skill_md = @skillMd
        WHERE id = @id`,
     )
     .run({
@@ -147,6 +151,7 @@ export function updateTemplate(
       instructions: next.instructions ?? "",
       graphicsStyle: next.graphicsStyle ?? null,
       editingStyle: next.editingStyle ?? null,
+      editRecipeJson: next.editRecipe ? JSON.stringify(normalizeEditRecipe(next.editRecipe)) : null,
       origin: next.origin ?? "app",
       skillMd: next.skillMd ?? null,
     });

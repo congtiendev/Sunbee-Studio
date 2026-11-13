@@ -17,6 +17,7 @@ import {
 import {
   ASSET_LAYER_RULE,
   DIRECTOR_RULE,
+  NARRATION_RULE,
   SCRIPT_ANALYSIS_SCHEMA,
   withAssetLayers,
 } from "../schema.js";
@@ -47,6 +48,8 @@ const DEFAULT_SYSTEM_PROMPT =
   DIRECTOR_RULE +
   "\n" +
   ASSET_LAYER_RULE +
+  "\n" +
+  NARRATION_RULE +
   "\n" +
   "Ngoài ra liệt kê tài nguyên tổng thể cần chuẩn bị để quay/dựng (số cảnh quay, giọng đọc cần, nhạc nền, hình ảnh/b-roll cần, ghi chú khác), và tóm tắt phong cách tổng thể (thể loại, các từ khoá phong cách, mô tả tone/giọng điệu) để có thể lưu lại dùng cho các video sau. Trả lời bằng cùng ngôn ngữ với kịch bản gốc.";
 

@@ -8,6 +8,7 @@ import {
   DIRECTOR_RULE,
   REQUIRED_ASSET_ITEM_SCHEMA,
   SCENE_SHOT_SCHEMA,
+  assetsForPrompt,
   withAssetLayers,
 } from "../../script/schema.js";
 
@@ -91,7 +92,7 @@ export const splitLayersTask = defineTask<SplitLayersInput, SplitLayersOutput>({
       cameraMovement: scene.cameraMovement,
       characters: scene.characters ?? [],
       shots: scene.shots ?? [],
-      requiredAssets: scene.requiredAssets,
+      requiredAssets: assetsForPrompt(scene.requiredAssets),
     }));
     const editingStyle = input.editingStyle?.trim();
     const result = await providerFor(ctx, input.provider).generateStructured<SplitLayersOutput>({

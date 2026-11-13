@@ -217,13 +217,31 @@ router.post("/image-prompts", requireAuth, async (req, res) => {
 /** Scenes per AI call when planning shots & layers — each scene's answer is long (shots + images per shot). */
 const SPLIT_SCENES_PER_CALL = 4;
 
+const descriptionKey = (text: string) => text.normalize("NFC").trim().toLowerCase().replace(/\s+/g, " ");
+
+/**
+ * Gives each re-planned asset the id of the old asset it is (same type and
+ * description, each old one used once), so its pick survives; genuinely new
+ * assets keep the fresh id the re-plan gave them.
+ */
+function keepAssetIds(before: RequiredAsset[], after: RequiredAsset[]): RequiredAsset[] {
+  const unused = [...before];
+  return after.map((asset) => {
+    const i = unused.findIndex(
+      (old) => old.type === asset.type && descriptionKey(old.description) === descriptionKey(asset.description),
+    );
+    if (i === -1) return asset;
+    const [match] = unused.splice(i, 1);
+    return { ...asset, id: match!.id };
+  });
+}
+
 /**
  * Splits the moving subjects of a scene range into layers (a background frame
  * plus one transparent cutout per visual state) on an existing analysis, and
  * overwrites that version's scenes in place (no new version — re-running this
- * is an annotation pass, not a creative redo worth a history entry). Picks of
- * scenes whose asset list changed are cleared, since their positions now mean
- * other assets.
+ * is an annotation pass, not a creative redo worth a history entry). Assets the
+ * re-plan keeps keep their id and pick; picks of assets it dropped are cleared.
  */
 router.post("/split-layers", requireAuth, async (req, res) => {
   const body = req.body as AssetSplitLayersRequest;
@@ -286,23 +304,26 @@ router.post("/split-layers", requireAuth, async (req, res) => {
       }
     }
     const changedScenes: number[] = [];
+    const droppedAssetIds: string[] = [];
     const scenes = base.scenes.map((scene) => {
       const plan = rewritten.get(scene.index);
-      if (
-        !plan ||
-        (JSON.stringify(plan.requiredAssets) === JSON.stringify(scene.requiredAssets) &&
-          JSON.stringify(plan.shots) === JSON.stringify(scene.shots ?? []))
-      ) {
-        return scene;
-      }
+      if (!plan) return scene;
+      // An asset the re-plan kept (same description) keeps its id — and so its pick.
+      const requiredAssets = keepAssetIds(scene.requiredAssets, plan.requiredAssets);
+      const sameAssets =
+        JSON.stringify(requiredAssets) === JSON.stringify(scene.requiredAssets) &&
+        JSON.stringify(plan.shots) === JSON.stringify(scene.shots ?? []);
+      if (sameAssets) return scene;
       changedScenes.push(scene.index);
-      return { ...scene, shots: plan.shots, requiredAssets: plan.requiredAssets };
+      const kept = new Set(requiredAssets.map((asset) => asset.id));
+      droppedAssetIds.push(...scene.requiredAssets.map((a) => a.id).filter((id) => !kept.has(id)));
+      return { ...scene, shots: plan.shots, requiredAssets };
     });
     const version =
       changedScenes.length > 0
         ? (updateAnalyzedScenes(req.user!.id, admin, base.id, scenes) ?? base)
         : base;
-    clearSceneResources(body.videoId, changedScenes);
+    clearSceneResources(body.videoId, droppedAssetIds);
     const response: AssetSplitLayersResponse = { version, changedScenes };
     res.json(response);
   } catch (err) {
@@ -337,8 +358,8 @@ router.put("/selections", requireAuth, (req, res) => {
     res.status(404).json({ error: "Không tìm thấy video." });
     return;
   }
-  if (!Number.isInteger(body.sceneIndex) || !Number.isInteger(body.assetIndex)) {
-    res.status(400).json({ error: "Thiếu vị trí cảnh/tài nguyên." });
+  if (typeof body.assetId !== "string" || !body.assetId) {
+    res.status(400).json({ error: "Thiếu mã tài nguyên." });
     return;
   }
   res.json(setSceneResource(req.user!.id, body));

@@ -204,7 +204,12 @@ export default function SceneEditor({
                 ...scene,
                 requiredAssets: [
                   ...scene.requiredAssets,
-                  { type: "video", description: "", source: "stock" } satisfies RequiredAsset,
+                  {
+                    id: crypto.randomUUID(),
+                    type: "video",
+                    description: "",
+                    source: "stock",
+                  } satisfies RequiredAsset,
                 ],
               }
             : scene,
@@ -378,7 +383,7 @@ export default function SceneEditor({
           )}
           {draft.map((scene, sceneIndex) => (
             <div
-              key={scene.index}
+              key={scene.id}
               className="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800"
             >
               <div className="flex flex-wrap items-center gap-2">
@@ -410,6 +415,14 @@ export default function SceneEditor({
                   />
                 </Field>
               </div>
+              <Field>
+                <FieldLabel>{t("sceneNarration")}</FieldLabel>
+                <Textarea
+                  value={scene.narration ?? ""}
+                  placeholder={t("sceneNarrationPlaceholder")}
+                  onChange={(e) => updateScene(sceneIndex, { narration: e.target.value })}
+                />
+              </Field>
               <Field className="w-32">
                 <FieldLabel>{t("sceneDuration")}</FieldLabel>
                 <Input

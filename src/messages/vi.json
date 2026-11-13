@@ -1235,7 +1235,8 @@
           "document": "Từ tài liệu",
           "idea": "Từ ý tưởng",
           "template": "Theo mẫu"
-        }
+        },
+        "inUse": "Đang dùng"
       },
       "sourceTitle": "Nguồn kịch bản",
       "fromLink": "Từ link video",
@@ -1300,7 +1301,8 @@
         "hasScenes": "Có ít nhất một cảnh",
         "sceneDurationSane": "Thời lượng trung bình mỗi cảnh hợp lý",
         "resourcesFilled": "Đã điền đủ tài nguyên (cảnh quay, giọng đọc, hình ảnh)",
-        "scenesHaveAssets": "Mọi cảnh đều có liệt kê tài nguyên cần thiết"
+        "scenesHaveAssets": "Mọi cảnh đều có liệt kê tài nguyên cần thiết",
+        "narrationMatches": "Mọi cảnh có lời đọc khớp với kịch bản"
       },
       "scenesTitle": "Phân cảnh",
       "scenesCount": "{count, plural, one {# cảnh} other {# cảnh}}",
@@ -1427,6 +1429,13 @@
         "button": "Huấn luyện skill từ video này",
         "buttonHint": "Mở Huấn luyện AI với video này được chọn sẵn, để học giọng văn và phong cách",
         "needsScript": "Lấy hoặc dán kịch bản trước để phân tích."
+      },
+      "sceneNarration": "Lời đọc (đọc thành tiếng)",
+      "sceneNarrationPlaceholder": "Đúng những chữ giọng đọc sẽ đọc trong cảnh này",
+      "narration": {
+        "hint": "Một số cảnh chưa có lời đọc hoặc lời đọc không khớp kịch bản. Giọng đọc sẽ đọc đúng phần này — hãy tách lời đọc từ kịch bản (giữ nguyên các cảnh và ảnh đã chọn).",
+        "extract": "Tạo lời đọc",
+        "extracting": "Đang tạo lời đọc…"
       }
     },
     "skills": {
@@ -1798,6 +1807,116 @@
       "notFound": "Video không tồn tại hoặc đã bị xoá.",
       "goToProjects": "Đến trang Dự án",
       "switchVideo": "Video khác trong danh mục"
+    },
+    "editPlan": {
+      "title": "Kế hoạch dựng",
+      "description": "Từng cảnh được xếp theo từng shot: nền của shot, các cutout đè lên trên, sprite sheet chạy từng khung, chuyển động máy của mỗi shot, và phụ đề lấy từ lời đọc.",
+      "refresh": "Dựng lại",
+      "stats": {
+        "duration": "Thời lượng",
+        "scenes": "Cảnh",
+        "shots": "Shot",
+        "images": "Ảnh đã đặt",
+        "subtitles": "Dòng phụ đề"
+      },
+      "estimatedTiming": "Chưa có giọng đọc: mỗi shot dài đúng thời lượng đã lên kế hoạch. Khi chọn giọng, thời lượng sẽ theo audio thật.",
+      "warningsTitle": "Còn thiếu trước khi video hoàn chỉnh",
+      "andMore": "…và {count} mục khác",
+      "warnings": {
+        "noNarration": {
+          "title": "{count} cảnh chưa có lời đọc — chưa có phụ đề",
+          "hint": "Mở bước 1 và bấm “Tạo lời đọc” (giữ nguyên các cảnh và ảnh đã chọn).",
+          "item": ""
+        },
+        "missingPick": {
+          "title": "{count} ảnh chưa được chọn",
+          "item": "Cảnh {scene}, shot {shot}: {detail}"
+        },
+        "noBackground": {
+          "title": "{count} shot chưa có ảnh nền",
+          "item": "Cảnh {scene}, shot {shot}"
+        },
+        "spriteGrid": {
+          "title": "{count} sprite sheet không rõ lưới (dùng nguyên ảnh)",
+          "item": "Cảnh {scene}: {detail}"
+        },
+        "downloadFailed": {
+          "title": "{count} ảnh không tải về được",
+          "item": "Cảnh {scene}: {detail}"
+        },
+        "skippedMedia": {
+          "title": "{count} tài nguyên video/âm thanh chưa được đặt (hiện chỉ dựng hình ảnh)",
+          "item": "Cảnh {scene}: {detail}"
+        }
+      },
+      "export": {
+        "title": "Xuất sang CapCut",
+        "description": "Tạo một dự án mới trong thư mục nháp của CapCut (không bao giờ đụng tới dự án có sẵn). Để trống khoảng cảnh để xuất cả video, hoặc chỉ xuất những cảnh đã có đủ ảnh.",
+        "fromScene": "Từ cảnh",
+        "toScene": "Đến cảnh",
+        "button": "Xuất sang CapCut",
+        "working": "Đang xuất… (có thể mất một phút)",
+        "done": "Đã tạo dự án “{name}” ({duration}). Tắt hẳn CapCut rồi mở lại để thấy dự án."
+      },
+      "table": {
+        "scene": "Cảnh",
+        "time": "Thời gian",
+        "shots": "Shot",
+        "images": "Ảnh",
+        "subtitles": "Phụ đề"
+      },
+      "skill": {
+        "label": "Skill dựng",
+        "analysisOption": "Skill đã dùng khi phân tích kịch bản",
+        "fromAnalysis": "Theo phân tích: {name}",
+        "defaultRecipe": "công thức mặc định",
+        "learn": "Học từ video mẫu",
+        "hint": "Công thức bên dưới chính là những gì bản xuất CapCut sẽ làm: keyframe pop/mờ dần, thời điểm từng phần tử xuất hiện, phụ đề, mức nhạc nền. Chỉnh rồi lưu vào skill.",
+        "noRecipe": "Skill này chưa có công thức — đang dùng công thức mặc định. Hãy học từ video mẫu, hoặc chỉnh bên dưới rồi lưu."
+      },
+      "recipe": {
+        "camera": "Máy quay",
+        "intensity": "Độ lớn chuyển động",
+        "revealMode": "Phần tử xuất hiện",
+        "revealAnimation": "Hiệu ứng phần tử",
+        "revealMs": "Hiệu ứng (ms)",
+        "leadMs": "Sau điểm cắt (ms)",
+        "textAnimation": "Hiệu ứng chữ",
+        "textMs": "Hiệu ứng chữ (ms)",
+        "musicDb": "Nhạc so với giọng (dB)",
+        "subtitles": "Phụ đề",
+        "save": "Lưu vào skill",
+        "needsSkill": "Chọn một skill dựng để lưu công thức.",
+        "options": {
+          "none": "Không",
+          "fromShots": "Theo từng shot (zoom/lia…)",
+          "together": "Cùng lúc khi cắt",
+          "sequential": "Lần lượt",
+          "pop": "Pop",
+          "fade": "Mờ dần"
+        },
+        "holdDrift": "Trôi khi giữ hình (0–0,1)",
+        "spriteMs": "Khung sprite (ms)"
+      },
+      "learn": {
+        "title": "Học phong cách dựng",
+        "description": "Dán link video mẫu (YouTube, TikTok…). Sunbee tải về, đo điểm cắt, nhịp hiện phần tử, nhạc nền và cho AI xem các khung hình — khoảng một phút — rồi lưu thành skill dựng kèm công thức.",
+        "url": "Link video",
+        "name": "Tên skill",
+        "namePlaceholder": "Ví dụ: Kênh của tôi – Dựng",
+        "working": "Đang tải, đo và phân tích… (khoảng một phút)",
+        "submit": "Học",
+        "cancel": "Huỷ",
+        "close": "Đóng",
+        "done": "Đã tạo “{name}” và chọn cho video này.",
+        "facts": {
+          "pacing": "Shot dài trung bình {mean} giây, {cuts} lần cắt/phút",
+          "reveals": "{reveals} lần hiện thêm phần tử/phút giữa các lần cắt",
+          "pauses": "{pct}% điểm cắt rơi vào quãng nghỉ của giọng (ngẫu nhiên: {baseline}%)",
+          "music": "Có nhạc nền chạy dưới giọng, thấp hơn khoảng {db} dB",
+          "noMusic": "Không có nhạc nền dưới giọng"
+        }
+      }
     }
   },
   "databaseAdmin": {

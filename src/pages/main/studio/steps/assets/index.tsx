@@ -58,9 +58,6 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-const slotKey = (sceneIndex: number, assetIndex: number) =>
-  `${sceneIndex}:${assetIndex}`;
-
 /** A scene's assets under the shot each is for (scenes without shots: one group). */
 function assetGroupsOf(scene: ScriptScene) {
   const items = scene.requiredAssets.map((asset, assetIndex) => ({
@@ -137,9 +134,12 @@ export default function AssetsStep({
     ])
       .then(([history, sourceList, picks, templates, settings, video]) => {
         if (!active) return;
-        // The newest analyzed version is the one the scenes come from.
+        // The scenes come from the version the video works from (set when a
+        // version is analyzed/approved); older videos without one fall back
+        // to the newest analyzed version.
         setVersion(
-          history.find((v) => v.kind === "analyzed" && v.scenes.length > 0) ??
+          history.find((v) => v.id === video.scriptVersionId && v.kind === "analyzed") ??
+            history.find((v) => v.kind === "analyzed" && v.scenes.length > 0) ??
             null,
         );
         const order = { library: 0, stock: 1, ai: 2 } as const;
@@ -149,11 +149,11 @@ export default function AssetsStep({
         setSelections(picks);
         const skills = templates.filter((t) => t.type === "image");
         setImageSkills(skills);
-        // A saved skill that has since been deleted falls back to none.
-        const savedSkill = skills.some(
-          (s) => s.id === settings.assetsGraphicsSkillId,
-        )
-          ? settings.assetsGraphicsSkillId!
+        // The video's own skill; a video that never picked one starts from the
+        // user's last choice. A skill since deleted falls back to none.
+        const wanted = video.graphicsSkillId ?? settings.assetsGraphicsSkillId;
+        const savedSkill = skills.some((s) => s.id === wanted)
+          ? wanted!
           : NO_GRAPHICS_SKILL;
         setGraphicsSkillId(savedSkill);
         setSavedGraphicsSkillId(savedSkill);
@@ -172,14 +172,10 @@ export default function AssetsStep({
     };
   }, [videoId]);
 
+  // Picks by asset id. The list may also hold picks of other versions' assets
+  // (kept for when that version is selected again); they just never match.
   const bySlot = useMemo(
-    () =>
-      new Map(
-        selections.map((pick) => [
-          slotKey(pick.sceneIndex, pick.assetIndex),
-          pick,
-        ]),
-      ),
+    () => new Map(selections.map((pick) => [pick.assetId, pick])),
     [selections],
   );
   // Stable reference across re-renders (not a fresh `?? []` every render) so
@@ -208,10 +204,10 @@ export default function AssetsStep({
       setSavingSkill(true);
       try {
         if (graphicsSkillId !== savedGraphicsSkillId) {
-          await apiClient.settings.set({
-            assetsGraphicsSkillId:
-              graphicsSkillId === NO_GRAPHICS_SKILL ? "" : graphicsSkillId,
-          });
+          const skillId = graphicsSkillId === NO_GRAPHICS_SKILL ? "" : graphicsSkillId;
+          // Saved on the video; also remembered as the default for new videos.
+          await apiClient.videos.update(videoId, { graphicsSkillId: skillId });
+          await apiClient.settings.set({ assetsGraphicsSkillId: skillId });
           setSavedGraphicsSkillId(graphicsSkillId);
         }
         if (frameRatio !== savedFrameRatio) {
@@ -262,15 +258,19 @@ export default function AssetsStep({
   const filledSlots =
     version?.scenes.reduce(
       (sum, scene) =>
-        sum +
-        scene.requiredAssets.filter((_, i) =>
-          bySlot.has(slotKey(scene.index, i)),
-        ).length,
+        sum + scene.requiredAssets.filter((asset) => bySlot.has(asset.id)).length,
       0,
     ) ?? 0;
   const filledCountOf = (scene: ScriptScene) =>
-    scene.requiredAssets.filter((_, i) => bySlot.has(slotKey(scene.index, i)))
-      .length;
+    scene.requiredAssets.filter((asset) => bySlot.has(asset.id)).length;
+  /** Every asset of the current version has a pick in `picks`. */
+  const allPicked = (picks: SceneResource[]) => {
+    const picked = new Set(picks.map((pick) => pick.assetId));
+    return (
+      !!version &&
+      version.scenes.every((scene) => scene.requiredAssets.every((asset) => picked.has(asset.id)))
+    );
+  };
   const sceneFilled = (scene: ScriptScene) =>
     filledCountOf(scene) === scene.requiredAssets.length;
 
@@ -314,24 +314,17 @@ export default function AssetsStep({
     try {
       const saved = await apiClient.assets.select({
         videoId,
-        sceneIndex: target.scene.index,
-        assetIndex: target.assetIndex,
+        assetId: target.asset.id,
         assetDescription: target.asset.description,
         candidate,
       });
       if (!saved) return;
       const next = [
-        ...selections.filter(
-          (pick) =>
-            !(
-              pick.sceneIndex === saved.sceneIndex &&
-              pick.assetIndex === saved.assetIndex
-            ),
-        ),
+        ...selections.filter((pick) => pick.assetId !== saved.assetId),
         saved,
       ];
       setSelections(next);
-      if (next.length >= totalSlots) onComplete();
+      if (allPicked(next)) onComplete();
       setTarget(null);
     } catch (err) {
       setError(errorMessage(err));
@@ -343,26 +336,20 @@ export default function AssetsStep({
       .selections(videoId)
       .then((picks) => {
         setSelections(picks);
-        if (picks.length >= totalSlots) onComplete();
+        if (allPicked(picks)) onComplete();
       })
       .catch((err) => setError(errorMessage(err)));
 
-  const clear = async (sceneIndex: number, assetIndex: number) => {
-    const key = slotKey(sceneIndex, assetIndex);
-    setClearing(key);
+  const clear = async (assetId: string) => {
+    setClearing(assetId);
     try {
       await apiClient.assets.select({
         videoId,
-        sceneIndex,
-        assetIndex,
+        assetId,
         assetDescription: "",
         candidate: null,
       });
-      setSelections((prev) =>
-        prev.filter(
-          (pick) => slotKey(pick.sceneIndex, pick.assetIndex) !== key,
-        ),
-      );
+      setSelections((prev) => prev.filter((pick) => pick.assetId !== assetId));
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -635,15 +622,13 @@ export default function AssetsStep({
                             )}
                             <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                               {group.items.map(({ asset, assetIndex }) => {
-                                const pick = bySlot.get(
-                                  slotKey(scene.index, assetIndex),
-                                );
+                                const pick = bySlot.get(asset.id);
                                 const outdated =
                                   pick &&
                                   pick.assetDescription !== asset.description;
                                 return (
                                   <li
-                                    key={assetIndex}
+                                    key={asset.id}
                                     className="flex flex-wrap items-center gap-3 py-3"
                                   >
                                     <div className="min-w-0 flex-1 basis-60">
@@ -746,13 +731,8 @@ export default function AssetsStep({
                                           size="icon-sm"
                                           variant="ghost"
                                           title={t("remove")}
-                                          disabled={
-                                            clearing ===
-                                            slotKey(scene.index, assetIndex)
-                                          }
-                                          onClick={() =>
-                                            void clear(scene.index, assetIndex)
-                                          }
+                                          disabled={clearing === asset.id}
+                                          onClick={() => void clear(asset.id)}
                                         >
                                           <TrashBinIcon className="size-4" />
                                         </Button>
@@ -778,8 +758,7 @@ export default function AssetsStep({
         sources={sources}
         selected={
           target
-            ? bySlot.get(slotKey(target.scene.index, target.assetIndex))
-                ?.candidate
+            ? bySlot.get(target.asset.id)?.candidate
             : undefined
         }
         characterRoster={characterRoster}

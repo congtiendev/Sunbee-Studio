@@ -157,8 +157,12 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
   // Whether the loaded result is a user-approved version (a skill example candidate).
   const [approved, setApproved] = useState(false);
   const [approving, setApproving] = useState(false);
+  // The analyzed version the shown scenes belong to (`currentVersionId` moves
+  // to a new draft once the text is edited; the scenes stay this version's).
+  const [resultVersion, setResultVersion] = useState<{ id: string; scriptText: string } | null>(null);
+  const [extractingNarration, setExtractingNarration] = useState(false);
 
-  const busy = fetching || transcribing || writing || analyzing;
+  const busy = fetching || transcribing || writing || analyzing || extractingNarration;
 
   // Seconds elapsed since the current AI call started — shown so a long
   // fetch/analysis doesn't look stalled.
@@ -271,6 +275,9 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     if (record.templateSourceId) setTemplateVersionId(record.templateSourceId);
     setSelectedTemplateId(record.styleTemplateId ?? NO_TEMPLATE);
     setSelectedEditingStyleId(record.editingStyleTemplateId ?? NO_TEMPLATE);
+    setResultVersion(
+      record.kind === "analyzed" && record.style ? { id: record.id, scriptText: record.scriptText } : null,
+    );
     setResult(
       record.kind === "analyzed" && record.style
         ? {
@@ -490,6 +497,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
       });
       setResultKey((key) => key + 1);
       setCurrentVersionId(res.versionId);
+      setResultVersion({ id: res.versionId, scriptText: res.scriptText });
       onAnalyzed?.();
     } catch (err) {
       setError(errorMessage(err));
@@ -528,6 +536,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
       setResult(res);
       setResultKey((key) => key + 1);
       setCurrentVersionId(res.versionId);
+      setResultVersion({ id: res.versionId, scriptText });
       // The script text sent is now exactly what the saved "analyzed" version holds.
       setSavedScriptText(scriptText);
       setLastSavedAt(new Date());
@@ -570,6 +579,7 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
       });
       setResultKey((key) => key + 1);
       setCurrentVersionId(record.id);
+      setResultVersion({ id: record.id, scriptText: record.scriptText });
       setApproved(true);
       return true;
     } catch (err) {
@@ -577,6 +587,27 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
       return false;
     } finally {
       setApproving(false);
+    }
+  };
+
+  /** Fills in the shown version's scene narration from its script, in place (same scenes and picks). */
+  const extractNarration = async () => {
+    if (!resultVersion) return;
+    setError(null);
+    setExtractingNarration(true);
+    try {
+      const record = await apiClient.script.narration({
+        versionId: resultVersion.id,
+        provider,
+        model,
+        effort,
+      });
+      setResult((prev) => (prev ? { ...prev, scenes: record.scenes } : prev));
+      setResultKey((key) => key + 1);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setExtractingNarration(false);
     }
   };
 
@@ -626,6 +657,9 @@ export function useScriptStep(videoId: string, onAnalyzed?: () => void) {
     setError,
     result,
     resultKey,
+    resultVersion,
+    extractNarration,
+    extractingNarration,
     approved,
     approving,
     approve,

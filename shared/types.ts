@@ -1,3 +1,5 @@
+import type { EditRecipe } from "./edit-recipe.js";
+
 export interface NamedApiKey {
   id: string;
   name: string;
@@ -57,6 +59,8 @@ export interface StyleTemplate {
   graphicsStyle?: string;
   /** type "editing": shot size, camera movement, cut rhythm and scene-transition methodology, folded into the scene-breakdown (analyze) step so a video's editing stays consistent regardless of who wrote the script. */
   editingStyle?: string;
+  /** type "editing": the numeric recipe the edit plan builds the timeline with (camera, reveals, subtitles, music level). Absent: the default recipe. */
+  editRecipe?: EditRecipe;
   /** type "image": up to 10 reference illustrations (their *style* only, never copied content) described into every image-gen prompt alongside graphicsStyle. Set only via the dedicated upload/remove endpoints. */
   referenceImageFileIds: string[];
   /** "anthropic" when imported from an Agent Skill (SKILL.md). */
@@ -134,6 +138,34 @@ export interface Video {
   ownerEmail?: string;
   /** Unset until picked; treat as `DEFAULT_FRAME_RATIO`. */
   frameRatio?: FrameRatio;
+  /**
+   * The analyzed script version every later step (assets, edit plan, render)
+   * works from. Set when a version is analyzed/approved, or picked by hand;
+   * editing the script text afterwards doesn't move it. Unset: none yet.
+   */
+  scriptVersionId?: string;
+  /** Target length of the finished video, in seconds. */
+  targetDurationSec?: number;
+  /** The narration voice (`VoiceProfile.id`), picked in the edit-plan step. */
+  voiceProfileId?: string;
+  /** The type "image" skill its pictures are drawn in: absent = the user's default, "" = none. */
+  graphicsSkillId?: string;
+  /** Steps the user finished (`VideoStudioStepKey`s). */
+  completedSteps?: string[];
+  /** The type "editing" skill the edit plan follows (its recipe); absent = the one the script was analyzed with. */
+  editSkillId?: string;
+}
+
+/** PATCH /api/videos/:id — any subset; `null` clears a field. */
+export interface VideoUpdateRequest {
+  name?: string;
+  frameRatio?: FrameRatio;
+  scriptVersionId?: string | null;
+  targetDurationSec?: number | null;
+  voiceProfileId?: string | null;
+  graphicsSkillId?: string | null;
+  completedSteps?: string[];
+  editSkillId?: string | null;
 }
 
 /** A video with the project/category it lives in — what the studio and "recent" lists need. */
@@ -229,6 +261,8 @@ export type RequiredAssetType = "image" | "video" | "audio" | "graphic";
 export type RequiredAssetSource = "generate" | "stock" | "provided";
 
 export interface RequiredAsset {
+  /** Permanent id (assigned by the server when the scenes are saved); picks refer to the asset by it, never by position. */
+  id: string;
   type: RequiredAssetType;
   description: string;
   source: RequiredAssetSource;
@@ -257,8 +291,18 @@ export interface SceneCharacter {
 }
 
 export interface ScriptScene {
+  /** Permanent id (assigned by the server when the scenes are saved); stays the same when scenes are renumbered. */
+  id: string;
+  /** 1-based screen order. */
   index: number;
   content: string;
+  /**
+   * The exact words spoken aloud in this scene (narration/dialogue, no visual
+   * notes) — the voiceover is synthesized from it word for word. Consecutive
+   * scenes' narration joined in order reproduces the script's spoken text.
+   * Absent on versions analyzed before this field existed (see "extract narration").
+   */
+  narration?: string;
   visualDescription: string;
   estimatedDurationSec: number;
   narrativeRole: SceneNarrativeRole;
@@ -415,6 +459,18 @@ export interface ScriptApproveRequest {
   /** Hand-edited roster (e.g. filled-in appearance detail); omitted keeps the base version's roster as-is. */
   characterRoster?: RecurringCharacter[];
   objectRoster?: RecurringObject[];
+}
+
+/**
+ * Fills in `narration` for an analyzed version's scenes from its script text,
+ * in place — same scenes, ids and picks (for versions analyzed before
+ * narration existed, or after the narration drifted from the script).
+ */
+export interface ScriptNarrationRequest {
+  versionId: string;
+  provider?: "openai" | "claude";
+  model?: string;
+  effort?: "low" | "medium" | "high";
 }
 
 export type DocumentTargetType = "skill" | "project";
@@ -853,12 +909,16 @@ export interface LibraryAsset {
   ownerEmail?: string;
 }
 
-/** The asset picked for one required asset of one scene of a video. */
+/**
+ * The asset picked for one required asset of a video, by the asset's id —
+ * so a pick follows its asset through renumbering and re-planning, and a
+ * version whose assets have other ids simply has no picks yet.
+ */
 export interface SceneResource {
   id: string;
   videoId: string;
-  sceneIndex: number;
-  assetIndex: number;
+  /** `RequiredAsset.id` */
+  assetId: string;
   /** The required asset's description when it was picked (to spot outdated picks). */
   assetDescription: string;
   candidate: AssetCandidate;
@@ -867,8 +927,7 @@ export interface SceneResource {
 
 export interface SceneResourceSelectRequest {
   videoId: string;
-  sceneIndex: number;
-  assetIndex: number;
+  assetId: string;
   assetDescription: string;
   /** null clears the pick. */
   candidate: AssetCandidate | null;
