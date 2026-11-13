@@ -1,8 +1,10 @@
+import { readFile } from "node:fs/promises";
 import type { LibraryAsset, SoundEffectPack } from "../../../../shared/types.js";
 import { saveFile } from "../../../services/storage/files.js";
-import { countAssetsBySourcePack, createLibraryAsset, getLibraryAsset } from "../repo.js";
+import { countAssetsBySourcePack, createLibraryAsset, findAssetIdBySourcePack, getLibraryAsset } from "../repo.js";
 import { fetchKenneyPackSounds, listKenneyPacks } from "./kenney-source.js";
 import { listSfxKitCategories, listSfxKitSounds, sfxKitDownloadUrl } from "./sfx-kit-catalog.js";
+import { findSystemSound, systemSoundPath } from "./system-catalog.js";
 
 /**
  * Combines every sound-effect source into one catalog: SFX Kit's 28
@@ -12,6 +14,7 @@ import { listSfxKitCategories, listSfxKitSounds, sfxKitDownloadUrl } from "./sfx
  * install can dispatch without a lookup table.
  */
 
+const SYSTEM_PREFIX = "system:";
 const SFXKIT_PREFIX = "sfxkit:";
 const KENNEY_PREFIX = "kenney:";
 
@@ -123,4 +126,33 @@ export async function installSoundPack(userId: string, packId: string): Promise<
     return installKenneyPack(userId, packId, packId.slice(KENNEY_PREFIX.length));
   }
   throw new Error("Không nhận ra gói âm thanh này.");
+}
+
+/**
+ * Saves one system-library sound into the user's library (`sourcePackId` =
+ * `system:<sound id>`, category = its readable title). Saving it again
+ * returns the existing asset instead of a copy.
+ */
+export async function saveSystemSound(userId: string, soundId: string): Promise<LibraryAsset> {
+  const sound = findSystemSound(soundId);
+  if (!sound) throw new Error("Không tìm thấy âm thanh này trong thư viện hệ thống.");
+  const sourceId = `${SYSTEM_PREFIX}${sound.id}`;
+  const existingId = findAssetIdBySourcePack(userId, sourceId);
+  const existing = existingId ? getLibraryAsset(userId, false, existingId) : null;
+  if (existing) return existing;
+
+  const buffer = await readFile(systemSoundPath(sound));
+  const stored = await saveFile(userId, "asset", buffer, sound.file.split("/").pop()!, sound.mime);
+  const id = createLibraryAsset(userId, {
+    fileId: stored.id,
+    mediaType: "audio",
+    name: sound.name,
+    tags: sound.tags,
+    description: "",
+    category: sound.categoryTitle,
+    sourcePackId: sourceId,
+  });
+  const asset = getLibraryAsset(userId, false, id);
+  if (!asset) throw new Error("Không lưu được âm thanh.");
+  return asset;
 }

@@ -7,14 +7,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslations } from "@/i18n";
-import { NO_TEMPLATE, type ScriptStepState } from "./use-script-step";
+import type { ScriptSourceState } from "./source-state";
+import { NO_TEMPLATE } from "./use-script-step";
 
 /** Picks the skill (voice/style guide) applied when writing the script. */
 export default function SkillSelectField({
   step,
   className,
 }: {
-  step: ScriptStepState;
+  step: ScriptSourceState;
   className?: string;
 }) {
   const t = useTranslations("videoStudio.script");

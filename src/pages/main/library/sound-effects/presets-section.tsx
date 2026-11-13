@@ -5,6 +5,7 @@ import { useTranslations } from "@/i18n";
 import type { Translator } from "@/i18n";
 import { FolderIcon } from "@/icons";
 import { apiClient } from "@/lib/api-client";
+import { PackSoundsDialog } from "@/pages/main/library/sound-effects/pack-sounds-dialog";
 import type { LibraryAsset, SoundEffectPack } from "@shared/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -13,6 +14,8 @@ function errorMessage(err: unknown): string {
 }
 
 interface PacksSectionProps {
+  /** The user's sound library, to list an installed pack's sounds. */
+  assets: LibraryAsset[];
   onInstalled: (assets: LibraryAsset[]) => void;
 }
 
@@ -20,20 +23,24 @@ function PackCard({
   pack,
   installing,
   onInstall,
+  onOpen,
   t,
 }: {
   pack: SoundEffectPack;
   installing: boolean;
   onInstall: () => void;
+  onOpen: () => void;
   t: Translator;
 }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-white/[0.03]">
+  const className =
+    "flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 text-start dark:border-gray-800 dark:bg-white/[0.03]";
+  const body = (
+    <>
       <FolderIcon className="size-5 shrink-0 text-gray-400 dark:text-gray-500" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-gray-800 dark:text-white/90">{pack.title}</p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          <Badge variant="light" color="success" size="sm">
+          <Badge variant="light" color={pack.license.startsWith("CC0") ? "success" : "warning"} size="sm">
             {pack.license}
           </Badge>
           {pack.soundCount > 0 && (
@@ -58,17 +65,32 @@ function PackCard({
           {t("packs.installButton")}
         </Button>
       )}
-    </div>
+    </>
+  );
+
+  // An installed pack opens its sounds for preview; one not yet added only offers "Add".
+  return pack.installed ? (
+    <button
+      type="button"
+      title={t("packs.listenHint")}
+      onClick={onOpen}
+      className={`${className} cursor-pointer transition-colors hover:border-brand-300 hover:bg-gray-50 dark:hover:border-brand-800 dark:hover:bg-white/[0.06]`}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className={className}>{body}</div>
   );
 }
 
-/** Catalog of ready-made sound-effect packs (SFX Kit + Kenney.nl, both CC0) — one pack = one category/folder's worth of sounds. */
-export function PacksSection({ onInstalled }: PacksSectionProps) {
+/** Catalog of ready-made CC0 sound-effect packs (SFX Kit, Kenney.nl) — one pack = one category/folder's worth of sounds. */
+export function PacksSection({ assets, onInstalled }: PacksSectionProps) {
   const t = useTranslations("soundEffects");
   const [packs, setPacks] = useState<SoundEffectPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openPack, setOpenPack] = useState<SoundEffectPack | null>(null);
 
   useEffect(() => {
     apiClient.assets.soundPacks
@@ -105,11 +127,17 @@ export function PacksSection({ onInstalled }: PacksSectionProps) {
     }
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
-    <div className="mb-4">
-      <h3 className="mb-2 text-base font-semibold text-gray-800 dark:text-white/90">{t("packs.title")}</h3>
+    <div>
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("packs.intro")}</p>
       {error && <p className="mb-2 text-sm text-red-500 dark:text-red-400">{error}</p>}
       {packs.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">{t("packs.empty")}</p>
@@ -129,6 +157,7 @@ export function PacksSection({ onInstalled }: PacksSectionProps) {
                   pack={pack}
                   installing={installingId === pack.id}
                   onInstall={() => void handleInstall(pack)}
+                  onOpen={() => setOpenPack(pack)}
                   t={t}
                 />
               ))}
@@ -136,6 +165,11 @@ export function PacksSection({ onInstalled }: PacksSectionProps) {
           </div>
         ))
       )}
+      <PackSoundsDialog
+        pack={openPack}
+        sounds={openPack ? assets.filter((asset) => asset.sourcePackId === openPack.id) : []}
+        onOpenChange={(open) => !open && setOpenPack(null)}
+      />
     </div>
   );
 }

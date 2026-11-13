@@ -742,7 +742,8 @@ export type StoredFileKind =
   | "asset"
   | "skill-attachment"
   | "character-reference"
-  | "voice-sample";
+  | "voice-sample"
+  | "render";
 
 export interface StoredFile {
   id: string;
@@ -857,6 +858,31 @@ export interface LibraryAsset {
   sourcePackId?: string;
 }
 
+/** One category of the system sound library (`<dataDir>/system-sounds`). */
+export interface SystemSoundCategory {
+  id: string;
+  title: string;
+  description: string;
+  count: number;
+}
+
+/** One sound of the system library, previewed via `GET /api/assets/system-sounds/audio?id=`. */
+export interface SystemSound {
+  /** `<category>:<slug>`; saving it stores a library asset with `sourcePackId` = `system:<id>`. */
+  id: string;
+  name: string;
+  category: string;
+  /** Seconds. */
+  duration: number;
+  tags: string[];
+}
+
+export interface SystemSoundLibrary {
+  license: string;
+  categories: SystemSoundCategory[];
+  sounds: SystemSound[];
+}
+
 /**
  * A ready-made sound-effect pack listed in the catalog
  * (`server/modules/assets/sound-effects/`) that the user can add to their
@@ -894,6 +920,173 @@ export interface SceneResourceSelectRequest {
   assetDescription: string;
   /** null clears the pick. */
   candidate: AssetCandidate | null;
+}
+
+/**
+ * The video-render module's (`server/modules/video-render/`) small, fixed
+ * catalog of Remotion shot components (see `renderer/src/shots.tsx`) — adding
+ * one is a code change, not data, by design: it keeps every render
+ * deterministic instead of having an AI author code per video. "kenBurns"
+ * is a slow push-in/drift on the still image; "titleCard" is a full-frame
+ * typography card (hook/outro beats, or a scene with no image).
+ */
+export type ShotKind = "staticHold" | "kenBurns" | "lowerThirdCaption" | "titleCard";
+
+/** v1: an opacity ramp at the clip's own edges, not a true cross-dissolve between two clips. */
+export type ClipTransition = "cut" | "fade";
+
+export type RenderCaptionStyle = "none" | "lowerThird" | "title";
+
+/** One clip of the render timeline — one per `RenderScene`. */
+export interface RenderManifestClip {
+  sceneIndex: number;
+  /** Frame offset from the timeline's start. */
+  from: number;
+  durationInFrames: number;
+  shotKind: ShotKind;
+  imageFileId?: string;
+  transitionIn: ClipTransition;
+  transitionOut: ClipTransition;
+  caption?: { text: string; style: "lowerThird" | "title" };
+  /** Unused until a TTS narration step exists — kept so that integration is additive, not a schema break. */
+  voiceoverFileId?: string;
+}
+
+export type RenderManifestAudioTrack = "bgm" | "sfx";
+
+/** One music/SFX cue, placed by hand — referencing a library `LibraryAsset.fileId`. */
+export interface RenderManifestAudioCue {
+  fileId: string;
+  /** The library asset's name when it was added — display only. */
+  label?: string;
+  track: RenderManifestAudioTrack;
+  from: number;
+  /** Omitted: play once at the clip's natural length. */
+  durationInFrames?: number;
+  gainDb?: number;
+}
+
+/** The declarative timeline fed to Remotion as `inputProps` — derived from a `RenderProject` at render time. */
+export interface RenderManifest {
+  fps: number;
+  width: number;
+  height: number;
+  totalDurationInFrames: number;
+  clips: RenderManifestClip[];
+  audio: RenderManifestAudioCue[];
+}
+
+/** One scene of a render project — the module's own breakdown of its own script (one clip each). */
+export interface RenderScene {
+  /** The words on screen (the script's line for this scene). */
+  text: string;
+  durationSec: number;
+  shotKind: ShotKind;
+  captionStyle: RenderCaptionStyle;
+  transitionOut: ClipTransition;
+  /** What picture the scene needs — written by the AI, a hint for picking/uploading one. */
+  imageHint: string;
+  imageFileId?: string;
+}
+
+/**
+ * Where a render project's script comes from — the same sources as the Video
+ * Studio's Script step (their code is shared), but the result is kept only in
+ * the render project, never as a Studio script version.
+ */
+export type RenderSourceMode = "script" | "link" | "upload" | "document" | "idea" | "template";
+
+/** The script-source inputs and AI options a render project remembers between visits. */
+export interface RenderSourceOptions {
+  /** "link": the video URL, and whether AI cleans captions / transcribes when there are none. */
+  url?: string;
+  linkUseAi?: boolean;
+  /** "document": the library documents to write from, and the angle to take. */
+  documentIds?: string[];
+  brief?: string;
+  /** "template": the analyzed Studio version whose structure to reuse, and the new topic. */
+  templateVersionId?: string;
+  topic?: string;
+  /** Skill (type "script") whose voice/instructions the AI follows. */
+  styleTemplateId?: string;
+  language?: "vi" | "en";
+  provider?: "openai" | "claude";
+  model?: string;
+  effort?: "low" | "medium" | "high";
+}
+
+/**
+ * A video made entirely inside the video-render module — its own script,
+ * scenes, images and audio, independent of the Video Studio and its
+ * Project → Category → Video hierarchy.
+ */
+export interface RenderProject {
+  id: string;
+  name: string;
+  frameRatio: FrameRatio;
+  sourceMode: RenderSourceMode;
+  sourceOptions: RenderSourceOptions;
+  ideaText: string;
+  /** For the AI-written sources (idea, document, template); null = let the AI pick. */
+  targetDurationSec: number | null;
+  scriptText: string;
+  scenes: RenderScene[];
+  audio: RenderManifestAudioCue[];
+  createdAt: string;
+  updatedAt: string;
+  ownerEmail?: string;
+}
+
+export interface RenderProjectSummary {
+  id: string;
+  name: string;
+  frameRatio: FrameRatio;
+  sceneCount: number;
+  durationSec: number;
+  createdAt: string;
+  updatedAt: string;
+  ownerEmail?: string;
+}
+
+/** The fields a save may change (everything the page edits). */
+export type RenderProjectUpdate = Partial<
+  Pick<
+    RenderProject,
+    | "name"
+    | "frameRatio"
+    | "sourceMode"
+    | "sourceOptions"
+    | "ideaText"
+    | "targetDurationSec"
+    | "scriptText"
+    | "scenes"
+    | "audio"
+  >
+>;
+
+/** One finished render — append-only history; the MP4 itself is a `StoredFile` of kind "render". */
+export interface VideoRender {
+  id: string;
+  projectId: string;
+  fileId: string;
+  durationMs: number;
+  createdAt: string;
+}
+
+/**
+ * A render running in the background (a long video takes far longer than any
+ * request should stay open) — polled by the page. Kept in server memory only:
+ * a server restart drops it, and the page reports the render as interrupted.
+ */
+export interface VideoRenderJob {
+  projectId: string;
+  status: "running" | "done" | "failed";
+  /** 0–1, from Remotion's own progress callback. */
+  progress: number;
+  startedAt: string;
+  error?: string;
+  /** Set once `status` is "done". */
+  render?: VideoRender;
 }
 
 /** AI image sources: "square" for a general asset, "portrait"/"landscape" to match a vertical/horizontal video frame. */

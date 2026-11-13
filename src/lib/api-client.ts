@@ -29,6 +29,9 @@ import type {
   PromptOverride,
   PromptScope,
   PromptTaskInfo,
+  RenderProject,
+  RenderProjectSummary,
+  RenderProjectUpdate,
   ResearchSourceInfo,
   SkillDetail,
   SkillTrainingRequest,
@@ -53,12 +56,15 @@ import type {
   SceneResource,
   SceneResourceSelectRequest,
   SoundEffectPack,
+  SystemSoundLibrary,
   StyleTemplate,
   TrashItem,
   TrashItemType,
   TrashPurgeResult,
   User,
   Video,
+  VideoRender,
+  VideoRenderJob,
   VideoSummary,
   VoicePreset,
   VoiceProfile,
@@ -476,12 +482,59 @@ export const apiClient = {
           body: JSON.stringify({ candidate, ...meta }),
         }),
     },
+    /** The system sound library: browse/preview every sound, save single sounds into the library. */
+    systemSounds: {
+      list: (): Promise<SystemSoundLibrary> => request("/api/assets/system-sounds"),
+      audioUrl: (id: string): string => `/api/assets/system-sounds/audio?id=${encodeURIComponent(id)}`,
+      save: (id: string): Promise<LibraryAsset> =>
+        request("/api/assets/system-sounds/save", { method: "POST", body: JSON.stringify({ id }) }),
+    },
     /** Ready-made sound-effect packs the user can add to the library with one click. */
     soundPacks: {
       list: (): Promise<SoundEffectPack[]> => request("/api/assets/sound-packs"),
       install: (id: string): Promise<LibraryAsset[]> =>
         request(`/api/assets/sound-packs/${encodeURIComponent(id)}/install`, { method: "POST" }),
     },
+  },
+  /** Video render: self-contained render projects (own script, AI scenes, images, audio) rendered to MP4. */
+  videoRender: {
+    list: (): Promise<RenderProjectSummary[]> => request("/api/video-render/projects"),
+    create: (name: string): Promise<RenderProject> =>
+      request("/api/video-render/projects", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      }),
+    get: (id: string): Promise<RenderProject> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}`),
+    update: (id: string, patch: RenderProjectUpdate): Promise<RenderProject> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(patch),
+      }),
+    delete: (id: string): Promise<void> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    /** Gets the script from a Studio script source (link, document, idea, template) using the saved inputs — kept in the project only. */
+    scriptFromSource: (
+      id: string,
+      source: "link" | "document" | "idea" | "template",
+    ): Promise<RenderProject> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}/script/${source}`, { method: "POST" }),
+    /** Transcribes an uploaded video/audio file into the project's script. */
+    scriptFromUpload: (id: string, file: File): Promise<RenderProject> => {
+      const formData = new FormData();
+      formData.set("file", file);
+      return requestUpload(`/api/video-render/projects/${encodeURIComponent(id)}/script/upload`, formData);
+    },
+    /** AI breaks the saved script into scenes, replacing the current ones. */
+    splitScenes: (id: string): Promise<RenderProject> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}/split-scenes`, { method: "POST" }),
+    /** Starts rendering the saved project in the background; poll `renderStatus` for progress. */
+    render: (id: string): Promise<VideoRenderJob> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}/render`, { method: "POST" }),
+    renderStatus: (id: string): Promise<VideoRenderJob | null> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}/render-status`),
+    renders: (id: string): Promise<VideoRender[]> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}/renders`),
   },
   /** AI training: skills learned from videos and documents, one version per run. */
   training: {

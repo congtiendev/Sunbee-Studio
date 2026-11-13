@@ -149,7 +149,130 @@
       "skills": "Skill (phong cách AI)",
       "training": "Huấn luyện AI",
       "voices": "Giọng nói",
-      "soundEffects": "Hiệu ứng âm thanh"
+      "soundEffects": "Hiệu ứng âm thanh",
+      "videoRender": "Dựng video"
+    }
+  },
+  "videoRender": {
+    "title": "Dựng video",
+    "metaDescription": "Làm video từ kịch bản của riêng bạn: AI chia cảnh, bạn chọn ảnh cho từng cảnh, rồi xuất MP4.",
+    "intro": "Công cụ làm video riêng, tách khỏi Video Studio: dán kịch bản (hoặc để AI viết từ ý tưởng), để AI chia thành cảnh, chọn ảnh cho từng cảnh, thêm nhạc rồi xuất MP4.",
+    "newProject": "Video mới",
+    "namePlaceholder": "Tên video",
+    "create": "Tạo",
+    "noProjects": "Chưa có video nào — tạo một video để bắt đầu.",
+    "deleteProject": "Xoá",
+    "deleteConfirmTitle": "Xoá \"{name}\"?",
+    "deleteConfirmDescription": "Kịch bản, các cảnh và mọi file MP4 đã xuất sẽ bị xoá. Ảnh và âm thanh vẫn còn trong thư viện.",
+    "backToList": "Tất cả video",
+    "notFound": "Không tìm thấy video.",
+    "nameLabel": "Tên",
+    "summary": "{count} cảnh · {seconds}s",
+    "unsaved": "Có thay đổi chưa lưu",
+    "saved": "Đã lưu",
+    "save": "Lưu",
+    "saving": "Đang lưu…",
+    "scenesTitle": "Các cảnh",
+    "noScenes": "Chưa có cảnh nào — viết kịch bản ở trên rồi để AI chia cảnh (hoặc tự thêm cảnh).",
+    "missingImages": "{count} cảnh chưa có ảnh — cảnh đó sẽ chỉ hiện chữ trên nền tối.",
+    "addScene": "Thêm cảnh",
+    "scene": "Cảnh {index}",
+    "moveUp": "Lên trên",
+    "moveDown": "Xuống dưới",
+    "removeScene": "Xoá cảnh",
+    "pickImage": "Chọn ảnh",
+    "changeImage": "Đổi ảnh",
+    "clearImage": "Bỏ ảnh",
+    "imageHintLabel": "Cần ảnh",
+    "textLabel": "Chữ trên màn hình",
+    "durationLabel": "Thời lượng (giây)",
+    "shotKindLabel": "Kiểu shot",
+    "shotKinds": {
+      "staticHold": "Ảnh tĩnh",
+      "kenBurns": "Ken Burns (lia/zoom chậm)",
+      "lowerThirdCaption": "Ảnh + phụ đề trồi lên",
+      "titleCard": "Thẻ tiêu đề (chỉ chữ)"
+    },
+    "captionStyleLabel": "Phụ đề",
+    "captionStyles": {
+      "none": "Không phụ đề",
+      "lowerThird": "Dòng dưới",
+      "title": "Tiêu đề"
+    },
+    "transitionOutLabel": "Chuyển cảnh ra",
+    "transitions": {
+      "cut": "Cắt thẳng",
+      "fade": "Mờ dần"
+    },
+    "content": {
+      "frameRatioLabel": "Khung hình",
+      "scriptHint": "Chỉ lưu trong video này (không lưu gì vào Video Studio). Mỗi đoạn một ý là dễ chia cảnh nhất.",
+      "splitButton": "Chia cảnh bằng AI",
+      "splitting": "Đang chia cảnh…",
+      "splitConfirmTitle": "Thay các cảnh hiện tại?",
+      "splitConfirmDescription": "AI sẽ chia lại kịch bản; các cảnh hiện tại (và ảnh đã chọn cho chúng) sẽ bị thay thế.",
+      "splitConfirm": "Chia lại",
+      "splitTitle": "Chia kịch bản thành cảnh",
+      "splitHint": "AI chia kịch bản thành từng cảnh, gợi ý ảnh và thời lượng cho mỗi cảnh. Xong sẽ chuyển sang bước Cảnh."
+    },
+    "imagePicker": {
+      "title": "Chọn ảnh",
+      "hint": "Cảnh này cần: {hint}",
+      "searchPlaceholder": "Tìm ảnh trong thư viện…",
+      "upload": "Tải lên",
+      "empty": "Không có ảnh nào — hãy tải lên."
+    },
+    "audio": {
+      "title": "Nhạc & hiệu ứng âm thanh",
+      "hint": "Nhạc nền và hiệu ứng lấy từ thư viện âm thanh của bạn. Bấm vào một dòng để nghe thử.",
+      "empty": "Chưa có âm thanh nào — thêm từ thư viện bên dưới.",
+      "searchPlaceholder": "Tìm âm thanh trong thư viện…",
+      "noResults": "Không tìm thấy âm thanh.",
+      "add": "Thêm",
+      "remove": "Xoá",
+      "trackLabel": "Loại",
+      "tracks": {
+        "bgm": "Nhạc nền",
+        "sfx": "Hiệu ứng"
+      },
+      "startLabel": "Bắt đầu",
+      "gainLabel": "Âm lượng",
+      "openLibrary": "Thư viện âm thanh",
+      "inVideo": "Trong video ({count})",
+      "fromLibrary": "Thêm từ thư viện",
+      "clearSearch": "Xoá tìm kiếm"
+    },
+    "render": {
+      "title": "Xuất video",
+      "hint": "Xuất chạy nền (thay đổi chưa lưu sẽ được lưu trước) — có thể rời trang rồi quay lại. Video càng dài, xuất càng lâu.",
+      "renderingHint": "Đang xuất… có thể mất vài phút.",
+      "button": "Xuất video",
+      "rendering": "Đang xuất… {percent}% · {elapsed}",
+      "download": "Tải MP4",
+      "history": "Các lần xuất trước",
+      "open": "Mở",
+      "interrupted": "Lần xuất bị gián đoạn (server vừa khởi động lại). Hãy xuất lại.",
+      "rerender": "Xuất lại",
+      "noRenderYet": "Chưa xuất lần nào",
+      "statDuration": "Thời lượng",
+      "statScenes": "Cảnh",
+      "statResolution": "Độ phân giải"
+    },
+    "sceneCount": "{count, plural, other {# cảnh}}",
+    "scenesHint": "Bấm vào ảnh để chọn hoặc đổi ảnh. Dòng thời gian cho thấy nhịp video — ô vàng là cảnh còn thiếu ảnh.",
+    "goToScript": "Viết kịch bản",
+    "titleCardNoImage": "Thẻ tiêu đề — không cần ảnh",
+    "steps": {
+      "script": "Kịch bản",
+      "scenes": "Cảnh",
+      "audio": "Âm thanh",
+      "scriptEmpty": "Chưa có kịch bản",
+      "scriptChars": "{count, plural, other {# ký tự}}",
+      "scenesEmpty": "Chưa chia cảnh",
+      "scenesMissing": "{count} cảnh thiếu ảnh",
+      "scenesReady": "{count} cảnh, đủ ảnh",
+      "audioOptional": "Không bắt buộc",
+      "audioCount": "{count, plural, other {# âm thanh}}"
     }
   },
   "header": {
@@ -1755,7 +1878,6 @@
       "pageTitle": "Kho media",
       "pageDescription": "Ảnh, video và âm thanh của riêng bạn. Đặt tên và tag rõ ràng để bước Tài nguyên dễ tìm trong thư viện theo tên, tag và mô tả.",
       "searchPlaceholder": "Tìm theo tên, tag hoặc mô tả",
-      "searchButton": "Tìm",
       "uploadButton": "Tải lên",
       "uploadTagsPlaceholder": "Tag cho file tải lên, cách nhau bằng dấu phẩy",
       "generateButton": "Tạo ảnh",
@@ -1791,7 +1913,21 @@
       "tagsLabel": "Tag",
       "descriptionLabel": "Mô tả",
       "cancel": "Huỷ",
-      "save": "Lưu"
+      "save": "Lưu",
+      "clearSearch": "Xoá tìm kiếm",
+      "noResults": "Không tìm thấy tài nguyên nào khớp.",
+      "open": "Xem",
+      "sections": {
+        "visual": "Ảnh & video",
+        "audio": "Âm thanh"
+      },
+      "uploadTitle": "Tải lên kho media",
+      "uploadDescription": "Ảnh, video hoặc âm thanh. Tag giúp bước Tài nguyên tìm ra file nhanh hơn.",
+      "dropHere": "Kéo thả file vào đây, hoặc bấm để chọn",
+      "dropActive": "Thả file để thêm",
+      "dropHint": "Ảnh · Video · Âm thanh",
+      "uploadSubmit": "{count, plural, =0 {Tải lên} other {Tải lên # file}}",
+      "removeFile": "Bỏ file"
     },
     "workspace": {
       "noVideoTitle": "Chọn một video để làm việc",
@@ -2209,23 +2345,71 @@
   },
   "soundEffects": {
     "pageTitle": "Hiệu ứng âm thanh",
-    "pageDescription": "Thêm các gói hiệu ứng âm thanh có sẵn (CC0, dùng thương mại được) hoặc tự tải lên, chia sẵn theo danh mục.",
+    "pageDescription": "Chọn âm thanh như chọn nhạc cho story: bấm để nghe thử, bấm biểu tượng lưu để đưa vào thư viện của bạn.",
+    "searchPlaceholder": "Tìm âm thanh — whoosh, ding, camera, meme…",
+    "clearSearch": "Xoá tìm kiếm",
+    "showMore": "Xem thêm ({count})",
     "deleteButton": "Xoá",
     "deleteTitle": "Xoá âm thanh này?",
-    "deleteDescription": "\"{name}\" sẽ bị xoá.",
+    "deleteDescription": "\"{name}\" sẽ bị xoá khỏi thư viện của bạn.",
+    "tabs": {
+      "browse": "Khám phá",
+      "saved": "Đã lưu",
+      "packs": "Gói CC0"
+    },
+    "row": {
+      "play": "Nghe thử",
+      "pause": "Tạm dừng",
+      "save": "Lưu vào thư viện",
+      "unsave": "Bỏ lưu"
+    },
+    "browse": {
+      "all": "Tất cả",
+      "categories": "Danh mục",
+      "allSounds": "Tất cả âm thanh",
+      "results": "Kết quả tìm kiếm",
+      "empty": "Không tìm thấy âm thanh nào.",
+      "unavailable": "Máy này chưa có thư viện âm thanh hệ thống.",
+      "licenseNote": "Thư viện hệ thống được tổng hợp từ nhiều nguồn ({license}). Kiểm tra bản quyền trước khi dùng cho video thương mại."
+    },
+    "saved": {
+      "empty": "Chưa lưu âm thanh nào — bấm biểu tượng lưu ở tab Khám phá, hoặc thêm một gói ở tab Gói CC0.",
+      "uncategorized": "Chưa phân loại"
+    },
+    "categories": {
+      "whoosh": "Whoosh & chuyển cảnh",
+      "riser": "Riser & đảo ngược",
+      "impact": "Va chạm, boom & cháy nổ",
+      "ui": "Click, nút & thông báo",
+      "typing": "Gõ phím & viết",
+      "camera": "Máy ảnh & chụp hình",
+      "money": "Tiền & giao dịch",
+      "paper": "Giấy, vải & đồ vật",
+      "comedy": "Hài hước & meme",
+      "magic": "Lấp lánh & phép thuật",
+      "tension": "Căng thẳng & kịch tính",
+      "glitch": "Glitch, điện tử & dữ liệu",
+      "nature": "Thiên nhiên, môi trường & xe cộ",
+      "music": "Nhạc nền & intro"
+    },
     "packs": {
-      "title": "Gói có sẵn",
+      "intro": "Gói âm thanh CC0 (dùng thương mại được, không cần ghi nguồn). Thêm cả gói vào thư viện, rồi bấm vào gói đã thêm để nghe.",
       "empty": "Hiện chưa có gói nào.",
       "soundCount": "{count, plural, other {# âm thanh}}",
       "folderCount": "{count, plural, other {# danh mục}}",
       "installButton": "Thêm",
-      "installedBadge": "Đã thêm"
+      "installedBadge": "Đã thêm",
+      "listenHint": "Bấm để nghe các âm thanh trong gói",
+      "noSounds": "Gói này chưa có âm thanh nào trong thư viện của bạn."
     },
-    "library": {
-      "title": "Âm thanh của bạn",
-      "empty": "Chưa có âm thanh nào — thêm một gói có sẵn ở trên, hoặc tự tải lên ở Kho media.",
-      "allCategories": "Tất cả ({count})",
-      "uncategorized": "Chưa phân loại"
+    "player": {
+      "region": "Đang phát",
+      "play": "Phát",
+      "pause": "Tạm dừng",
+      "previous": "Âm thanh trước",
+      "next": "Âm thanh tiếp theo",
+      "seek": "Tua",
+      "close": "Đóng trình phát"
     }
   }
 }

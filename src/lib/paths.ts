@@ -11,6 +11,7 @@ export const paths = {
   projects: "/projects",
   projectDetail: "/projects/detail",
   studio: "/studio",
+  videoRender: "/video-render",
   libraryMedia: "/library/media",
   libraryDocuments: "/library/documents",
   librarySkills: "/library/skills",
@@ -28,6 +29,8 @@ export const pathParams = {
   skillId: "skill",
   /** The studio's open step (`VideoStudioStepKey`), so a reload stays on it. */
   step: "step",
+  /** The video-render page's open render project. */
+  renderProjectId: "project",
 } as const;
 
 export function projectUrl(projectId: string): string {
@@ -39,6 +42,13 @@ export function studioUrl(videoId: string, step?: string): string {
   const query = new URLSearchParams({ [pathParams.videoId]: videoId });
   if (step) query.set(pathParams.step, step);
   return `${paths.studio}?${query.toString()}`;
+}
+
+/** The video-render page: its project list, or one render project. */
+export function videoRenderUrl(projectId?: string): string {
+  return projectId
+    ? `${paths.videoRender}?${pathParams.renderProjectId}=${encodeURIComponent(projectId)}`
+    : paths.videoRender;
 }
 
 /** The AI-training page, optionally on an existing skill and/or with a video pre-picked. */

@@ -36,7 +36,8 @@ import {
   setSceneResource,
   updateLibraryAsset,
 } from "./repo.js";
-import { installSoundPack, listSoundPacks } from "./sound-effects/install.js";
+import { installSoundPack, listSoundPacks, saveSystemSound } from "./sound-effects/install.js";
+import { findSystemSound, getSystemSoundLibrary, systemSoundPath } from "./sound-effects/system-catalog.js";
 import { imagePromptTask } from "./tasks/image-prompt.js";
 import { searchQueryTask } from "./tasks/search-query.js";
 import { splitLayersTask } from "./tasks/split-layers.js";
@@ -476,6 +477,35 @@ router.delete("/library/:id", requireAuth, async (req, res) => {
   const fileId = deleteLibraryAsset(req.user!.id, isAdmin(req.user!), req.params.id as string);
   if (fileId) await deleteFile(req.user!.id, isAdmin(req.user!), fileId);
   res.json({ ok: true });
+});
+
+// ---------- system sound library (browse + preview + save single sounds) ----------
+
+router.get("/system-sounds", requireAuth, (_req, res) => {
+  try {
+    res.json(getSystemSoundLibrary());
+  } catch (err) {
+    res.status(500).json({ error: errorMessage(err) });
+  }
+});
+
+/** Streams one system sound for preview (`sendFile` answers Range requests, so seeking works). */
+router.get("/system-sounds/audio", requireAuth, (req, res) => {
+  const sound = findSystemSound(String(req.query.id ?? ""));
+  if (!sound) {
+    res.status(404).json({ error: "Không tìm thấy âm thanh." });
+    return;
+  }
+  res.type(sound.mime);
+  res.sendFile(systemSoundPath(sound), { maxAge: "1d" });
+});
+
+router.post("/system-sounds/save", requireAuth, async (req, res) => {
+  try {
+    res.json(await saveSystemSound(req.user!.id, String((req.body as { id?: string }).id ?? "")));
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
 });
 
 // ---------- sound-effect packs (ready-made, installed into the library) ----------

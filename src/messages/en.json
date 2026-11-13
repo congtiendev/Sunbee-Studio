@@ -148,7 +148,130 @@
       "skills": "Skills",
       "training": "AI training",
       "voices": "Voices",
-      "soundEffects": "Sound Effects"
+      "soundEffects": "Sound Effects",
+      "videoRender": "Video render"
+    }
+  },
+  "videoRender": {
+    "title": "Video render",
+    "metaDescription": "Make a video from your own script: AI splits it into scenes, you pick an image for each, then render to MP4.",
+    "intro": "A video maker of its own, separate from the Video Studio: paste a script (or let AI write one from an idea), let AI split it into scenes, pick an image for each scene, add music, and render to MP4.",
+    "newProject": "New video",
+    "namePlaceholder": "Video name",
+    "create": "Create",
+    "noProjects": "No videos yet — create one to start.",
+    "deleteProject": "Delete",
+    "deleteConfirmTitle": "Delete \"{name}\"?",
+    "deleteConfirmDescription": "Its script, scenes and every rendered MP4 are deleted. Images and audio stay in the library.",
+    "backToList": "All videos",
+    "notFound": "Video not found.",
+    "nameLabel": "Name",
+    "summary": "{count, plural, one {# scene} other {# scenes}} · {seconds}s",
+    "unsaved": "Unsaved changes",
+    "saved": "Saved",
+    "save": "Save",
+    "saving": "Saving…",
+    "scenesTitle": "Scenes",
+    "noScenes": "No scenes yet — write the script above, then let AI split it into scenes (or add scenes by hand).",
+    "missingImages": "{count, plural, one {# scene has} other {# scenes have}} no image yet — it renders as text on a dark background.",
+    "addScene": "Add scene",
+    "scene": "Scene {index}",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeScene": "Remove scene",
+    "pickImage": "Pick an image",
+    "changeImage": "Change",
+    "clearImage": "Remove image",
+    "imageHintLabel": "Needs",
+    "textLabel": "On-screen text",
+    "durationLabel": "Duration (s)",
+    "shotKindLabel": "Shot",
+    "shotKinds": {
+      "staticHold": "Static image",
+      "kenBurns": "Ken Burns (slow pan/zoom)",
+      "lowerThirdCaption": "Image + rising caption",
+      "titleCard": "Title card (text only)"
+    },
+    "captionStyleLabel": "Caption",
+    "captionStyles": {
+      "none": "No caption",
+      "lowerThird": "Lower third",
+      "title": "Title"
+    },
+    "transitionOutLabel": "Transition out",
+    "transitions": {
+      "cut": "Cut",
+      "fade": "Fade"
+    },
+    "content": {
+      "frameRatioLabel": "Frame",
+      "scriptHint": "Kept in this video only (nothing is saved in the Video Studio). One idea per paragraph splits best.",
+      "splitButton": "Split with AI",
+      "splitting": "Splitting…",
+      "splitConfirmTitle": "Replace the current scenes?",
+      "splitConfirmDescription": "AI splits the script again; the current scenes (and the images picked for them) are replaced.",
+      "splitConfirm": "Split again",
+      "splitTitle": "Split the script into scenes",
+      "splitHint": "AI splits the script into scenes and suggests a picture and length for each. You'll move on to Scenes when it's done."
+    },
+    "imagePicker": {
+      "title": "Pick an image",
+      "hint": "This scene needs: {hint}",
+      "searchPlaceholder": "Search images in the library…",
+      "upload": "Upload",
+      "empty": "No images found — upload one."
+    },
+    "audio": {
+      "title": "Music & sound effects",
+      "hint": "Music and sound effects come from your audio library. Click a row to preview it.",
+      "empty": "No audio yet — add some from the library below.",
+      "searchPlaceholder": "Search audio in the library…",
+      "noResults": "No audio found.",
+      "add": "Add",
+      "remove": "Remove",
+      "trackLabel": "Track",
+      "tracks": {
+        "bgm": "Music",
+        "sfx": "Sound effect"
+      },
+      "startLabel": "Start",
+      "gainLabel": "Volume",
+      "openLibrary": "Sound library",
+      "inVideo": "In this video ({count})",
+      "fromLibrary": "Add from library",
+      "clearSearch": "Clear search"
+    },
+    "render": {
+      "title": "Export video",
+      "hint": "Renders in the background (unsaved edits are saved first) — you can leave this page and come back. Longer videos take longer.",
+      "renderingHint": "Rendering… this can take several minutes.",
+      "button": "Render video",
+      "rendering": "Rendering… {percent}% · {elapsed}",
+      "download": "Download MP4",
+      "history": "Earlier renders",
+      "open": "Open",
+      "interrupted": "The render was interrupted (the server restarted). Start it again.",
+      "rerender": "Export again",
+      "noRenderYet": "Not exported yet",
+      "statDuration": "Length",
+      "statScenes": "Scenes",
+      "statResolution": "Resolution"
+    },
+    "sceneCount": "{count, plural, one {# scene} other {# scenes}}",
+    "scenesHint": "Click a picture to pick or change it. The timeline shows the video's pacing — amber blocks are scenes still missing a picture.",
+    "goToScript": "Write the script",
+    "titleCardNoImage": "Title card — no picture needed",
+    "steps": {
+      "script": "Script",
+      "scenes": "Scenes",
+      "audio": "Audio",
+      "scriptEmpty": "No script yet",
+      "scriptChars": "{count, plural, one {# character} other {# characters}}",
+      "scenesEmpty": "Not split yet",
+      "scenesMissing": "{count} missing a picture",
+      "scenesReady": "{count} scenes, all pictured",
+      "audioOptional": "Optional",
+      "audioCount": "{count, plural, one {# sound} other {# sounds}}"
     }
   },
   "header": {
@@ -1737,7 +1860,6 @@
       "pageTitle": "Media library",
       "pageDescription": "Your own images, video clips and audio. Tag them well: the Assets step searches this library by name, tags and description.",
       "searchPlaceholder": "Search by name, tag or description",
-      "searchButton": "Search",
       "uploadButton": "Upload",
       "uploadTagsPlaceholder": "Tags for uploads, comma-separated",
       "generateButton": "Generate image",
@@ -1773,7 +1895,21 @@
       "tagsLabel": "Tags",
       "descriptionLabel": "Description",
       "cancel": "Cancel",
-      "save": "Save"
+      "save": "Save",
+      "clearSearch": "Clear search",
+      "noResults": "No assets match your search.",
+      "open": "Open",
+      "sections": {
+        "visual": "Images & videos",
+        "audio": "Audio"
+      },
+      "uploadTitle": "Upload to Media Library",
+      "uploadDescription": "Images, videos or audio. Tags help the Assets step find files faster.",
+      "dropHere": "Drop files here, or click to choose",
+      "dropActive": "Drop to add",
+      "dropHint": "Images · Videos · Audio",
+      "uploadSubmit": "{count, plural, =0 {Upload} one {Upload # file} other {Upload # files}}",
+      "removeFile": "Remove file"
     },
     "workspace": {
       "noVideoTitle": "Pick a video to work on",
@@ -2135,23 +2271,71 @@
   },
   "soundEffects": {
     "pageTitle": "Sound Effects",
-    "pageDescription": "Add ready-made sound effect packs (CC0, free for commercial use) or your own uploads, organized by category.",
+    "pageDescription": "Pick sounds like picking music for a story: tap to preview, tap the bookmark to save it to your library.",
+    "searchPlaceholder": "Search sounds — whoosh, ding, camera, meme…",
+    "clearSearch": "Clear search",
+    "showMore": "Show more ({count})",
     "deleteButton": "Delete",
     "deleteTitle": "Delete this sound?",
-    "deleteDescription": "\"{name}\" will be deleted.",
+    "deleteDescription": "\"{name}\" will be removed from your library.",
+    "tabs": {
+      "browse": "Explore",
+      "saved": "Saved",
+      "packs": "CC0 packs"
+    },
+    "row": {
+      "play": "Preview",
+      "pause": "Pause",
+      "save": "Save to library",
+      "unsave": "Remove from saved"
+    },
+    "browse": {
+      "all": "All",
+      "categories": "Categories",
+      "allSounds": "All sounds",
+      "results": "Search results",
+      "empty": "No sounds found.",
+      "unavailable": "The system sound library isn't installed on this machine.",
+      "licenseNote": "The system library is collected from many sources ({license}). Check the license before using it in commercial videos."
+    },
+    "saved": {
+      "empty": "Nothing saved yet — tap the bookmark in Explore, or add a pack from CC0 packs.",
+      "uncategorized": "Uncategorized"
+    },
+    "categories": {
+      "whoosh": "Whooshes & transitions",
+      "riser": "Risers & reverses",
+      "impact": "Impacts, booms & explosions",
+      "ui": "Clicks, buttons & notifications",
+      "typing": "Typing & writing",
+      "camera": "Camera & photo",
+      "money": "Money & payments",
+      "paper": "Paper, cloth & objects",
+      "comedy": "Comedy & memes",
+      "magic": "Sparkles & magic",
+      "tension": "Tension & drama",
+      "glitch": "Glitch, electronic & data",
+      "nature": "Nature, ambience & vehicles",
+      "music": "Background music & intros"
+    },
     "packs": {
-      "title": "Ready-made packs",
+      "intro": "CC0 sound packs (free for commercial use, no credit needed). Add a whole pack to your library, then tap an added pack to listen.",
       "empty": "No packs available right now.",
       "soundCount": "{count, plural, one {# sound} other {# sounds}}",
       "folderCount": "{count, plural, one {# folder} other {# folders}}",
       "installButton": "Add",
-      "installedBadge": "Added"
+      "installedBadge": "Added",
+      "listenHint": "Click to listen to the sounds in this pack",
+      "noSounds": "This pack has no sounds in your library."
     },
-    "library": {
-      "title": "Your sounds",
-      "empty": "No sounds yet — add a ready-made pack above, or upload your own in Media Library.",
-      "allCategories": "All ({count})",
-      "uncategorized": "Uncategorized"
+    "player": {
+      "region": "Now playing",
+      "play": "Play",
+      "pause": "Pause",
+      "previous": "Previous sound",
+      "next": "Next sound",
+      "seek": "Seek",
+      "close": "Close player"
     }
   }
 }

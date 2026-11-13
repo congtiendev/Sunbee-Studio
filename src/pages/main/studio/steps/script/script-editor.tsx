@@ -7,7 +7,7 @@ import { useTranslations } from "@/i18n";
 import { cn } from "@/utils";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { TextRange } from "./frame-passage";
-import type { ScriptStepState } from "./use-script-step";
+import type { ScriptSourceState } from "./source-state";
 
 /** A passage to highlight (from a clicked frame); `nonce` re-scrolls on a repeat click. */
 export interface ScriptHighlight extends TextRange {
@@ -40,7 +40,7 @@ export default function ScriptEditor({
   highlight = null,
   className,
 }: {
-  step: ScriptStepState;
+  step: ScriptSourceState;
   showResultHint: boolean;
   highlight?: ScriptHighlight | null;
   className?: string;

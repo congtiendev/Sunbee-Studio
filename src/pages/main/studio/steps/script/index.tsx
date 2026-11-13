@@ -1,9 +1,6 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
-import { Field } from "@/components/ui/field";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { BrainIcon, ClockIcon } from "@/icons";
 import { trainingUrl } from "@/lib/paths";
@@ -24,7 +21,8 @@ import ScriptChecklist, {
 } from "./result/script-checklist";
 import ScriptEditor, { type ScriptHighlight } from "./script-editor";
 import SaveStatus from "./save-status";
-import { SCRIPT_SOURCES, type ScriptSourceKey } from "./sources/registry";
+import ScriptSourcePicker from "./source-picker";
+import { SCRIPT_SOURCES } from "./sources/registry";
 import { useScriptStep } from "./use-script-step";
 
 const SECTION =
@@ -145,27 +143,7 @@ export default function ScriptStep({
           onSelect={step.loadVersion}
         />
 
-        <RadioGroup
-          value={step.mode}
-          onValueChange={(value) => step.setMode(value as ScriptSourceKey)}
-          className="flex flex-wrap items-center gap-6"
-        >
-          {SCRIPT_SOURCES.map((s) => (
-            <Field
-              key={s.key}
-              orientation="horizontal"
-              className="w-auto gap-2.5"
-            >
-              <RadioGroupItem id={`script-source-${s.key}`} value={s.key} />
-              <Label
-                htmlFor={`script-source-${s.key}`}
-                className="cursor-pointer"
-              >
-                {t(s.labelKey)}
-              </Label>
-            </Field>
-          ))}
-        </RadioGroup>
+        <ScriptSourcePicker value={step.mode} onChange={step.setMode} />
 
         {SourcePanel && <SourcePanel step={step} />}
 

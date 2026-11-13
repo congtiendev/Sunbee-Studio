@@ -35,3 +35,13 @@ export const GPT_IMAGE_SIZE: Record<FrameRatio, "1024x1024" | "1024x1536" | "153
   "1:1": "1024x1024",
   "4:3": "1536x1024",
 };
+
+/** The render step's output resolution — higher than the ~720p image-gen sizes above, since this is the final deliverable. */
+export const RENDER_DIMENSIONS: Record<FrameRatio, { width: number; height: number }> = {
+  "16:9": { width: 1920, height: 1080 },
+  "9:16": { width: 1080, height: 1920 },
+  "1:1": { width: 1080, height: 1080 },
+  "4:3": { width: 1440, height: 1080 },
+};
+
+export const RENDER_FPS = 30;

@@ -20,6 +20,7 @@ import ProjectDetailPage from "@/pages/main/projects/detail";
 import SettingsPage from "@/pages/main/settings";
 import StudioPage from "@/pages/main/studio";
 import LegacyVideoStudioRedirect from "@/pages/main/studio/legacy-redirect";
+import VideoRenderPage from "@/pages/main/video-render";
 import BasicTablesPage from "@/pages/main/tables/basic-tables";
 import { paths } from "@/lib/paths";
 import { AuthLayout, SignInPage, SignUpPage } from "@/pages/others/auth";
@@ -51,6 +52,7 @@ export default function App() {
         <Route path={paths.projects} element={<ProjectsPage />} />
         <Route path={paths.projectDetail} element={<ProjectDetailPage />} />
         <Route path={paths.studio} element={<StudioPage />} />
+        <Route path={paths.videoRender} element={<VideoRenderPage />} />
 
         {/* Library */}
         <Route path={paths.libraryMedia} element={<MediaLibraryPage />} />

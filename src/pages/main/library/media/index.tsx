@@ -2,7 +2,6 @@ import { PageBreadcrumb } from "@/components/shared/page-breadcrumb";
 import { PageMeta } from "@/components/shared/page-meta";
 import { SkeletonMediaGrid } from "@/components/shared/skeleton-blocks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,11 +20,15 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useTranslations } from "@/i18n";
 import {
   BoltIcon,
+  CameraIcon,
   CheckIcon,
   DownloadIcon,
   GptIcon,
+  LayoutGridIcon,
+  MusicIcon,
   PaperClipIcon,
   PencilIcon,
+  PlayIcon,
   SearchIcon,
   SparkIcon,
   TrashBinIcon,
@@ -33,6 +36,18 @@ import {
   XIcon,
 } from "@/icons";
 import { apiClient } from "@/lib/api-client";
+import { MediaPreviewDialog, MediaTile } from "@/pages/main/library/media/media-tile";
+import { formatSize, UploadDialog } from "@/pages/main/library/media/upload-dialog";
+import { CategoryChips } from "@/pages/main/library/sound-effects/category-chips";
+import { systemCategoryOf } from "@/pages/main/library/sound-effects/category-style";
+import { NowPlayingBar } from "@/pages/main/library/sound-effects/now-playing-bar";
+import { PagedList } from "@/pages/main/library/sound-effects/paged-list";
+import {
+  PreviewPlayer,
+  PreviewPlayerContext,
+  type PreviewTrack,
+} from "@/pages/main/library/sound-effects/preview-player";
+import { RowActionButton, SoundRow } from "@/pages/main/library/sound-effects/sound-row";
 import CandidatePreview from "@/pages/main/studio/steps/assets/candidate-preview";
 import { cn } from "@/utils";
 import type {
@@ -42,10 +57,11 @@ import type {
   LibraryMediaType,
   ResearchSourceInfo,
 } from "@shared/types";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 const TYPE_FILTERS = ["all", "image", "video", "audio"] as const;
 type TypeFilter = (typeof TYPE_FILTERS)[number];
+const TYPE_ICONS = { all: LayoutGridIcon, image: CameraIcon, video: PlayIcon, audio: MusicIcon };
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -66,55 +82,95 @@ const ASPECT_CLASS: Record<ImageAspectRatio, string> = {
   landscape: "aspect-video",
 };
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function SectionHeading({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="mb-3 flex items-baseline gap-2">
+      <h3 className="text-sm font-semibold text-gray-800 dark:text-white/90">{title}</h3>
+      <span className="text-xs text-gray-400 dark:text-gray-500">{count}</span>
+    </div>
+  );
 }
 
-/** The internal asset library: the user's own images, clips and audio, searchable from the Assets step. */
+function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-gray-300 px-6 py-14 text-center dark:border-gray-700">
+      <span className="flex size-12 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-white/[0.06] dark:text-gray-500">
+        <LayoutGridIcon className="size-5" />
+      </span>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The internal asset library: the user's own images, clips and audio,
+ * searchable from the Assets step. Images/videos show as a thumbnail grid,
+ * audio as preview rows sharing one player (same as the sound-effects page).
+ */
 export default function AssetLibraryPage() {
   const t = useTranslations("videoStudio.library");
   const tNav = useTranslations("sidebar.items");
 
+  const [player] = useState(() => new PreviewPlayer());
+  useEffect(() => () => player.dispose(), [player]);
+
   const [assets, setAssets] = useState<LibraryAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [uploadTags, setUploadTags] = useState("");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [editing, setEditing] = useState<LibraryAsset | null>(null);
+  const [previewing, setPreviewing] = useState<LibraryAsset | null>(null);
   const [generating, setGenerating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<LibraryAsset | null>(null);
   const [busy, setBusy] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const load = (q: string, type: TypeFilter) =>
-    apiClient.assets.library
-      .list({ q: q.trim() || undefined, type: type === "all" ? undefined : (type as LibraryMediaType) })
-      .then(setAssets)
-      .catch((err) => setErrors([errorMessage(err)]))
-      .finally(() => setLoading(false));
-
+  // Search as you type (debounced); the server matches name, tags and description.
   useEffect(() => {
-    void load("", "all");
-  }, []);
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      setSearching(true);
+      apiClient.assets.library
+        .list({ q: query.trim() || undefined, type: typeFilter === "all" ? undefined : (typeFilter as LibraryMediaType) })
+        .then((list) => {
+          if (!cancelled) setAssets(list);
+        })
+        .catch((err) => {
+          if (!cancelled) setErrors([errorMessage(err)]);
+        })
+        .finally(() => {
+          if (cancelled) return;
+          setLoading(false);
+          setSearching(false);
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query, typeFilter, reloadKey]);
 
-  const handleUpload = async (files: File[]) => {
-    setUploading(true);
-    setErrors([]);
-    const failures: string[] = [];
-    for (const file of files) {
-      try {
-        await apiClient.assets.library.upload(file, { tags: uploadTags });
-      } catch (err) {
-        failures.push(`${file.name}: ${errorMessage(err)}`);
-      }
-    }
-    setErrors(failures);
-    await load(query, typeFilter);
-    setUploading(false);
-  };
+  const reload = () => setReloadKey((key) => key + 1);
+
+  const visual = useMemo(() => assets.filter((a) => a.mediaType !== "audio"), [assets]);
+  const audio = useMemo(() => assets.filter((a) => a.mediaType === "audio"), [assets]);
+  const audioQueue = useMemo(
+    () =>
+      audio.map(
+        (asset): PreviewTrack => ({
+          id: `asset:${asset.id}`,
+          src: apiClient.documents.fileUrl(asset.fileId),
+          title: asset.name,
+          subtitle: [asset.category ?? asset.tags.join(" · "), formatSize(asset.size)].filter(Boolean).join(" · "),
+          categoryId: systemCategoryOf(asset.sourcePackId),
+        }),
+      ),
+    [audio],
+  );
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -127,142 +183,156 @@ export default function AssetLibraryPage() {
     }
   };
 
+  const showHeadings = typeFilter === "all" && visual.length > 0 && audio.length > 0;
+
   return (
-    <div>
+    <PreviewPlayerContext.Provider value={player}>
       <PageMeta title={tNav("mediaLibrary")} description={t("pageDescription")} />
       <PageBreadcrumb pageTitle={t("pageTitle")} />
 
-      <p className="mb-4 max-w-3xl text-sm text-gray-500 dark:text-gray-400">{t("pageDescription")}</p>
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+        <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">{t("pageDescription")}</p>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <form
-          className="flex min-w-60 flex-1 gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void load(query, typeFilter);
-          }}
-        >
-          <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("searchPlaceholder")} />
-          <Button type="submit" variant="outline" size="icon" title={t("searchButton")}>
-            <SearchIcon className="size-4" />
-          </Button>
-        </form>
-        <ToggleGroup
-          variant="outline"
-          value={[typeFilter]}
-          onValueChange={(value) => {
-            const next = (value[0] as TypeFilter | undefined) ?? "all";
-            setTypeFilter(next);
-            void load(query, next);
-          }}
-        >
-          {TYPE_FILTERS.map((type) => (
-            <ToggleGroupItem key={type} value={type}>
-              {t(`types.${type}`)}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
-        <Input
-          value={uploadTags}
-          onChange={(e) => setUploadTags(e.target.value)}
-          placeholder={t("uploadTagsPlaceholder")}
-          className="w-56"
-        />
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept="image/*,video/*,audio/*"
-          className="hidden"
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? []);
-            e.target.value = "";
-            if (files.length > 0) void handleUpload(files);
-          }}
-        />
-        <Button type="button" className="gap-1.5" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-          {uploading ? <Spinner /> : <UploadIcon className="size-4" />}
-          {t("uploadButton")}
-        </Button>
-        <Button type="button" variant="outline" className="gap-1.5" onClick={() => setGenerating(true)}>
-          <SparkIcon className="size-4" />
-          {t("generateButton")}
-        </Button>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative min-w-60 flex-1 sm:max-w-2xl">
+            <SearchIcon className="pointer-events-none absolute start-4 top-1/2 size-5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <Input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+              className="h-12 rounded-full border-transparent bg-gray-100 ps-12 pe-11 shadow-none [&::-webkit-search-cancel-button]:hidden dark:border-transparent dark:bg-white/[0.06]"
+            />
+            <span className="absolute end-3 top-1/2 flex -translate-y-1/2 items-center">
+              {searching ? (
+                <Spinner />
+              ) : (
+                query && (
+                  <button
+                    type="button"
+                    aria-label={t("clearSearch")}
+                    onClick={() => setQuery("")}
+                    className="flex size-7 cursor-pointer items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+                  >
+                    <XIcon className="size-4" />
+                  </button>
+                )
+              )}
+            </span>
+          </div>
+          <div className="ms-auto flex gap-2">
+            <Button type="button" variant="outline" className="h-11 gap-1.5 rounded-full" onClick={() => setGenerating(true)}>
+              <SparkIcon className="size-4" />
+              {t("generateButton")}
+            </Button>
+            <Button type="button" className="h-11 gap-1.5 rounded-full" onClick={() => setUploadOpen(true)}>
+              <UploadIcon className="size-4" />
+              {t("uploadButton")}
+            </Button>
+          </div>
+        </div>
+
+        <div className="mb-5">
+          <CategoryChips
+            value={typeFilter}
+            onChange={(value) => {
+              player.stop();
+              setTypeFilter(value as TypeFilter);
+            }}
+            items={TYPE_FILTERS.map((type) => ({ value: type, label: t(`types.${type}`), Icon: TYPE_ICONS[type] }))}
+          />
+        </div>
+
+        {errors.length > 0 && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>
+              {errors.map((message) => (
+                <div key={message}>{message}</div>
+              ))}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {loading ? (
+          <SkeletonMediaGrid count={8} />
+        ) : assets.length === 0 ? (
+          query.trim() ? (
+            <EmptyState title={t("noResults")} />
+          ) : (
+            <EmptyState title={t("empty")}>
+              <Button type="button" className="gap-1.5 rounded-full" onClick={() => setUploadOpen(true)}>
+                <UploadIcon className="size-4" />
+                {t("uploadButton")}
+              </Button>
+            </EmptyState>
+          )
+        ) : (
+          <div className="flex flex-col gap-8">
+            {visual.length > 0 && (
+              <section>
+                {showHeadings && <SectionHeading title={t("sections.visual")} count={visual.length} />}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                  {visual.map((asset) => (
+                    <MediaTile
+                      key={asset.id}
+                      asset={asset}
+                      onOpen={() => setPreviewing(asset)}
+                      onEdit={() => setEditing(asset)}
+                      onDelete={() => setDeleteTarget(asset)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {audio.length > 0 && (
+              <section>
+                {showHeadings && <SectionHeading title={t("sections.audio")} count={audio.length} />}
+                <PagedList
+                  key={`${typeFilter}|${query}`}
+                  items={audio.map((asset, index) => ({ asset, track: audioQueue[index] }))}
+                  render={({ asset, track }) => (
+                    <SoundRow
+                      key={asset.id}
+                      track={track}
+                      queue={audioQueue}
+                      action={
+                        <>
+                          <RowActionButton label={t("editButton")} onClick={() => setEditing(asset)}>
+                            <PencilIcon className="size-4" />
+                          </RowActionButton>
+                          <RowActionButton label={t("deleteButton")} onClick={() => setDeleteTarget(asset)}>
+                            <TrashBinIcon className="size-4" />
+                          </RowActionButton>
+                        </>
+                      }
+                    />
+                  )}
+                />
+              </section>
+            )}
+          </div>
+        )}
       </div>
 
-      {errors.length > 0 && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>
-            {errors.map((message) => (
-              <div key={message}>{message}</div>
-            ))}
-          </AlertDescription>
-        </Alert>
-      )}
+      <NowPlayingBar />
 
-      {loading ? (
-        <SkeletonMediaGrid count={8} />
-      ) : assets.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 px-6 py-12 text-center dark:border-gray-700">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("empty")}</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
-          {assets.map((asset) => (
-            <div
-              key={asset.id}
-              className="glass-flat flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]"
-            >
-              <CandidatePreview
-                candidate={{
-                  mediaType: asset.mediaType,
-                  url: apiClient.documents.fileUrl(asset.fileId),
-                  title: asset.name,
-                }}
-                className="aspect-video w-full"
-              />
-              <div className="flex flex-1 flex-col gap-1.5 p-3">
-                <div className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-800 dark:text-white/90" title={asset.name}>
-                    {asset.name}
-                  </span>
-                  <Badge variant="light" color="gray" size="sm">
-                    {t(`types.${asset.mediaType}`)}
-                  </Badge>
-                </div>
-                {asset.description && (
-                  <p className="line-clamp-2 text-xs text-gray-500 dark:text-gray-400">{asset.description}</p>
-                )}
-                {asset.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {asset.tags.map((tag) => (
-                      <Badge key={tag} variant="light" color="primary" size="sm">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-                <div className="mt-auto flex items-center gap-1 pt-1">
-                  <span className="me-auto text-[11px] text-gray-400 dark:text-gray-500">{formatSize(asset.size)}</span>
-                  <Button type="button" variant="ghost" size="icon-xs" title={t("editButton")} onClick={() => setEditing(asset)}>
-                    <PencilIcon className="size-4" />
-                  </Button>
-                  <Button type="button" variant="ghost" size="icon-xs" title={t("deleteButton")} onClick={() => setDeleteTarget(asset)}>
-                    <TrashBinIcon className="size-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} onUploaded={reload} />
 
-      {generating && (
-        <GenerateImageDialog
-          onClose={() => setGenerating(false)}
-          onSaved={() => void load(query, typeFilter)}
-        />
-      )}
+      <MediaPreviewDialog
+        asset={previewing}
+        onClose={() => setPreviewing(null)}
+        onEdit={(asset) => {
+          setPreviewing(null);
+          setEditing(asset);
+        }}
+        onDelete={(asset) => {
+          setPreviewing(null);
+          setDeleteTarget(asset);
+        }}
+      />
+
+      {generating && <GenerateImageDialog onClose={() => setGenerating(false)} onSaved={reload} />}
 
       {editing && (
         <EditAssetDialog
@@ -297,6 +367,7 @@ export default function AssetLibraryPage() {
               onClick={() =>
                 void run(async () => {
                   if (!deleteTarget) return;
+                  if (player.getCurrent()?.id === `asset:${deleteTarget.id}`) player.stop();
                   await apiClient.assets.library.delete(deleteTarget.id);
                   setAssets((prev) => prev.filter((a) => a.id !== deleteTarget.id));
                   setDeleteTarget(null);
@@ -309,7 +380,7 @@ export default function AssetLibraryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PreviewPlayerContext.Provider>
   );
 }
 
