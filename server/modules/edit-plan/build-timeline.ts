@@ -796,7 +796,8 @@ export async function buildEditPlan(
             id: `s${scene.index}-${shot.order}-t${k + 1}`,
             startMs: cursor + from,
             durationMs: durationMs - from,
-            text,
+            // Key words read like the video's titles: all caps.
+            text: text.toLocaleUpperCase("vi"),
             ...animateLayer(knots, { ...calloutBases[k]!, scale: 1 }, 0, durationMs - from, { kind: "pop", durationMs: 220 }),
             style: CALLOUT_STYLE,
             maxWidth: CALLOUT_MAX_WIDTH,
