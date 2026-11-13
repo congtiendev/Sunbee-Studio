@@ -51,6 +51,8 @@ function parseSize(text: string): { size: number; axis: CutoutPlacement["axis"] 
     const before = text.slice(Math.max(0, at - 6), at);
     const after = text.slice(at + match[0].length, at + match[0].length + 30);
     if (/góc\s*$/.test(before)) continue; // "góc 3/4" = a three-quarter view
+    // "mỗi bong bóng khoảng 1/6…": the size of each thing inside the picture, not of the picture.
+    if (/mỗi\s+[^,;]{0,25}$/.test(text.slice(Math.max(0, at - 30), at))) continue;
     if (match[4] === "nửa" && /^\s*(trên|dưới|trái|phải|người|thân|mặt)/.test(after)) continue;
     const value = match[1]
       ? Number(match[1].replace(",", ".")) / 100
@@ -94,7 +96,9 @@ export function parsePlacement(text: string | undefined): CutoutPlacement {
           : 0;
 
   const sized = parseSize(t);
-  const size = sized?.size ?? (/phần lớn|gần kín|kín khung/.test(t) ? 0.8 : 0.45);
+  const size =
+    sized?.size ??
+    (/phần lớn|gần kín|kín khung|khắp khung|toả ra (?:bốn phía|khắp)|về (?:các |bốn )?mép khung/.test(t) ? 0.8 : 0.45);
   const axis = sized?.axis ?? "height";
 
   // Vertical: an explicit top/bottom position, else centred, else resting a little low.
@@ -127,8 +131,12 @@ export function placementScale(
   return wanted / shown;
 }
 
-/** How far inside the frame's edge a layer is kept (in half-canvas units). */
-const SAFE_EDGE = 0.98;
+/**
+ * How far inside the frame's edge a layer is kept (in half-canvas units):
+ * pictures keep ~3% of the frame clear, text ~5% (title-safe).
+ */
+export const SAFE_EDGE = 0.94;
+export const TEXT_SAFE_EDGE = 0.9;
 
 /**
  * Keeps a "contain"-fitted layer entirely inside the frame: shrinks it when
@@ -140,15 +148,16 @@ export function fitInside(
   base: ClipTransform,
   image: { width: number; height: number },
   canvas: { width: number; height: number },
+  edge = SAFE_EDGE,
 ): ClipTransform {
   const contain = Math.min(canvas.width / image.width, canvas.height / image.height);
   // Half-extents at scale 1, in half-canvas units (±1 = edge).
   const halfW = (image.width * contain) / canvas.width;
   const halfH = (image.height * contain) / canvas.height;
   const largest = Math.max(halfW, halfH) * base.scale;
-  const scale = largest > SAFE_EDGE ? (base.scale * SAFE_EDGE) / largest : base.scale;
-  const roomX = Math.max(0, SAFE_EDGE - halfW * scale);
-  const roomY = Math.max(0, SAFE_EDGE - halfH * scale);
+  const scale = largest > edge ? (base.scale * edge) / largest : base.scale;
+  const roomX = Math.max(0, edge - halfW * scale);
+  const roomY = Math.max(0, edge - halfH * scale);
   return {
     ...base,
     scale: round(scale),
@@ -182,47 +191,70 @@ function overlapShare(
  * cards both read as "bên trái"): each layer, in order, takes the position
  * — its own, or just below/above/beside one it collides with — that overlaps
  * the earlier ones least while staying inside the frame. Small overlaps
- * (a hand over a prop) are fine and left alone.
+ * (a hand over a prop) are fine and left alone. A grounded layer (a character
+ * standing on, or cut off at, the bottom edge) only ever moves sideways and
+ * shrinks towards its feet, so it never ends up floating.
  */
 export function avoidOverlap(
-  layers: { base: ClipTransform; size: { width: number; height: number }; pinned?: boolean }[],
+  layers: {
+    base: ClipTransform;
+    size: { width: number; height: number };
+    pinned?: boolean;
+    grounded?: boolean;
+    edge?: number;
+  }[],
   canvas: { width: number; height: number },
 ): ClipTransform[] {
   const placed: { x: number; y: number; hw: number; hh: number }[] = [];
-  return layers.map(({ base, size, pinned }) => {
+  return layers.map(({ base, size, pinned, grounded, edge = SAFE_EDGE }) => {
     const { hw, hh } = halfExtents(base, size, canvas);
     // Placed deliberately relative to another element (a line in a column): stays put.
     if (pinned) {
       placed.push({ x: base.x, y: base.y, hw, hh });
       return base;
     }
-    // Try moving it next to what it collides with; if nothing frees it, shrink it
-    // (up to twice) and try again — a smaller subject beside the text beats one
-    // hidden behind it.
+    // Try moving it next to what it collides with, or shrinking it (up to
+    // twice): whatever overlaps least, counting moving far and shrinking a lot
+    // as costs too — a title over a presenter's head is fixed by making the
+    // presenter a little smaller, not by shoving them into a corner.
     let shrink = 1;
     let best = { x: base.x, y: base.y, cost: Infinity, shrink };
+    let bestScore = Infinity;
     for (let attempt = 0; attempt < 3; attempt++, shrink *= 0.8) {
       const w = hw * shrink;
       const h = hh * shrink;
-      const rx = Math.max(0, SAFE_EDGE - w);
-      const ry = Math.max(0, SAFE_EDGE - h);
+      const rx = Math.max(0, edge - w);
+      const ry = Math.max(0, edge - h);
+      // Grounded: the bottom edge stays where it was as it shrinks.
+      const groundY = base.y + hh - h;
       const cost = (x: number, y: number) =>
         placed.reduce((sum, other) => sum + overlapShare({ x, y, hw: w, hh: h }, other), 0);
-      const candidates: [number, number][] = [[Math.max(-rx, Math.min(rx, base.x)), Math.max(-ry, Math.min(ry, base.y))]];
+      const own: [number, number] = [
+        Math.max(-rx, Math.min(rx, base.x)),
+        grounded ? groundY : Math.max(-ry, Math.min(ry, base.y)),
+      ];
+      const candidates: [number, number][] = [own];
+      // Either side of the frame: two people in a shot stand apart.
+      candidates.push([-rx, own[1]], [rx, own[1]]);
       for (const other of placed) {
         candidates.push(
-          [base.x, other.y + other.hh + h + 0.02],
-          [base.x, other.y - other.hh - h - 0.02],
-          [other.x + other.hw + w + 0.02, base.y],
-          [other.x - other.hw - w - 0.02, base.y],
+          [other.x + other.hw + w + 0.02, own[1]],
+          [other.x - other.hw - w - 0.02, own[1]],
         );
+        if (!grounded) {
+          candidates.push([base.x, other.y + other.hh + h + 0.02], [base.x, other.y - other.hh - h - 0.02]);
+        }
       }
       for (const [x, y] of candidates) {
-        if (Math.abs(x) > rx + 1e-6 || Math.abs(y) > ry + 1e-6) continue;
+        if (Math.abs(x) > rx + 1e-6 || (!grounded && Math.abs(y) > ry + 1e-6)) continue;
         const c = cost(x, y);
-        if (c < best.cost) best = { x, y, cost: c, shrink };
+        const score = (c <= 0.1 ? 0 : c) + 0.3 * Math.hypot(x - base.x, y - base.y) + 0.6 * (1 - shrink);
+        if (score < bestScore) {
+          bestScore = score;
+          best = { x, y, cost: c, shrink };
+        }
       }
-      if (best.cost <= 0.25) break;
+      if (best.cost <= 0.1 && best.shrink === 1 && best.x === own[0] && best.y === own[1]) break;
     }
     placed.push({ x: best.x, y: best.y, hw: hw * best.shrink, hh: hh * best.shrink });
     return { ...base, scale: round(base.scale * best.shrink), x: round(best.x), y: round(best.y) };

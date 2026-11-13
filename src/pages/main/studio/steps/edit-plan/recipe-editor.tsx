@@ -179,6 +179,7 @@ export default function RecipeEditor({
           <Label htmlFor="recipe-sfx">{t("sfxEnabled")}</Label>
         </div>
         {choice("recipe-sfx-scene", t("sfxSceneChange"), draft.sfx.sceneChange, sounds, (sceneChange) => update("sfx", { sceneChange }))}
+        {choice("recipe-sfx-transition", t("sfxTransition"), draft.sfx.transition, sounds, (transition) => update("sfx", { transition }))}
         {choice("recipe-sfx-reveal", t("sfxReveal"), draft.sfx.reveal, sounds, (reveal) => update("sfx", { reveal }))}
         {choice("recipe-sfx-hero", t("sfxHero"), draft.sfx.hero, sounds, (hero) => update("sfx", { hero }))}
         <div className="flex items-center gap-2 self-end pb-2">

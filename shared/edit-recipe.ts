@@ -63,6 +63,8 @@ export interface EditRecipe {
   sfx: {
     enabled: boolean;
     sceneChange: string | null;
+    /** With each CapCut scene transition (a whoosh under the flash). */
+    transition: string | null;
     reveal: string | null;
     hero: string | null;
     smart: boolean;
@@ -97,6 +99,7 @@ export const DEFAULT_EDIT_RECIPE: EditRecipe = {
   sfx: {
     enabled: false,
     sceneChange: null,
+    transition: null,
     reveal: null,
     hero: null,
     smart: true,
@@ -148,6 +151,7 @@ export function normalizeEditRecipe(value: unknown): EditRecipe {
     sfx: {
       enabled: typeof v.sfx?.enabled === "boolean" ? v.sfx.enabled : d.sfx.enabled,
       sceneChange: key(v.sfx?.sceneChange),
+      transition: key(v.sfx?.transition),
       reveal: key(v.sfx?.reveal),
       hero: key(v.sfx?.hero),
       smart: typeof v.sfx?.smart === "boolean" ? v.sfx.smart : d.sfx.smart,

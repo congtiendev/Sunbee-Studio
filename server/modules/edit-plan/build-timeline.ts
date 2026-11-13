@@ -33,6 +33,7 @@ import {
   parsePlacement,
   placementScale,
   screenArea,
+  TEXT_SAFE_EDGE,
   type LayerIntro,
 } from "./layout.js";
 import { gridFromDescription, gridFromImage, isSpriteSheet, spriteFrames } from "./sprites.js";
@@ -61,12 +62,27 @@ interface Media {
   paths: string[];
   width: number;
   height: number;
+  /** Ends in a straight cut along its bottom row (a bust, a hand from below): it belongs on the frame's bottom edge. */
+  cutBottom?: boolean;
 }
 
 /** A character cut off at the waist/chest/shoulders (its cut edge belongs on the frame's bottom). */
-const BUST_SHOT = /cận|trung cảnh|bán thân|đầu (?:và )?vai|ngang (?:ngực|hông|vai)|từ (?:hông|ngực|vai|eo) trở lên|cắt (?:ngang|ở) (?:ngực|hông|eo|vai)/i;
+// ("cầm điện thoại ngang ngực" is where a hand is, not where the picture is cut.)
+const BUST_SHOT =
+  /cận|trung cảnh|bán thân|đầu (?:và )?vai|(?:cảnh|cắt|khung) ngang (?:ngực|hông|vai)|từ (?:hông|ngực|vai|eo) trở lên|cắt (?:ngang|ở) (?:ngực|hông|eo|vai)/i;
 /** Smallest height (share of the frame) a full-figure character is shown at. */
-const MIN_FIGURE_HEIGHT = 0.35;
+const MIN_FIGURE_HEIGHT = 0.45;
+/** Smallest height of a shot's character by how close the shot is: a close-up's face fills the frame. */
+const MIN_CHARACTER_HEIGHT: Partial<Record<SceneShot["shotSize"], number>> = { extremeCloseUp: 0.8, closeUp: 0.7, medium: 0.55 };
+/** "nhịp 2/3": one beat of a subject's action split over several sprite sheets, played one after another in one spot. */
+const BEAT = /nhịp\s*(\d+)\s*\/\s*(\d+)/i;
+/** The video's very first shot, when it has nothing but a background, is cut to this (the hook can't wait). */
+const HOOK_EMPTY_MAX_MS = 800;
+/** What makes a hero moment worth a hit (shake + impact): something happens on screen. */
+const ACTION =
+  /quát|hét|gào|sốc|giật mình|choáng|sững sờ|trợn|há hốc|đập|ngã|nổ|hoảng|bật dậy|tát|đấm|văng|sụp|vỡ|rời nhóm|bị (?:lộ|lật tẩy)|bùng/i;
+/** Sound effects shorter than this are clicks nobody hears under a voice; a category's longer ones are used when it has a few. */
+const MIN_SFX_MS = 150;
 
 /**
  * What an element sounds like when it comes on, from what it is — the
@@ -82,6 +98,10 @@ const SMART_SFX: [RegExp, string][] = [
   [/tiền|đồng xu|ví tiền|hoá đơn|chuyển khoản/i, "money"],
   [/đồng hồ|tích tắc|hẹn giờ/i, "time"],
   [/bong bóng (?:chat|bình luận|lời thoại)|biểu tượng cảm xúc|emoji/i, "pops"],
+  [/rời nhóm|đã rời|bị (?:kick|xoá khỏi)|tin nhắn (?:mới|đến)|tích xanh|dấu x đỏ/i, "notifications"],
+  [/đã xem|lượt xem|đếm (?:ngược|lùi)|giảm dần|tăng dần|con số (?:nhảy|tăng|giảm)|biểu đồ|thanh tiến trình/i, "data"],
+  [/lật (?:hồ sơ|trang|tờ|giấy)|xấp (?:giấy|hồ sơ)|tập hồ sơ/i, "everyday-props"],
+  [/quát|hét|đập bàn|giật mình|choáng|sốc|ngã|nổ tung|sụp/i, "impacts"],
 ];
 /** Hero-moment hits (effect + sound) at most once per this long. */
 const HERO_MIN_GAP_MS = 30_000;
@@ -125,6 +145,30 @@ export function spriteSchedule(
   const step = Math.max(frameMs, Math.ceil(span / MAX_LOOP_CLIPS));
   for (let t = from, k = 0; t < to; t += step, k++) slots.push({ frame: k % count, from: t, to: Math.min(to, t + step) });
   return slots;
+}
+
+/** A beat of a multi-beat action ("nhịp 2/3" → { k: 2, n: 3 }), or null. */
+function beatOf(asset: RequiredAsset): { k: number; n: number } | null {
+  const match = BEAT.exec(asset.description);
+  if (!match) return null;
+  const k = Number(match[1]);
+  const n = Number(match[2]);
+  return k >= 1 && n >= 2 && k <= n ? { k, n } : null;
+}
+
+/** The words a text graphic shows — between its outermost quotes — normalized; null when it quotes nothing. */
+function quotedText(description: string): string | null {
+  const open = description.search(/[“"]/);
+  const close = Math.max(description.lastIndexOf("”"), description.lastIndexOf('"'));
+  if (open < 0 || close <= open + 1) return null;
+  const words = description
+    .slice(open + 1, close)
+    .normalize("NFC")
+    .toLowerCase()
+    .replace(/[“”"]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return words.length >= 6 ? words : null;
 }
 
 /** The analyzed version a video works from (its pointer, else the newest analyzed one). */
@@ -262,6 +306,8 @@ export async function buildEditPlan(
       if (grid) return spriteFrames({ ...image, cacheKey: image.fileId }, grid);
       warnings.push({ code: "spriteGrid", sceneIndex, shotOrder, detail: asset.description });
     }
+    // A cutout picture: cropped to what's drawn, and checked for a cut edge at its bottom.
+    if (asset.layer === "cutout") return spriteFrames({ ...image, cacheKey: image.fileId }, { cols: 1, rows: 1, frames: 1 });
     return { paths: [image.path], width: image.width, height: image.height };
   };
 
@@ -284,6 +330,8 @@ export async function buildEditPlan(
   /** Moments a sound effect could go, resolved to library sounds (and thinned out) at the end. */
   const sfxEvents: { atMs: number; category: string; priority: number }[] = [];
   let lastBackgroundClipId: string | null = null;
+  /** The picture under the last background clip — a transition into the same picture is skipped. */
+  let lastBackgroundPath: string | null = null;
   let lastTransitionAt = -Infinity;
   let lastHeroAt = -Infinity;
 
@@ -296,26 +344,30 @@ export async function buildEditPlan(
   for (const scene of inRange) {
     const sceneStart = cursor;
     const firstScene = scene === inRange[0];
-    if (!firstScene && transitionRef && lastBackgroundClipId && sceneStart - lastTransitionAt >= recipe.capcut.transitionMinGapSec * 1000) {
-      transitions.push({ afterClipId: lastBackgroundClipId, ref: transitionRef });
-      lastTransitionAt = sceneStart;
-    }
+    // A transition into this scene — placed once its first background is known
+    // (a flash between two shots of the same backdrop only looks like a glitch).
+    let pendingTransition =
+      !firstScene && transitionRef && lastBackgroundClipId && sceneStart - lastTransitionAt >= recipe.capcut.transitionMinGapSec * 1000
+        ? { afterClipId: lastBackgroundClipId, fromPath: lastBackgroundPath }
+        : null;
     if (!firstScene && recipe.sfx.enabled && recipe.sfx.sceneChange) {
       sfxEvents.push({ atMs: sceneStart, category: recipe.sfx.sceneChange, priority: 1 });
     }
-    // Hits stay rare: an analysis can mark many scenes as hero moments.
-    if (scene.heroMoment && sceneStart - lastHeroAt >= HERO_MIN_GAP_MS) {
-      lastHeroAt = sceneStart;
-      if (heroEffectRef) {
-        effects.push({ id: `fx-${scene.index}`, startMs: sceneStart, durationMs: recipe.capcut.heroEffectMs, ref: heroEffectRef });
-      }
-      if (recipe.sfx.enabled && recipe.sfx.hero) sfxEvents.push({ atMs: sceneStart, category: recipe.sfx.hero, priority: 3 });
-    }
+    const shots = shotsOf(scene);
+    // Hits stay rare (an analysis can mark many scenes as hero moments) and land
+    // on the shot where something happens — a shake on a still frame is a glitch.
+    const heroShot =
+      scene.heroMoment && sceneStart - lastHeroAt >= HERO_MIN_GAP_MS
+        ? (shots.find((shot) => ACTION.test(`${shot.subject} ${shot.purpose}`))?.order ?? null)
+        : null;
     // A shot without its own background keeps the one before it — within the
     // scene only, so a scene still missing its pictures shows as missing.
     let lastBackground: Media | null = null;
     let lastShot: { asset: RequiredAsset; media: Media }[] | null = null;
-    const shots = shotsOf(scene);
+    /** Text already on screen in this scene, by its words: the same line in the next shot stays put. */
+    const shownText = new Map<string, ClipTransform>();
+    /** Time cut from the opening shot, given to the next one. */
+    let carryMs = 0;
     const shotOrders = new Set(shots.map((shot) => shot.order));
     for (const asset of scene.requiredAssets) {
       if (asset.type === "audio" || asset.type === "video") {
@@ -327,9 +379,23 @@ export async function buildEditPlan(
     const fallbackShotMs = Math.max(1000, Math.round((scene.estimatedDurationSec * 1000) / shots.length));
 
     for (const shot of shots) {
-      const durationMs = shot.durationSec > 0 ? Math.round(shot.durationSec * 1000) : fallbackShotMs;
+      let durationMs = (shot.durationSec > 0 ? Math.round(shot.durationSec * 1000) : fallbackShotMs) + carryMs;
+      carryMs = 0;
       // Images not tied to an existing shot count for every shot of the scene.
       const own = imageAssets.filter((a) => a.shot === shot.order || !a.shot || !shotOrders.has(a.shot));
+      // The video opening on an empty establishing shot: cut it short, the hook can't wait.
+      const opening = scene === version.scenes[0] && shot === shots[0] && shots.length > 1;
+      if (opening && own.every((a) => a.layer !== "cutout") && durationMs > HOOK_EMPTY_MAX_MS) {
+        carryMs = durationMs - HOOK_EMPTY_MAX_MS;
+        durationMs = HOOK_EMPTY_MAX_MS;
+      }
+      if (shot.order === heroShot) {
+        lastHeroAt = cursor;
+        if (heroEffectRef) {
+          effects.push({ id: `fx-${scene.index}`, startMs: cursor, durationMs: recipe.capcut.heroEffectMs, ref: heroEffectRef });
+        }
+        if (recipe.sfx.enabled && recipe.sfx.hero) sfxEvents.push({ atMs: cursor, category: recipe.sfx.hero, priority: 3 });
+      }
       // A shot with no pictures of its own continues the previous shot's picture —
       // its whole point is the camera move ("đẩy máy vào…"), so that move plays
       // even under a locked-off recipe.
@@ -363,7 +429,12 @@ export async function buildEditPlan(
       if (carried) {
         for (const layer of lastShot!) resolved.push({ ...layer, media: { ...layer.media, paths: [layer.media.paths.at(-1)!] } });
       }
-      if (resolved.length > 0) lastShot = resolved;
+      if (resolved.length > 0) {
+        lastShot = resolved.filter(({ asset }) => {
+          const beat = beatOf(asset);
+          return !beat || !resolved.some((other) => (beatOf(other.asset)?.k ?? 0) > beat.k);
+        });
+      }
 
       /** Clips of one layer: a still, or a sprite's frames on their schedule (intro on the first). */
       const pushLayer = (
@@ -377,8 +448,9 @@ export async function buildEditPlan(
         loop: boolean,
         intro?: LayerIntro,
         capcutIntro?: CapcutRef | null,
+        to = durationMs,
       ) => {
-        spriteSchedule(media.paths.length, from, durationMs, recipe.sprite.frameMs, loop).forEach((slot, k) => {
+        spriteSchedule(media.paths.length, from, to, recipe.sprite.frameMs, loop).forEach((slot, k) => {
           visual.push({
             id: `${id}-${k + 1}`,
             mediaId: mediaFor(media.paths[slot.frame]!, media, role === "cutout"),
@@ -407,8 +479,17 @@ export async function buildEditPlan(
       if (background) {
         const loop = frame !== null && frame.media === background && LOOPING_SPRITE.test(frame.asset.description);
         const fit = misshapen && !insert ? "contain" : "cover";
+        if (pendingTransition && background.paths[0] !== pendingTransition.fromPath) {
+          transitions.push({ afterClipId: pendingTransition.afterClipId, ref: transitionRef! });
+          lastTransitionAt = sceneStart;
+          if (recipe.sfx.enabled && recipe.sfx.transition) {
+            sfxEvents.push({ atMs: sceneStart, category: recipe.sfx.transition, priority: 2 });
+          }
+        }
+        pendingTransition = null;
         pushLayer(`s${scene.index}-${shot.order}-bg`, background, 0, "background", fit, IDENTITY_TRANSFORM, 0, loop);
         lastBackgroundClipId = visual.at(-1)!.id;
+        lastBackgroundPath = background.paths.at(-1)!;
         // What stays on screen for the next shot: a sprite's last frame.
         if (background !== lastBackground) lastBackground = { ...background, paths: [background.paths.at(-1)!] };
       } else {
@@ -421,10 +502,32 @@ export async function buildEditPlan(
       }
 
       // ---- cutouts (layers above), placed from their placement, kept apart and inside the frame ----
-      const cutouts = resolved.filter((r) => r.asset.layer === "cutout");
+      const layered = resolved.filter((r) => r.asset.layer === "cutout");
+      // Beat 2+ of an action takes over from beat 1 in its spot (later in the
+      // shot) instead of being placed beside it as a second figure.
+      const firstBeats = new Set(layered.filter((r) => beatOf(r.asset)?.k === 1).map((r) => beatOf(r.asset)!.n));
+      const isLaterBeat = (asset: RequiredAsset) => {
+        const beat = beatOf(asset);
+        return beat !== null && beat.k > 1 && firstBeats.has(beat.n);
+      };
+      const cutouts = layered.filter((r) => !isLaterBeat(r.asset));
+      const laterBeats = layered.filter((r) => isLaterBeat(r.asset));
       const placedBases: ClipTransform[] = [];
       const pinned: boolean[] = [];
+      const grounded: boolean[] = [];
+      /** Text already shown in an earlier shot of the scene: same place and size, no second entrance. */
+      const held: boolean[] = [];
       for (const { asset, media } of cutouts) {
+        const words = asset.type === "graphic" ? quotedText(asset.description) : null;
+        const shown = words ? shownText.get(words) : undefined;
+        if (shown) {
+          placedBases.push(shown);
+          pinned.push(true);
+          grounded.push(false);
+          held.push(true);
+          continue;
+        }
+        held.push(false);
         const parsed = parsePlacement(asset.placement);
         // A line of text with no size given: a readable share of the width, not a
         // height share (a wide text strip sized by height fills the frame).
@@ -432,19 +535,25 @@ export async function buildEditPlan(
           asset.type === "graphic" && !parsed.sized ? { ...parsed, size: 0.4, axis: "width" as const } : parsed;
         // A full-figure character smaller than ~a third of the frame reads as a speck.
         const character = isCharacter(asset);
-        const bust = character && BUST_SHOT.test(`${asset.description} ${asset.placement ?? ""}`);
-        if (character && !bust && placement.axis === "height" && placement.size < MIN_FIGURE_HEIGHT) {
-          placement = { ...placement, size: MIN_FIGURE_HEIGHT };
+        // Cut off at the bottom — read off the picture itself, else from the words.
+        const cut = asset.type !== "graphic" && media.cutBottom === true;
+        const bust = cut || (character && BUST_SHOT.test(`${asset.description} ${asset.placement ?? ""}`));
+        const minHeight = bust ? (MIN_CHARACTER_HEIGHT[shot.shotSize] ?? 0.4) : MIN_FIGURE_HEIGHT;
+        if (character && placement.axis === "height" && placement.size < minHeight) {
+          placement = { ...placement, size: minHeight };
         }
+        const edge = asset.type === "graphic" ? TEXT_SAFE_EDGE : undefined;
         let base = fitInside(
           { ...IDENTITY_TRANSFORM, x: placement.x, y: placement.y, scale: placementScale(placement, media, canvas) },
           media,
           canvas,
+          edge,
         );
-        // A character cut off at the waist/chest stands on the bottom edge — never
-        // a half body floating mid-frame.
+        // RULE: anything cut off at the bottom (a character at the waist/chest, a
+        // hand from below) has its cut ON the frame's bottom edge — never a half
+        // body floating with background showing under it. The frames are cropped
+        // so the cut is the picture's last row; it bleeds 1% past the edge.
         if (bust) {
-          // Its cut edge bleeds 1% past the bottom, so no sliver of background shows under it.
           const box = halfExtents(base, media, canvas);
           base = { ...base, y: Math.round((1 - box.hh + 0.01) * 10000) / 10000 };
         }
@@ -464,15 +573,29 @@ export async function buildEditPlan(
             },
             media,
             canvas,
+            edge,
           );
         }
         placedBases.push(base);
         pinned.push(refIndex >= 0);
+        // A character standing on (or cut off at) the bottom edge stays on it when moved.
+        const box = halfExtents(base, media, canvas);
+        grounded.push(bust || (character && base.y + box.hh >= 0.9));
       }
       const bases = avoidOverlap(
-        cutouts.map(({ media }, i) => ({ base: placedBases[i]!, size: media, pinned: pinned[i] })),
+        cutouts.map(({ asset, media }, i) => ({
+          base: placedBases[i]!,
+          size: media,
+          pinned: pinned[i],
+          grounded: grounded[i],
+          edge: asset.type === "graphic" ? TEXT_SAFE_EDGE : undefined,
+        })),
         canvas,
       );
+      cutouts.forEach(({ asset }, i) => {
+        const words = asset.type === "graphic" ? quotedText(asset.description) : null;
+        if (words) shownText.set(words, bases[i]!);
+      });
       // When each comes on: all at the cut, or — built up — the main subject (the
       // largest) at the cut so the frame is never empty, the rest one after
       // another over the first ~60% of the shot, in the order they're listed.
@@ -490,7 +613,7 @@ export async function buildEditPlan(
       // first line) is fully there from the cut's first frame — no pop, no fade.
       const anchor = main >= 0 ? main : 0;
       const appearAt = (i: number) =>
-        carried || i === anchor
+        carried || i === anchor || held[i]
           ? 0
           : recipe.reveal.mode !== "sequential"
             ? lead
@@ -500,31 +623,64 @@ export async function buildEditPlan(
       for (const [i, { asset, media }] of cutouts.entries()) {
         placed++;
         const intro =
-          carried || i === anchor
+          carried || i === anchor || held[i]
             ? undefined
           : asset.type === "graphic"
             ? introOf(recipe.text.animation, recipe.text.durationMs)
             : introOf(recipe.reveal.animation, recipe.reveal.durationMs);
-        const fresh = !carried && i !== anchor;
+        const fresh = !carried && i !== anchor && !held[i];
         const capcutIntro = fresh ? (asset.type === "graphic" ? textIntroRef : revealIntroRef) : null;
+        const loop = LOOPING_SPRITE.test(asset.description);
+        const layer = i + 1 + (insert ? 1 : 0);
+        // Beats of one action share the time after this one comes on, in order.
+        const beat = beatOf(asset);
+        const beats = beat?.k === 1 ? laterBeats.filter((r) => beatOf(r.asset)!.n === beat.n) : [];
+        const start = appearAt(i);
+        const beatMs = Math.floor((durationMs - start) / (beats.length + 1));
         pushLayer(
           `s${scene.index}-${shot.order}-c${i + 1}`,
           media,
-          i + 1 + (insert ? 1 : 0),
+          layer,
           "cutout",
           "contain",
           bases[i]!,
-          appearAt(i),
-          LOOPING_SPRITE.test(asset.description),
+          start,
+          loop,
           intro,
           capcutIntro,
+          beats.length > 0 ? start + beatMs : durationMs,
         );
+        beats
+          .sort((a, b) => beatOf(a.asset)!.k - beatOf(b.asset)!.k)
+          .forEach((next, j) => {
+            const from = start + beatMs * (j + 1);
+            const to = j === beats.length - 1 ? durationMs : from + beatMs;
+            const base = fitInside({ ...bases[i]!, scale: (bases[i]!.scale * media.height) / next.media.height }, next.media, canvas);
+            pushLayer(
+              `s${scene.index}-${shot.order}-c${i + 1}b${j + 2}`,
+              next.media,
+              layer,
+              "cutout",
+              "contain",
+              grounded[i] ? { ...base, y: bases[i]!.y } : base,
+              from,
+              LOOPING_SPRITE.test(next.asset.description),
+              undefined,
+              null,
+              to,
+            );
+          });
         // A sound for what comes on: what it is (a notification → "ting"), else
-        // the recipe's reveal sound for elements popping in after the cut.
-        if (recipe.sfx.enabled && !carried) {
+        // the recipe's reveal sound for elements popping in after the cut. A
+        // one-off animation (a phone lighting up) sounds when it lands — its last frame.
+        if (recipe.sfx.enabled && !carried && !held[i]) {
           const smart = recipe.sfx.smart ? SMART_SFX.find(([re]) => re.test(asset.description))?.[1] : undefined;
           const category = smart ?? (fresh ? recipe.sfx.reveal : null);
-          if (category) sfxEvents.push({ atMs: cursor + appearAt(i), category, priority: smart ? 2 : 0 });
+          const landsAt =
+            smart && !loop && media.paths.length > 1
+              ? (spriteSchedule(media.paths.length, start, durationMs, recipe.sprite.frameMs, false).at(-1)?.from ?? start)
+              : start;
+          if (category) sfxEvents.push({ atMs: cursor + landsAt, category, priority: smart ? 2 : 0 });
         }
       }
       cursor += durationMs;
@@ -577,7 +733,9 @@ export async function buildEditPlan(
           const length = file ? (await probeMedia(file.absolutePath)).durationMs : undefined;
           if (file && length) sounds.push({ path: file.absolutePath, durationMs: length });
         }
-        library.set(event.category, sounds);
+        // Clicks too short to hear under a voice go, unless they're all the category has.
+        const audible = sounds.filter((sound) => sound.durationMs >= MIN_SFX_MS);
+        library.set(event.category, audible.length >= 2 ? audible : sounds);
         if (sounds.length === 0) warnings.push({ code: "sfxMissing", detail: event.category });
       }
       const sounds = library.get(event.category)!;

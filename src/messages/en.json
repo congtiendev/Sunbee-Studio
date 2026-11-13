@@ -1890,6 +1890,7 @@
         "sfxTitle": "Sound effects",
         "sfxEnabled": "Use sound effects",
         "sfxSceneChange": "On scene change",
+        "sfxTransition": "With a CapCut transition",
         "sfxReveal": "When an element pops in",
         "sfxHero": "On hero moments",
         "sfxSmart": "Match the element (notification → ting…)",
