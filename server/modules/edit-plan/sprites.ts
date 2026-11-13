@@ -451,3 +451,36 @@ export async function stickerCells(
   }
   return cells;
 }
+
+/**
+ * A real photo shown as a print: a white border around it (a photo with its own
+ * transparency is already a cutout and stays as it is). Cached; null when the
+ * file can't be read.
+ */
+export async function photoCard(source: {
+  path: string;
+  width: number;
+  height: number;
+  cacheKey: string;
+}): Promise<{ path: string; width: number; height: number } | null> {
+  let data: Buffer;
+  try {
+    data = await readRgba(source.path, source.width, source.height);
+  } catch {
+    return null;
+  }
+  for (let i = 3; i < data.length; i += 4 * 97) if (data[i]! <= DRAWN) return null;
+  const border = Math.max(4, Math.round(Math.min(source.width, source.height) * 0.03));
+  const width = source.width + border * 2;
+  const height = source.height + border * 2;
+  const out = join(dataDir(), "cache", "sprites", `${source.cacheKey}_card_v1.png`);
+  if (!existsSync(out)) {
+    await mkdir(join(dataDir(), "cache", "sprites"), { recursive: true });
+    const pixels = Buffer.alloc(width * height * 4, 255);
+    for (let y = 0; y < source.height; y++) {
+      data.copy(pixels, ((y + border) * width + border) * 4, y * source.width * 4, (y + 1) * source.width * 4);
+    }
+    await writePng(out, pixels, width, height);
+  }
+  return { path: out, width, height };
+}

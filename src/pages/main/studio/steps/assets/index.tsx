@@ -43,7 +43,7 @@ import {
   FRAME_RATIOS,
   isFrameRatio,
 } from "@shared/frame-ratio";
-import type { FrameRatio } from "@shared/types";
+import { isEditorText, type FrameRatio } from "@shared/types";
 import type { StepComponentProps } from "../registry";
 import { useStepSave } from "../step-save";
 import BatchPromptDialog from "./batch-prompt-dialog";
@@ -255,20 +255,23 @@ export default function AssetsStep({
       (sum, scene) => sum + scene.requiredAssets.length,
       0,
     ) ?? 0;
+  // Editor text (written in CapCut) needs no pick: it counts as done.
   const filledSlots =
     version?.scenes.reduce(
       (sum, scene) =>
-        sum + scene.requiredAssets.filter((asset) => bySlot.has(asset.id)).length,
+        sum + scene.requiredAssets.filter((asset) => isEditorText(asset) || bySlot.has(asset.id)).length,
       0,
     ) ?? 0;
   const filledCountOf = (scene: ScriptScene) =>
-    scene.requiredAssets.filter((asset) => bySlot.has(asset.id)).length;
-  /** Every asset of the current version has a pick in `picks`. */
+    scene.requiredAssets.filter((asset) => isEditorText(asset) || bySlot.has(asset.id)).length;
+  /** Every asset of the current version has a pick in `picks` (or is editor text). */
   const allPicked = (picks: SceneResource[]) => {
     const picked = new Set(picks.map((pick) => pick.assetId));
     return (
       !!version &&
-      version.scenes.every((scene) => scene.requiredAssets.every((asset) => picked.has(asset.id)))
+      version.scenes.every((scene) =>
+        scene.requiredAssets.every((asset) => isEditorText(asset) || picked.has(asset.id)),
+      )
     );
   };
   const sceneFilled = (scene: ScriptScene) =>
@@ -640,13 +643,19 @@ export default function AssetsStep({
                                         >
                                           {tScript(`assetTypes.${asset.type}`)}
                                         </Badge>
-                                        <Badge
-                                          variant="light"
-                                          color="info"
-                                          size="sm"
-                                        >
-                                          {t(`assetSources.${asset.source}`)}
-                                        </Badge>
+                                        {isEditorText(asset) ? (
+                                          <Badge variant="light" color="success" size="sm">
+                                            {t("editorText")}
+                                          </Badge>
+                                        ) : (
+                                          <Badge
+                                            variant="light"
+                                            color={asset.source === "stock" ? "primary" : "info"}
+                                            size="sm"
+                                          >
+                                            {t(`assetSources.${asset.source}`)}
+                                          </Badge>
+                                        )}
                                         {asset.layer && (
                                           <Badge
                                             variant="light"
@@ -661,6 +670,11 @@ export default function AssetsStep({
                                           </Badge>
                                         )}
                                       </div>
+                                      {isEditorText(asset) && (
+                                        <p className="mt-1 text-sm font-semibold whitespace-pre-line text-gray-800 dark:text-white/90">
+                                          {asset.text}
+                                        </p>
+                                      )}
                                       <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
                                         {asset.description}
                                       </p>
@@ -672,7 +686,11 @@ export default function AssetsStep({
                                       )}
                                     </div>
 
-                                    {pick ? (
+                                    {isEditorText(asset) ? (
+                                      <span className="basis-72 text-xs text-gray-500 dark:text-gray-400">
+                                        {t("editorTextHint")}
+                                      </span>
+                                    ) : pick ? (
                                       <div className="flex min-w-0 basis-72 items-center gap-2.5">
                                         <CandidatePreview
                                           candidate={pick.candidate}
@@ -708,7 +726,7 @@ export default function AssetsStep({
                                       </span>
                                     )}
 
-                                    <div className="flex shrink-0 gap-1">
+                                    <div className={cn("flex shrink-0 gap-1", isEditorText(asset) && "hidden")}>
                                       <Button
                                         type="button"
                                         size="sm"

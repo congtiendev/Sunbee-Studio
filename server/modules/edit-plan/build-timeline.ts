@@ -14,6 +14,7 @@ import {
   type TimelineMedia,
   type VisualClip,
 } from "../../../shared/timeline.js";
+import { isEditorText } from "../../../shared/types.js";
 import type { RequiredAsset, SceneResource, SceneShot, ScriptAnalysisRecord, User } from "../../../shared/types.js";
 import { capcutRef } from "../../services/capcut/lookup.js";
 import { probeMedia } from "../../services/capcut/probe.js";
@@ -42,6 +43,7 @@ import {
   gridFromDescription,
   gridFromImage,
   isSpriteSheet,
+  photoCard,
   spriteFrames,
   stickerCells,
   type CutSides,
@@ -75,7 +77,48 @@ interface Media {
   cutBottom?: boolean;
   /** Sides drawn as a straight cut (read off the pixels): each belongs on that edge of the frame. */
   cut?: CutSides;
+  /** A real photo framed as a print (white border): it leans a little when placed. */
+  photo?: boolean;
+  /** Editor text (no picture): the words and look; width/height are its box at a 100 px text size. */
+  text?: { value: string; align: "left" | "center"; color: string; stroke: string };
 }
+
+/** Rough share of the text size one character takes across (bold sans). */
+const CHAR_WIDTH = 0.55;
+const LINE_HEIGHT = 1.3;
+
+/** The colour a text graphic's description asks for, and an outline that reads against it. */
+function textColours(description: string): { color: string; stroke: string } {
+  const d = description.toLowerCase();
+  const pick = (color: string, stroke = "#ffffff") => ({ color, stroke });
+  if (/nâu đỏ|đỏ đậm|đỏ sẫm|đỏ đô|đỏ rượu/.test(d)) return pick("#8b1a1a");
+  if (/chữ (?:màu )?trắng|màu trắng/.test(d)) return pick("#ffffff", "#2b1d14");
+  if (/vàng/.test(d)) return pick("#f2b705", "#2b1d14");
+  if (/đỏ/.test(d)) return pick("#d62828");
+  if (/xanh dương|xanh lam|xanh nước biển/.test(d)) return pick("#1f4e9c");
+  if (/xanh lá|xanh lục/.test(d)) return pick("#2e7d32");
+  if (/đen|nâu sẫm|nâu đen/.test(d)) return pick("#2b1d14");
+  if (/nâu/.test(d)) return pick("#5a3a22");
+  return pick("#8b1a1a");
+}
+
+/** Editor text as layout media: a box the size the words take at 100 px. */
+function textMedia(asset: RequiredAsset): Media {
+  const value = asset.text!.trim();
+  const lines = value.split("\n");
+  const longest = Math.max(...lines.map((line) => Array.from(line).length), 1);
+  const list = lines.length > 1 && lines.some((line) => /^\s*[•\-–*·\d]/.test(line));
+  const align = list || /căn (?:lề )?trái/i.test(`${asset.description} ${asset.placement ?? ""}`) ? "left" : "center";
+  return {
+    paths: [],
+    width: Math.round(longest * CHAR_WIDTH * 100),
+    height: Math.round(lines.length * LINE_HEIGHT * 100),
+    text: { value, align, ...textColours(asset.description) },
+  };
+}
+
+/** Real photos placed as cutouts lean a little, like a print laid on the page. */
+const PHOTO_TILT = [-3, 2.5, -2, 3];
 
 /** A character cut off at the waist/chest/shoulders (its cut edge belongs on the frame's bottom). */
 // ("cầm điện thoại ngang ngực" is where a hand is, not where the picture is cut.)
@@ -174,6 +217,11 @@ function beatOf(asset: RequiredAsset): { k: number; n: number } | null {
   const k = Number(match[1]);
   const n = Number(match[2]);
   return k >= 1 && n >= 2 && k <= n ? { k, n } : null;
+}
+
+/** Words compared as the same line of text: case, quotes and spacing aside. */
+function normalizedWords(text: string): string {
+  return text.normalize("NFC").toLowerCase().replace(/[“”"]/g, "").replace(/\s+/g, " ").trim();
 }
 
 /** The words a text graphic shows — between its outermost quotes — normalized; null when it quotes nothing. */
@@ -333,6 +381,11 @@ export async function buildEditPlan(
       if (grid) return spriteFrames({ ...image, cacheKey: image.fileId }, grid, hintsOf(asset));
       warnings.push({ code: "spriteGrid", sceneIndex, shotOrder, detail: asset.description });
     }
+    // A real photo laid over the frame: a print with a white border.
+    if (asset.layer === "cutout" && asset.source === "stock") {
+      const card = await photoCard({ ...image, cacheKey: image.fileId });
+      if (card) return { paths: [card.path], width: card.width, height: card.height, photo: true };
+    }
     // A cutout picture: cropped to what's drawn, and checked for cut edges.
     if (asset.layer === "cutout") {
       return spriteFrames({ ...image, cacheKey: image.fileId }, { cols: 1, rows: 1, frames: 1 }, hintsOf(asset));
@@ -466,6 +519,11 @@ export async function buildEditPlan(
 
       const resolved: { asset: RequiredAsset; media: Media }[] = [];
       for (const asset of own) {
+        // Words the editor writes: no picture to find.
+        if (isEditorText(asset)) {
+          resolved.push({ asset, media: textMedia(asset) });
+          continue;
+        }
         const pick = picks.get(asset.id);
         const image = pick ? await localImageOf(pick, scene.index) : null;
         if (!image) {
@@ -567,7 +625,7 @@ export async function buildEditPlan(
       /** Text already shown in an earlier shot of the scene: same place and size, no second entrance. */
       const held: boolean[] = [];
       for (const { asset, media } of cutouts) {
-        const words = asset.type === "graphic" ? quotedText(asset.description) : null;
+        const words = asset.type === "graphic" ? (asset.text ? normalizedWords(asset.text) : quotedText(asset.description)) : null;
         const shown = words ? shownText.get(words) : undefined;
         if (shown) {
           placedBases.push(shown);
@@ -635,6 +693,7 @@ export async function buildEditPlan(
             edge,
           );
         }
+        if (media.photo) base = { ...base, rotation: PHOTO_TILT[placedBases.length % PHOTO_TILT.length]! };
         placedBases.push(base);
         pinned.push(refIndex >= 0 || Boolean(sideCut));
         // A character standing on (or cut off at) the bottom edge stays on it when moved.
@@ -652,7 +711,7 @@ export async function buildEditPlan(
         canvas,
       );
       cutouts.forEach(({ asset }, i) => {
-        const words = asset.type === "graphic" ? quotedText(asset.description) : null;
+        const words = asset.type === "graphic" ? (asset.text ? normalizedWords(asset.text) : quotedText(asset.description)) : null;
         if (words) shownText.set(words, bases[i]!);
       });
       // When each comes on: all at the cut, or — built up — the main subject (the
@@ -688,6 +747,25 @@ export async function buildEditPlan(
             ? introOf(recipe.text.animation, recipe.text.durationMs)
             : introOf(recipe.reveal.animation, recipe.reveal.durationMs);
         const fresh = !carried && i !== anchor && !held[i];
+        // Editor text: CapCut's own text at the laid-out box's size.
+        if (media.text) {
+          const box = halfExtents(bases[i]!, media, canvas);
+          const lines = media.text.value.split("\n").length;
+          const size = Math.min(0.16, Math.max(0.035, (box.hh * 2) / (lines * LINE_HEIGHT)));
+          const start = appearAt(i);
+          texts.push({
+            id: `s${scene.index}-${shot.order}-c${i + 1}`,
+            startMs: cursor + start,
+            durationMs: durationMs - start,
+            text: media.text.value,
+            ...animateLayer(knots, { ...bases[i]!, scale: 1 }, start, durationMs, intro),
+            style: { size, bold: true, color: media.text.color, strokeColor: media.text.stroke, strokeWidth: 0.12 },
+            maxWidth: Math.min(0.96, box.hw * 2 + 0.06),
+            align: media.text.align,
+            origin: { sceneIndex: scene.index, shotOrder: shot.order },
+          });
+          continue;
+        }
         const capcutIntro = fresh ? (asset.type === "graphic" ? textIntroRef : revealIntroRef) : null;
         const loop = LOOPING_SPRITE.test(asset.description);
         const layer = i + 1 + (insert ? 1 : 0);

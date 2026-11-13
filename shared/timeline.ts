@@ -178,6 +178,8 @@ export interface TextClip {
   style: Omit<SubtitleStyle, "y">;
   /** Lines wrap at this share of the canvas width. */
   maxWidth: number;
+  /** Line alignment; centred when absent. */
+  align?: "left" | "center";
   origin?: ClipOrigin;
 }
 

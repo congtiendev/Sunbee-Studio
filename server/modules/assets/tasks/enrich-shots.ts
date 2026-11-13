@@ -14,9 +14,9 @@ export interface EnrichShotsInput {
   effort?: AiEffort;
 }
 
-/** Per shot that needs it: icons to pop in and key words to show. */
+/** Per shot that needs it: icons to pop in, real photos to research and key words to show. */
 export interface EnrichShotsOutput {
-  shots: { scene: number; shot: number; stickers: string[]; callouts: string[] }[];
+  shots: { scene: number; shot: number; stickers: string[]; photos: string[]; callouts: string[] }[];
 }
 
 const SCHEMA = {
@@ -30,9 +30,10 @@ const SCHEMA = {
           scene: { type: "integer" },
           shot: { type: "integer" },
           stickers: { type: "array", items: { type: "string" } },
+          photos: { type: "array", items: { type: "string" } },
           callouts: { type: "array", items: { type: "string" } },
         },
-        required: ["scene", "shot", "stickers", "callouts"],
+        required: ["scene", "shot", "stickers", "photos", "callouts"],
         additionalProperties: false,
       },
     },
@@ -45,6 +46,8 @@ const DEFAULT_SYSTEM_PROMPT =
   "Bạn là EDITOR video YouTube kiến thức hoạt hình, ám ảnh với việc giữ chân người xem. Nhiều shot trong video chỉ có người dẫn đứng nói trên nền trơn (nền giấy, nền màu, nền mờ) — người xem chán và bỏ đi. Nhiệm vụ: với các cảnh được cho, chọn những shot như vậy và thêm minh hoạ bật ra cạnh người dẫn.\n" +
   "- CHỈ chọn shot mà khung hình chỉ có người dẫn (hoặc một nhân vật) trên nền trơn/nền giấy/nền mờ, dài từ 2 giây trở lên. BỎ QUA shot đã có ảnh minh hoạ, chữ, bảng, màn hình, bối cảnh thật đầy đủ (phòng, văn phòng, ngoài trời…), hoặc shot cận đặc mặt.\n" +
   "- `stickers`: 1–3 icon/sticker minh hoạ ĐÚNG ý đang nói trong shot đó (danh từ, sự vật, cảm xúc then chốt trong lời thoại) — mỗi cái mô tả ngắn gọn như một icon dễ vẽ: vật thể đơn lẻ, nét rõ, ví dụ \"trái tim đỏ vỡ đôi\", \"điện thoại có chuông báo đỏ\", \"dấu chấm hỏi vàng\", \"ổ khoá bị mở\". Shot dài hơn thì nhiều hơn (khoảng 1 icon mỗi 1,5–2,5 giây). Không dùng chữ trong icon. Không lặp icon giống nhau giữa các shot liền nhau.\n" +
+  "- `photos`: 0–1 ẢNH THẬT khi lời thoại nhắc tới thứ có thật ngoài đời (sự kiện, người nổi tiếng, địa danh, sản phẩm/thương hiệu, tin tức, số liệu, đồ vật đời thường dễ chụp) — ghi đúng thứ cần tìm như một câu tìm kiếm ảnh cụ thể, ví dụ \"ảnh chụp màn hình thông báo ngân hàng trên điện thoại\", \"ảnh thật đám cưới Việt Nam ngoài trời\". Khoảng 15–20 giây có một ảnh thật; KHÔNG dùng ảnh thật cho nhân vật của câu chuyện hay cảnh tưởng tượng. Ảnh thật thay cho sticker khi minh hoạ cùng một ý.\n" +
+  "- VÍ DỤ PHẢI CÓ HÌNH: khi lời thoại đưa ví dụ hoặc liệt kê, MỖI ví dụ phải có một sticker hoặc một ảnh thật — không chỉ chữ.\n" +
   "- `callouts`: 0–1 cụm chữ khoá (2–5 từ, lấy đúng từ ngữ trong lời thoại của shot, viết hoa chữ đầu) — câu \"đắt\" nhất của shot để hiện thành chữ to bật lên. Không lặp lại chữ đã có sẵn trên hình.\n" +
   "- `scene` và `shot` là số cảnh và số thứ tự shot như đã cho. Chỉ trả về những shot cần thêm; không có thì trả về danh sách rỗng.\n" +
   "- Viết bằng cùng ngôn ngữ với cảnh.";
@@ -107,6 +110,7 @@ export const enrichShotsTask = defineTask<EnrichShotsInput, EnrichShotsOutput>({
           scene: s.scene,
           shot: s.shot,
           stickers: s.stickers.map((t) => t.trim()).filter(Boolean).slice(0, 4),
+          photos: s.photos.map((t) => t.trim()).filter(Boolean).slice(0, 2),
           callouts: s.callouts.map((t) => t.trim()).filter(Boolean).slice(0, 1),
         })),
     };

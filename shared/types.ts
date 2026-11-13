@@ -300,6 +300,22 @@ export interface RequiredAsset {
   placement?: string;
   /** Images only: the `SceneShot.order` this image is for (drawn in that shot's framing). */
   shot?: number;
+  /**
+   * Graphics only: on-screen words (a title, a label, a list, a number) that the
+   * editor writes with its own text tool — no image to generate. The exact words,
+   * lines split by "\n"; `description` says the look (colour, emphasis).
+   */
+  text?: string;
+}
+
+/** Words the editor writes itself (CapCut text), not a picture. */
+export function isEditorText(asset: Pick<RequiredAsset, "type" | "text">): boolean {
+  return asset.type === "graphic" && Boolean(asset.text?.trim());
+}
+
+/** An asset that needs a picture found or generated (images and drawn graphics — not editor text, audio or video). */
+export function needsImage(asset: Pick<RequiredAsset, "type" | "text">): boolean {
+  return (asset.type === "image" || asset.type === "graphic") && !isEditorText(asset);
 }
 
 /** One character appearing in a scene: who (consistent across scenes) and what they're doing here. */
@@ -1084,6 +1100,8 @@ export interface AssetEnrichResponse {
   /** Sticker-sheet assets added (one image each to generate). */
   sheets: number;
   stickers: number;
+  /** Real photos added (to research, marked "stock"). */
+  photos: number;
   callouts: number;
 }
 

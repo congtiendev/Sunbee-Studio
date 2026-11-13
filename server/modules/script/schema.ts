@@ -73,8 +73,9 @@ export const REQUIRED_ASSET_ITEM_SCHEMA = {
     layer: { type: "string", enum: REQUIRED_ASSET_LAYERS },
     placement: { type: "string" },
     shot: { type: "integer" },
+    text: { type: "string" },
   },
-  required: ["type", "description", "source", "layer", "placement", "shot"],
+  required: ["type", "description", "source", "layer", "placement", "shot", "text"],
   additionalProperties: false,
 } as const;
 
@@ -105,12 +106,15 @@ export const DIRECTOR_RULE =
   "- HOOK (cảnh 1): shot đầu tiên mở bằng khoảnh khắc gây tò mò/sốc nhất của câu chuyện, dài ≤ 1,5s, có MẶT NGƯỜI hoặc CHỮ trong khung ngay từ khung hình đầu — KHÔNG mở bằng toàn cảnh tĩnh không người, không chữ. Câu hỏi/tiêu đề chính của video phải hiện trên hình trong 4 giây đầu.\n" +
   "- MẬT ĐỘ HÌNH (giữ chân người xem): cứ 2,5–3 giây phải có thêm MỘT phần tử mới trên hình (icon, chữ khoá, đạo cụ, ảnh minh hoạ) lấy từ danh từ/ý chính trong lời đọc của đoạn đó — mỗi phần tử là một cutout riêng trong requiredAssets. Người dẫn KHÔNG được đứng nói một mình trên nền trống quá 2,5s: khi người dẫn giải thích, đặt họ ở mép khung (cao ~45–55% khung, đứng trên đáy khung) và dành ~60% khung cho hình minh hoạ của điều đang nói.\n" +
   "- NHẤT QUÁN: trang phục và màu áo của mỗi nhân vật giữ y hệt mọi cảnh (theo mô tả cố định của nhân vật); động tác 'trình bày/chỉ vào' phải có thứ được trình bày trên hình; nhân vật đứng/ngồi trên một mặt phẳng hợp phối cảnh (sàn, ghế, bàn), không lơ lửng.\n" +
+  "- VÍ DỤ PHẢI CÓ HÌNH: khi lời thoại đưa ví dụ hoặc liệt kê (sự việc, đồ vật, con người, nơi chốn, con số), MỖI ví dụ được minh hoạ bằng ảnh thật hoặc đồ vật/icon vẽ xuất hiện trên hình đúng lúc nhắc tới — không bao giờ chỉ hiện chữ.\n" +
+  "- XEN KẼ ẢNH THẬT: khi nội dung nhắc tới thứ có thật ngoài đời (sự kiện, người nổi tiếng, địa danh, sản phẩm/thương hiệu, tin tức, số liệu, đồ vật đời thường dễ chụp), dùng ẢNH THẬT thay vì vẽ — tài nguyên type \"image\", `source` \"stock\", mô tả mở đầu bằng \"Ảnh thật:\" rồi ghi rõ cần tìm ảnh gì (từ khoá tìm kiếm cụ thể); layer \"cutout\" khi đặt như tấm ảnh in cạnh người dẫn (placement ghi phía và cỡ, ~35–45% chiều rộng khung), \"scene\" khi chiếm cả khung như một cú chèn. Khoảng 15–20 giây nên có một ảnh thật để video gần với đời thực; KHÔNG dùng ảnh thật cho nhân vật của câu chuyện hay cảnh tưởng tượng.\n" +
   "- NHÂN VẬT TRONG BỐI CẢNH THẬT: nhân vật ngồi/nằm/tựa vào đồ vật của một bối cảnh cụ thể (ghế văn phòng giữa dãy bàn, giường, sofa, bàn ăn) thì VẼ CHUNG trong ảnh nền của shot đó (layer \"scene\"), không tách cutout — ghép một nhân vật kèm ghế riêng lên ảnh nền đã có ghế, có người trông rất vô lý. Chỉ tách cutout khi nhân vật đứng trước nền trơn/nền giấy/nền mờ, hoặc đứng tự do ở tiền cảnh.\n" +
   "- Cảnh-level `shotSize`/`cameraMovement` là shot chủ đạo của cảnh.\n" +
   "- MỖI ảnh (image/graphic) thuộc đúng MỘT shot — ghi `shot` = `order` của shot đó, và vẽ theo đúng cỡ cảnh + góc máy của shot đó; audio/video ghi `shot` = 0. Mỗi góc máy cần ảnh riêng: cùng bối cảnh nhưng khác góc (toàn cảnh phòng vs. mặt chăn nhìn từ trên xuống) là hai NỀN khác nhau; cùng nhân vật ở shot cận mặt và shot trung cận là hai ảnh khác nhau. Chỉ dùng lại ảnh (mô tả Y HỆT) khi cùng bối cảnh VÀ cùng góc máy.";
 
 export const ASSET_LAYER_RULE =
   "Áp dụng các quy tắc lớp dưới đây cho TỪNG SHOT (nền, cutout, sprite sheet của shot nào thì vẽ theo góc máy của shot đó).\n" +
+  "CHỮ TRÊN HÌNH KHÔNG VẼ THÀNH ẢNH: tiêu đề, dòng chữ, nhãn, danh sách gạch đầu dòng, con số, chữ khoá… hiện trên hình là tài nguyên type \"graphic\", layer \"cutout\", với `text` = ĐÚNG chữ hiện ra (xuống dòng bằng \\n) — lúc dựng chèn bằng chữ của CapCut, không tạo ảnh; `description` chỉ tả kiểu chữ (màu, đậm, nhấn), `placement` tả vị trí và cỡ. Mỗi dòng/khối chữ xuất hiện vào một lúc khác nhau là một tài nguyên riêng. CHỈ vẽ chữ vào ảnh khi chữ là một phần của vật thể trong cảnh (màn hình điện thoại, biển hiệu, trang giấy, bong bóng chat, nhãn trên đồ vật) — khi đó `text` để trống. Mọi tài nguyên khác: `text` để trống.\n" +
   "LỚP HÌNH ẢNH (`layer` của mỗi tài nguyên): loại image/graphic chọn \"scene\" (MỘT khung hình hoàn chỉnh — vẽ chung với bối cảnh, phủ kín khung) hoặc \"cutout\" (CHỈ RIÊNG chủ thể — nhân vật/đồ vật — trên nền trong suốt, để ghép lên khung và làm chuyển động khi dựng); loại audio/video chọn \"none\".\n" +
   "Đây là video KỂ CHUYỆN hoạt hình, không phải slide thuyết trình: mỗi cảnh cần SINH ĐỘNG — nhân vật diễn, đồ vật phản ứng, khung hình có chuyển động. SỐ LƯỢNG và CÁCH CHIA tài nguyên của mỗi cảnh do KỊCH BẢN quyết định — KHÔNG có công thức cố định; liệt kê đúng những gì cần để DIỄN được cảnh đó:\n" +
   "- TRƯỚC KHI liệt kê, đọc kỹ diễn biến của cảnh (nội dung, lời thoại, mô tả hình ảnh, `characters[].action`) và chia thành các NHỊP hành động theo thời gian — một cảnh có thể có NHIỀU nhịp và một nhân vật có thể có NHIỀU hành động (vd. cầm điện thoại lên → nhìn thẳng camera → nói câu chốt → nhún vai). Số ảnh = số nhịp cần diễn; KHÔNG cố định một cảnh/một nhân vật chỉ có một hành động. Mỗi nhịp có chuyển động riêng → một SPRITE SHEET; các nhịp nối liền thành một chuyển động liên tục có thể gộp chung một sprite sheet nhiều khung. Ghi thứ tự nhịp đầu mô tả (\"Nhịp 1/3: ...\") để lúc dựng biết trình tự.\n" +
@@ -130,12 +134,15 @@ export const ASSET_LAYER_RULE =
 
 /** The schema's "none" layer (audio/video) becomes no field at all. */
 function normalizeAsset(asset: RequiredAsset): RequiredAsset {
-  const { layer, placement, shot, ...rest } = asset as Omit<RequiredAsset, "layer"> & {
+  const { layer, placement, shot, text, ...rest } = asset as Omit<RequiredAsset, "layer"> & {
     layer?: string;
   };
   const isImageLayer = layer === "scene" || layer === "cutout";
+  // Editor text only on graphics, and only with words in it.
+  const words = asset.type === "graphic" ? text?.trim() : undefined;
   return {
     ...rest,
+    ...(words ? { text: words } : {}),
     ...(isImageLayer ? { layer } : {}),
     ...(isImageLayer && placement?.trim() ? { placement: placement.trim() } : {}),
     ...(isImageLayer && shot && shot > 0 ? { shot } : {}),

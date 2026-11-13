@@ -9,10 +9,15 @@ import type {
 } from "../../../shared/types.js";
 import { firstAvailableProvider, runTask, taskContextFor } from "../../services/ai/task.js";
 import { getScriptAnalysisById, updateAnalyzedScenes } from "../script/repo.js";
+import { parsePlacement } from "../edit-plan/layout.js";
 import { clearSceneResources } from "./repo.js";
 import { enrichShotsTask, type EnrichShotsOutput } from "./tasks/enrich-shots.js";
 
 type Caller = Pick<User, "id" | "role">;
+
+/** A real photo "enrich shots" added (to research, not generate). */
+const ADDED_PHOTO = /^Ảnh thật \(bổ sung\):/;
+const isAddedPhoto = (asset: RequiredAsset) => ADDED_PHOTO.test(asset.description.trim());
 
 /** A sticker sheet: one image holding a grid of icons ("Sticker sheet 9 ô (3×3): 1) …"). */
 export const STICKER_SHEET = /^sticker sheet/i;
@@ -61,12 +66,14 @@ export async function enrichScenes(caller: Caller, req: AssetEnrichRequest): Pro
   const inRange = (scene: ScriptScene) => scene.index >= req.fromScene && scene.index <= req.toScene;
 
   // What an earlier run added in the range goes: its sheets (and their picks), its stickers and key words.
-  const oldSheets = base.scenes.filter(inRange).flatMap((scene) => scene.requiredAssets.filter(isStickerSheet));
+  const oldSheets = base.scenes
+    .filter(inRange)
+    .flatMap((scene) => scene.requiredAssets.filter((asset) => isStickerSheet(asset) || isAddedPhoto(asset)));
   const cleaned = base.scenes.map((scene) =>
     inRange(scene)
       ? {
           ...scene,
-          requiredAssets: scene.requiredAssets.filter((asset) => !isStickerSheet(asset)),
+          requiredAssets: scene.requiredAssets.filter((asset) => !isStickerSheet(asset) && !isAddedPhoto(asset)),
           shots: scene.shots?.map(({ stickers: _s, callouts: _c, ...shot }) => shot),
         }
       : scene,
@@ -121,9 +128,27 @@ export async function enrichScenes(caller: Caller, req: AssetEnrichRequest): Pro
         description: sheetDescription(sheet.labels),
         placement: "Không đặt nguyên tấm — bộ dựng cắt từng ô thành sticker riêng và cho bật ra cạnh người dẫn.",
       }));
+    // Real photos: a print on the side away from the shot's speaker, to research (not generate).
+    const photos: RequiredAsset[] = results
+      .filter((r) => r.scene === scene.index)
+      .flatMap((r) => {
+        const speaker = scene.requiredAssets.find(
+          (a) => a.shot === r.shot && a.layer === "cutout" && rosterNames.some((name) => a.description.includes(name)),
+        );
+        const side = speaker && parsePlacement(speaker.placement).x > 0 ? "bên trái" : "bên phải";
+        return r.photos.map((photo) => ({
+          id: randomUUID(),
+          type: "image" as const,
+          source: "stock" as const,
+          layer: "cutout" as const,
+          shot: r.shot,
+          description: `Ảnh thật (bổ sung): ${photo}`,
+          placement: `Như một tấm ảnh in đặt ${side} khung, chiếm khoảng 40% chiều rộng khung, nghiêng nhẹ.`,
+        }));
+      });
     return {
       ...scene,
-      requiredAssets: [...scene.requiredAssets, ...newSheets],
+      requiredAssets: [...scene.requiredAssets, ...newSheets, ...photos],
       shots: scene.shots?.map((shot) => {
         const key = `${scene.index}:${shot.order}`;
         return {
@@ -140,6 +165,7 @@ export async function enrichScenes(caller: Caller, req: AssetEnrichRequest): Pro
     version,
     sheets: sheets.length,
     stickers: stickerCount,
+    photos: results.reduce((n, r) => n + r.photos.length, 0),
     callouts: [...callouts.values()].reduce((n, list) => n + list.length, 0),
   };
 }

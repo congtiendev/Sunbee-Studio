@@ -68,6 +68,7 @@ import {
 import { blobToDataUrl, sceneContextOf } from "./scene-context";
 import { trimToSubject } from "./trim-image";
 import { describeShotForAi, shotOf } from "@shared/shots";
+import { needsImage } from "@shared/types";
 import {
   defaultModelFor,
   type AnalyzeProvider,
@@ -121,7 +122,8 @@ function groupRequiredAssets(
           a.assetIndex - b.assetIndex,
       );
     inShotOrder.forEach(({ asset, assetIndex }) => {
-      if (asset.type !== "image" && asset.type !== "graphic") return;
+      // Prompts are for pictures to generate: not editor text (CapCut writes it), not real photos (researched).
+      if (!needsImage(asset) || asset.source === "stock") return;
       const normalized = asset.description.trim().toLowerCase();
       if (!normalized) return;
       const existing = byNormalized.get(normalized);
@@ -1275,6 +1277,7 @@ export default function BatchPromptDialog({
                   ? t("enrichDone", {
                       sheets: enrichResult.sheets,
                       stickers: enrichResult.stickers,
+                      photos: enrichResult.photos,
                       callouts: enrichResult.callouts,
                     })
                   : t("enrichHint")}

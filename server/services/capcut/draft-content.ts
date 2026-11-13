@@ -381,7 +381,7 @@ function textSegment(cue: SubtitleCue, style: SubtitleStyle, font: DraftContentI
 /** A pop-up text: positioned and keyframed like a picture, styled by its own style. */
 function popupTextSegment(clip: TextClip, font: DraftContentInput["subtitleFont"], materials: DraftMaterials) {
   const materialId = hexId();
-  materials.texts.push(textMaterial(materialId, clip.text, { ...clip.style, y: 0 }, font, clip.maxWidth));
+  materials.texts.push(textMaterial(materialId, clip.text, { ...clip.style, y: 0 }, font, clip.maxWidth, clip.align));
   const motion = { ...clip, keyframes: clip.keyframes ?? [] } as unknown as VisualClip;
   return {
     ...baseSegment(materialId, clip.startMs, clip.durationMs, visualKeyframes(motion)),
@@ -544,6 +544,7 @@ function textMaterial(
   style: SubtitleStyle,
   font: DraftContentInput["subtitleFont"],
   maxWidth = 0.82,
+  align: "left" | "center" = "center",
 ) {
   const stroke = style.strokeColor && style.strokeWidth
     ? [{ content: { solid: { alpha: 1.0, color: rgb(style.strokeColor) } }, width: round(style.strokeWidth * CAPCUT_STROKE_PER_SIZE) }]
@@ -563,7 +564,8 @@ function textMaterial(
     id,
     content: JSON.stringify({ styles: [styleItem], text }),
     typesetting: 0,
-    alignment: 1,
+    // CapCut: 0 left, 1 centre.
+    alignment: align === "left" ? 0 : 1,
     letter_spacing: 0,
     line_spacing: 0.02,
     line_feed: 1,

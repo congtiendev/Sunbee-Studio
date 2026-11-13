@@ -1685,10 +1685,10 @@
         "enrich": "Bổ sung sticker & chữ khoá (cảnh {from}–{to})",
         "enriching": "Đang bổ sung sticker & chữ khoá…",
         "enrichHint": "Cho các shot chỉ có người dẫn trên nền trơn: icon bật ra cạnh người dẫn và cụm chữ khoá từ lời thoại. Icon được gom thành các tấm sticker (mỗi ảnh tối đa 16 icon) để tạo như các ảnh khác; bộ dựng tự đặt vào.",
-        "enrichDone": "Đã thêm {stickers} sticker trên {sheets} tấm và {callouts} chữ khoá. Tạo các tấm sticker cùng các prompt bên dưới."
+        "enrichDone": "Đã thêm {stickers} sticker trên {sheets} tấm, {photos} ảnh thật cần tìm và {callouts} chữ khoá. Tạo các tấm sticker cùng các prompt bên dưới; ảnh thật thì tìm bằng nút Tìm tư liệu."
       },
       "assetSources": {
-        "stock": "Stock",
+        "stock": "Ảnh thật — tìm",
         "generate": "Tạo mới",
         "provided": "Có sẵn"
       },
@@ -1762,7 +1762,9 @@
         "pov": "Góc nhìn thứ nhất",
         "dutch": "Nghiêng khung"
       },
-      "techniqueLabel": "Kỹ thuật quay & chuyển cảnh"
+      "techniqueLabel": "Kỹ thuật quay & chuyển cảnh",
+      "editorText": "Chữ (CapCut)",
+      "editorTextHint": "Chèn bằng chữ của CapCut lúc dựng — không cần ảnh."
     },
     "library": {
       "pageTitle": "Kho media",

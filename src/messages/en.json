@@ -1667,10 +1667,10 @@
         "enrich": "Add stickers & key words (scenes {from}–{to})",
         "enriching": "Adding stickers & key words…",
         "enrichHint": "For shots where the speaker is alone on a plain backdrop: icons that pop in beside them and a key phrase from the narration. The icons come as sticker sheets (one image per up to 16 icons) to generate like the other images; the edit plan places them.",
-        "enrichDone": "Added {stickers, plural, one {# sticker} other {# stickers}} on {sheets, plural, one {# sheet} other {# sheets}} and {callouts, plural, one {# key phrase} other {# key phrases}}. Generate the sticker sheets with the other prompts below."
+        "enrichDone": "Added {stickers, plural, one {# sticker} other {# stickers}} on {sheets, plural, one {# sheet} other {# sheets}}, {photos, plural, one {# real photo} other {# real photos}} to search and {callouts, plural, one {# key phrase} other {# key phrases}}. Generate the sticker sheets with the other prompts below; find the real photos with Research."
       },
       "assetSources": {
-        "stock": "Stock",
+        "stock": "Real photo — search",
         "generate": "Generate",
         "provided": "Provided"
       },
@@ -1744,7 +1744,9 @@
         "pov": "POV",
         "dutch": "Dutch angle"
       },
-      "techniqueLabel": "Camera & transition"
+      "techniqueLabel": "Camera & transition",
+      "editorText": "Text (CapCut)",
+      "editorTextHint": "Written with CapCut's text tool when the edit is built — no image needed."
     },
     "library": {
       "pageTitle": "Media library",
