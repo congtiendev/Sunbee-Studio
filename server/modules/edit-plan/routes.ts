@@ -1,9 +1,17 @@
 import { Router } from "express";
-import type { CapcutExportRequest, CapcutExportResponse, EditStyleLearnRequest } from "../../../shared/edit-plan.js";
+import type {
+  CapcutExportRequest,
+  CapcutExportResponse,
+  EditRecipeChoices,
+  EditStyleLearnRequest,
+} from "../../../shared/edit-plan.js";
 import { requireVideoAccess } from "../../middleware/require-access.js";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { writeCapcutDraft } from "../../services/capcut/writer.js";
 import { buildEditPlan } from "./build-timeline.js";
+import { capcutChoices } from "../../services/capcut/lookup.js";
+import { countAssetsBySourcePack } from "../assets/repo.js";
+import { listSfxKitCategories } from "../assets/sound-effects/sfx-kit-catalog.js";
 import { learnEditingStyle } from "./learn/service.js";
 
 const router = Router();
@@ -60,6 +68,19 @@ router.post("/capcut", requireAuth, requireVideoAccess, async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: errorMessage(err) });
   }
+});
+
+/** GET /api/edit-plan/recipe-choices — CapCut built-ins and sound-effect categories a recipe can use. */
+router.get("/recipe-choices", requireAuth, (req, res) => {
+  const choices: EditRecipeChoices = {
+    ...capcutChoices(),
+    sfxCategories: listSfxKitCategories().map((category) => ({
+      id: category.id,
+      title: category.title,
+      installed: countAssetsBySourcePack(req.user!.id, `sfxkit:${category.id}`) > 0,
+    })),
+  };
+  res.json(choices);
 });
 
 /** POST /api/edit-plan/learn-style — an editing skill (guide + recipe) learned from a sample video link. */

@@ -72,6 +72,23 @@ export interface ClipOrigin {
 
 export type VisualClipRole = "background" | "cutout";
 
+/**
+ * A CapCut built-in (clip animation, transition, video effect) referenced by
+ * its ids — CapCut downloads it when the draft opens. Other writers (ffmpeg)
+ * approximate it or leave it out.
+ */
+export interface CapcutRef {
+  key: string;
+  name: string;
+  resourceId: string;
+  effectId: string;
+  durationMs: number;
+  /** Transitions: the two clips overlap during it. */
+  overlap?: boolean;
+  /** Effects: parameters at their defaults. */
+  params?: { name: string; default: number; min: number; max: number }[];
+}
+
 export interface VisualClip {
   id: string;
   mediaId: string;
@@ -92,6 +109,8 @@ export interface VisualClip {
   sourceStartMs?: number;
   /** Video media only: its own sound, 1 = original level. Default 0 (b-roll plays muted under the voice). */
   volume?: number;
+  /** A CapCut intro animation played as the clip comes on (instead of keyframed intros). */
+  capcutIntro?: CapcutRef;
   origin?: ClipOrigin;
 }
 
@@ -157,6 +176,10 @@ export interface Timeline {
   audio: AudioClip[];
   subtitles: SubtitleCue[];
   subtitleStyle: SubtitleStyle;
+  /** CapCut transitions on the background track, each between `afterClipId` and the clip after it. */
+  transitions?: { afterClipId: string; ref: CapcutRef }[];
+  /** CapCut video effects over the whole picture for a stretch of time (shake on a hit…). */
+  effects?: { id: string; startMs: number; durationMs: number; ref: CapcutRef }[];
 }
 
 export const IDENTITY_TRANSFORM: ClipTransform = { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1 };

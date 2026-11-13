@@ -1894,10 +1894,27 @@
           "together": "Cùng lúc khi cắt",
           "sequential": "Lần lượt",
           "pop": "Pop",
-          "fade": "Mờ dần"
+          "fade": "Mờ dần",
+          "notUsed": "Không dùng"
         },
         "holdDrift": "Trôi khi giữ hình (0–0,1)",
-        "spriteMs": "Khung sprite (ms)"
+        "spriteMs": "Khung sprite (ms)",
+        "capcutTitle": "Hiệu ứng CapCut",
+        "capcutRevealIntro": "Hiệu ứng vào cho phần tử (CapCut)",
+        "capcutTextIntro": "Hiệu ứng vào cho chữ (CapCut)",
+        "capcutTransition": "Chuyển cảnh khi đổi cảnh",
+        "capcutTransitionGap": "Cách nhau tối thiểu (giây)",
+        "capcutHeroEffect": "Hiệu ứng ở cảnh cao trào",
+        "sfxTitle": "Âm thanh hiệu ứng",
+        "sfxEnabled": "Dùng sound effect",
+        "sfxSceneChange": "Khi đổi cảnh",
+        "sfxReveal": "Khi phần tử bật ra",
+        "sfxHero": "Ở cảnh cao trào",
+        "sfxSmart": "Theo nội dung (thông báo → ting…)",
+        "sfxVolumeDb": "Mức so với giọng (dB)",
+        "sfxMaxPerMinute": "Tối đa mỗi phút",
+        "sfxHint": "Âm thanh lấy từ các gói sound effect trong Thư viện → Sound effects — nhóm nào chưa cài thì cài ở đó để dùng. Hiệu ứng vào của CapCut sẽ thay hiệu ứng pop/mờ dần cho các phần tử đó.",
+        "notInstalled": "chưa cài"
       },
       "learn": {
         "title": "Học phong cách dựng",

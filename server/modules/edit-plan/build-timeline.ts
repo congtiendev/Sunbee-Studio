@@ -5,6 +5,8 @@ import {
   IDENTITY_TRANSFORM,
   TIMELINE_CANVAS,
   TIMELINE_VERSION,
+  type AudioClip,
+  type CapcutRef,
   type ClipTransform,
   type SubtitleCue,
   type Timeline,
@@ -12,12 +14,13 @@ import {
   type VisualClip,
 } from "../../../shared/timeline.js";
 import type { RequiredAsset, SceneResource, SceneShot, ScriptAnalysisRecord, User } from "../../../shared/types.js";
+import { capcutRef } from "../../services/capcut/lookup.js";
 import { probeMedia } from "../../services/capcut/probe.js";
 import { getVideo } from "../../services/db/videos-repo.js";
 import { getTemplateById } from "../../services/db/style-templates-repo.js";
 import { DEFAULT_EDIT_RECIPE, type EditRecipe, type RevealAnimation } from "../../../shared/edit-recipe.js";
 import { getFileForUser, saveFile } from "../../services/storage/files.js";
-import { listSceneResources, setSceneResource } from "../assets/repo.js";
+import { listSceneResources, searchLibrary, setSceneResource } from "../assets/repo.js";
 import { getScriptAnalysisById, listVersionsForVideo } from "../script/repo.js";
 import {
   animateLayer,
@@ -64,6 +67,28 @@ interface Media {
 const BUST_SHOT = /cận|trung cảnh|bán thân|đầu (?:và )?vai|ngang (?:ngực|hông|vai)|từ (?:hông|ngực|vai|eo) trở lên|cắt (?:ngang|ở) (?:ngực|hông|eo|vai)/i;
 /** Smallest height (share of the frame) a full-figure character is shown at. */
 const MIN_FIGURE_HEIGHT = 0.35;
+
+/**
+ * What an element sounds like when it comes on, from what it is — the
+ * library's sound-effect pack categories. First match wins; most elements
+ * (characters, text lines) match nothing and stay silent.
+ */
+const SMART_SFX: [RegExp, string][] = [
+  [/thông báo|notification|tin nhắn mới|màn hình (?:điện thoại )?sáng/i, "notifications"],
+  [/chuông điện thoại|cuộc gọi|đổ chuông/i, "phone"],
+  [/bóng đèn|ý tưởng|lóe sáng|lấp lánh|tia sáng/i, "shimmers"],
+  [/khoanh (?:tròn|đỏ)|vòng tròn đỏ|gạch chân|đánh dấu bằng bút/i, "writing-and-drawing"],
+  [/gõ phím|bàn phím|đánh máy/i, "keyboard"],
+  [/tiền|đồng xu|ví tiền|hoá đơn|chuyển khoản/i, "money"],
+  [/đồng hồ|tích tắc|hẹn giờ/i, "time"],
+  [/bong bóng (?:chat|bình luận|lời thoại)|biểu tượng cảm xúc|emoji/i, "pops"],
+];
+/** Hero-moment hits (effect + sound) at most once per this long. */
+const HERO_MIN_GAP_MS = 30_000;
+/** Sound effects never closer than this. */
+const SFX_MIN_GAP_MS = 1200;
+/** A sound effect is cut to at most this long (they're accents, not beds). */
+const SFX_MAX_MS = 2500;
 
 /** Shots that would hold perfectly still at least this long get the recipe's slow drift. */
 const HOLD_DRIFT_FROM_MS = 2500;
@@ -247,6 +272,21 @@ export async function buildEditPlan(
     (characterNames.some((name) => asset.description.toLowerCase().includes(name)) ||
       /người dẫn|nhân vật/i.test(asset.description));
 
+  // CapCut built-ins the recipe asks for (null: not used / unknown key).
+  // CapCut intros run for the recipe's reveal/text durations (snappy), not CapCut's 0.5 s default.
+  const withMs = (ref: CapcutRef | null, ms: number) => (ref && ms > 0 ? { ...ref, durationMs: ms } : ref);
+  const revealIntroRef = withMs(capcutRef(recipe.capcut.revealIntro), recipe.reveal.durationMs);
+  const textIntroRef = withMs(capcutRef(recipe.capcut.textIntro), recipe.text.durationMs);
+  const transitionRef = capcutRef(recipe.capcut.sceneTransition, 467);
+  const heroEffectRef = capcutRef(recipe.capcut.heroEffect, recipe.capcut.heroEffectMs);
+  const transitions: NonNullable<Timeline["transitions"]> = [];
+  const effects: NonNullable<Timeline["effects"]> = [];
+  /** Moments a sound effect could go, resolved to library sounds (and thinned out) at the end. */
+  const sfxEvents: { atMs: number; category: string; priority: number }[] = [];
+  let lastBackgroundClipId: string | null = null;
+  let lastTransitionAt = -Infinity;
+  let lastHeroAt = -Infinity;
+
   let cursor = 0;
   let missingNarration = 0;
   const inRange = version.scenes.filter(
@@ -255,6 +295,22 @@ export async function buildEditPlan(
 
   for (const scene of inRange) {
     const sceneStart = cursor;
+    const firstScene = scene === inRange[0];
+    if (!firstScene && transitionRef && lastBackgroundClipId && sceneStart - lastTransitionAt >= recipe.capcut.transitionMinGapSec * 1000) {
+      transitions.push({ afterClipId: lastBackgroundClipId, ref: transitionRef });
+      lastTransitionAt = sceneStart;
+    }
+    if (!firstScene && recipe.sfx.enabled && recipe.sfx.sceneChange) {
+      sfxEvents.push({ atMs: sceneStart, category: recipe.sfx.sceneChange, priority: 1 });
+    }
+    // Hits stay rare: an analysis can mark many scenes as hero moments.
+    if (scene.heroMoment && sceneStart - lastHeroAt >= HERO_MIN_GAP_MS) {
+      lastHeroAt = sceneStart;
+      if (heroEffectRef) {
+        effects.push({ id: `fx-${scene.index}`, startMs: sceneStart, durationMs: recipe.capcut.heroEffectMs, ref: heroEffectRef });
+      }
+      if (recipe.sfx.enabled && recipe.sfx.hero) sfxEvents.push({ atMs: sceneStart, category: recipe.sfx.hero, priority: 3 });
+    }
     // A shot without its own background keeps the one before it — within the
     // scene only, so a scene still missing its pictures shows as missing.
     let lastBackground: Media | null = null;
@@ -320,6 +376,7 @@ export async function buildEditPlan(
         from: number,
         loop: boolean,
         intro?: LayerIntro,
+        capcutIntro?: CapcutRef | null,
       ) => {
         spriteSchedule(media.paths.length, from, durationMs, recipe.sprite.frameMs, loop).forEach((slot, k) => {
           visual.push({
@@ -330,7 +387,9 @@ export async function buildEditPlan(
             fit,
             startMs: cursor + slot.from,
             durationMs: slot.to - slot.from,
-            ...animateLayer(knots, base, slot.from, slot.to, k === 0 ? intro : undefined),
+            // A CapCut intro replaces the keyframed one; either plays on the first frame only.
+            ...animateLayer(knots, base, slot.from, slot.to, k === 0 && !capcutIntro ? intro : undefined),
+            ...(k === 0 && capcutIntro ? { capcutIntro } : {}),
             origin: { sceneIndex: scene.index, shotOrder: shot.order },
           });
         });
@@ -349,6 +408,7 @@ export async function buildEditPlan(
         const loop = frame !== null && frame.media === background && LOOPING_SPRITE.test(frame.asset.description);
         const fit = misshapen && !insert ? "contain" : "cover";
         pushLayer(`s${scene.index}-${shot.order}-bg`, background, 0, "background", fit, IDENTITY_TRANSFORM, 0, loop);
+        lastBackgroundClipId = visual.at(-1)!.id;
         // What stays on screen for the next shot: a sprite's last frame.
         if (background !== lastBackground) lastBackground = { ...background, paths: [background.paths.at(-1)!] };
       } else {
@@ -445,6 +505,8 @@ export async function buildEditPlan(
           : asset.type === "graphic"
             ? introOf(recipe.text.animation, recipe.text.durationMs)
             : introOf(recipe.reveal.animation, recipe.reveal.durationMs);
+        const fresh = !carried && i !== anchor;
+        const capcutIntro = fresh ? (asset.type === "graphic" ? textIntroRef : revealIntroRef) : null;
         pushLayer(
           `s${scene.index}-${shot.order}-c${i + 1}`,
           media,
@@ -455,7 +517,15 @@ export async function buildEditPlan(
           appearAt(i),
           LOOPING_SPRITE.test(asset.description),
           intro,
+          capcutIntro,
         );
+        // A sound for what comes on: what it is (a notification → "ting"), else
+        // the recipe's reveal sound for elements popping in after the cut.
+        if (recipe.sfx.enabled && !carried) {
+          const smart = recipe.sfx.smart ? SMART_SFX.find(([re]) => re.test(asset.description))?.[1] : undefined;
+          const category = smart ?? (fresh ? recipe.sfx.reveal : null);
+          if (category) sfxEvents.push({ atMs: cursor + appearAt(i), category, priority: smart ? 2 : 0 });
+        }
       }
       cursor += durationMs;
     }
@@ -484,6 +554,57 @@ export async function buildEditPlan(
   }
   if (missingNarration > 0) warnings.push({ code: "noNarration", detail: String(missingNarration) });
 
+  // ---- sound effects: sparse on purpose — ≥ 1.2 s apart, at most N a minute,
+  // the more meaningful sound winning a clash (hit > smart > scene change > reveal).
+  const audio: AudioClip[] = [];
+  if (recipe.sfx.enabled && sfxEvents.length > 0 && recipe.sfx.maxPerMinute > 0) {
+    const byPriority = [...sfxEvents].sort((a, b) => b.priority - a.priority || a.atMs - b.atMs);
+    const kept: typeof sfxEvents = [];
+    for (const event of byPriority) {
+      const tooClose = kept.some((k) => Math.abs(k.atMs - event.atMs) < SFX_MIN_GAP_MS);
+      const inMinute = kept.filter((k) => Math.abs(k.atMs - event.atMs) < 30_000).length;
+      if (!tooClose && inMinute < recipe.sfx.maxPerMinute) kept.push(event);
+    }
+    kept.sort((a, b) => a.atMs - b.atMs);
+    const library = new Map<string, { path: string; durationMs: number }[]>();
+    const turn = new Map<string, number>();
+    const volume = Math.round(10 ** (recipe.sfx.volumeDb / 20) * 1000) / 1000;
+    for (const [n, event] of kept.entries()) {
+      if (!library.has(event.category)) {
+        const sounds: { path: string; durationMs: number }[] = [];
+        for (const asset of searchLibrary(caller.id, admin, { mediaType: "audio", category: event.category, limit: 40 })) {
+          const file = getFileForUser(caller.id, admin, asset.fileId);
+          const length = file ? (await probeMedia(file.absolutePath)).durationMs : undefined;
+          if (file && length) sounds.push({ path: file.absolutePath, durationMs: length });
+        }
+        library.set(event.category, sounds);
+        if (sounds.length === 0) warnings.push({ code: "sfxMissing", detail: event.category });
+      }
+      const sounds = library.get(event.category)!;
+      if (sounds.length === 0) continue;
+      // Take the category's sounds in turn, so repeats are spread out.
+      const index = turn.get(event.category) ?? 0;
+      turn.set(event.category, index + 1);
+      const sound = sounds[index % sounds.length]!;
+      let mediaId = media.get(sound.path)?.id;
+      if (!mediaId) {
+        mediaId = `m${media.size + 1}`;
+        media.set(sound.path, { id: mediaId, kind: "audio", path: sound.path, durationMs: sound.durationMs });
+      }
+      const length = Math.min(sound.durationMs, SFX_MAX_MS, Math.max(1, cursor - event.atMs));
+      audio.push({
+        id: `sfx-${n + 1}`,
+        mediaId,
+        role: "sfx",
+        startMs: event.atMs,
+        durationMs: length,
+        sourceStartMs: 0,
+        volume,
+        fadeOutMs: length < sound.durationMs ? Math.min(300, Math.floor(length / 3)) : undefined,
+      });
+    }
+  }
+
   const timeline: Timeline = {
     version: TIMELINE_VERSION,
     videoId,
@@ -492,9 +613,11 @@ export async function buildEditPlan(
     durationMs: cursor,
     media: [...media.values()],
     visual,
-    audio: [],
+    audio,
     subtitles,
     subtitleStyle: DEFAULT_SUBTITLE_STYLE,
+    transitions,
+    effects,
   };
   // An asset without a shot is checked once per shot: report each problem once.
   const unique = [...new Map(warnings.map((w) => [`${w.code}|${w.sceneIndex}|${w.detail}`, w])).values()];

@@ -1876,10 +1876,27 @@
           "together": "All at the cut",
           "sequential": "One by one",
           "pop": "Pop",
-          "fade": "Fade"
+          "fade": "Fade",
+          "notUsed": "Not used"
         },
         "holdDrift": "Hold drift (0–0.1)",
-        "spriteMs": "Sprite frame (ms)"
+        "spriteMs": "Sprite frame (ms)",
+        "capcutTitle": "CapCut effects",
+        "capcutRevealIntro": "Element intro (CapCut)",
+        "capcutTextIntro": "Text intro (CapCut)",
+        "capcutTransition": "Transition at scene changes",
+        "capcutTransitionGap": "Min. seconds between transitions",
+        "capcutHeroEffect": "Effect on hero moments",
+        "sfxTitle": "Sound effects",
+        "sfxEnabled": "Use sound effects",
+        "sfxSceneChange": "On scene change",
+        "sfxReveal": "When an element pops in",
+        "sfxHero": "On hero moments",
+        "sfxSmart": "Match the element (notification → ting…)",
+        "sfxVolumeDb": "Level vs voice (dB)",
+        "sfxMaxPerMinute": "Max per minute",
+        "sfxHint": "Sounds come from the sound-effect packs in Library → Sound effects — install a category there to use it. A CapCut intro replaces the keyframed reveal for those elements.",
+        "notInstalled": "not installed"
       },
       "learn": {
         "title": "Learn an editing style",

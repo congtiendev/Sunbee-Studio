@@ -60,6 +60,8 @@ const hexId = () => randomUUID().replace(/-/g, "");
 
 /** Track z-order: video tracks by layer, audio at 0, text above everything (VectCutAPI imports subtitles at 15000 + 999). */
 const TEXT_RENDER_INDEX = 15999;
+/** Effect tracks sit above the picture, below text (pyJianYingDraft's effect track base). */
+const EFFECT_RENDER_INDEX = 10000;
 /** Photos get a 3-hour material duration, as CapCut gives a still image. */
 const PHOTO_DURATION_US = 10_800_000_000;
 /** CapCut's library font the Người Que channel uses for subtitles. */
@@ -84,6 +86,7 @@ export function buildDraftContent(input: DraftContentInput): Record<string, unkn
 
   // ---- images: one video track per layer, bottom first ----
   const photoMaterialIds = new Map<string, string>();
+  const segmentOfClip = new Map<string, { extra_material_refs: string[] }>();
   const layers = [...new Set(timeline.visual.map((clip) => clip.layer))].sort((a, b) => a - b);
   for (const [rank, layer] of layers.entries()) {
     const clips = timeline.visual.filter((clip) => clip.layer === layer).sort((a, b) => a.startMs - b.startMs);
@@ -97,9 +100,73 @@ export function buildDraftContent(input: DraftContentInput): Record<string, unkn
         photoMaterialIds.set(key, materialId);
         materials.videos.push(photoMaterial(materialId, image));
       }
-      return visualSegment(clip, materialId, materials);
+      const segment = visualSegment(clip, materialId, materials);
+      segmentOfClip.set(clip.id, segment);
+      return segment;
     });
     tracks.push(track("video", rank === 0 ? "sunbee_background" : `sunbee_layer_${rank}`, segments, rank));
+  }
+
+  // ---- CapCut transitions: on the clip before the change ----
+  for (const { afterClipId, ref } of timeline.transitions ?? []) {
+    const segment = segmentOfClip.get(afterClipId);
+    if (!segment) continue;
+    const id = hexId();
+    materials.transitions.push({
+      category_id: "",
+      category_name: "",
+      duration: us(ref.durationMs),
+      effect_id: ref.effectId,
+      id,
+      is_overlap: Boolean(ref.overlap),
+      name: ref.name,
+      platform: "all",
+      resource_id: ref.resourceId,
+      type: "transition",
+    });
+    segment.extra_material_refs.push(id);
+  }
+
+  // ---- CapCut video effects: their own track, over the whole picture ----
+  const effects = timeline.effects ?? [];
+  if (effects.length) {
+    const segments = [...effects]
+      .sort((a, b) => a.startMs - b.startMs)
+      .map((effect) => {
+        const id = hexId();
+        materials.video_effects.push({
+          adjust_params: (effect.ref.params ?? []).map((param, index) => ({
+            default_value: param.default,
+            max_value: param.max,
+            min_value: param.min,
+            name: param.name,
+            parameterIndex: index,
+            portIndex: 0,
+            value: param.default,
+          })),
+          apply_target_type: 2,
+          apply_time_range: null,
+          category_id: "",
+          category_name: "",
+          common_keyframes: [],
+          disable_effect_faces: [],
+          effect_id: effect.ref.effectId,
+          formula_id: "",
+          id,
+          name: effect.ref.name,
+          platform: "all",
+          render_index: 11000,
+          resource_id: effect.ref.resourceId,
+          source_platform: 0,
+          time_range: null,
+          track_render_index: 0,
+          type: "video_effect",
+          value: 1.0,
+          version: "",
+        });
+        return baseSegment(id, effect.startMs, effect.durationMs);
+      });
+    tracks.push(track("effect", "effects", segments, EFFECT_RENDER_INDEX));
   }
 
   // ---- audio: one track per role, more when clips of a role overlap ----
@@ -161,7 +228,7 @@ export function buildDraftContent(input: DraftContentInput): Record<string, unkn
 // ---------- tracks & segments ----------
 
 /** A track; its render index (z-order) is stamped on each of its segments, as pyJianYingDraft does. */
-function track(type: "video" | "audio" | "text", name: string, segments: Record<string, unknown>[], index = 0) {
+function track(type: "video" | "audio" | "text" | "effect", name: string, segments: Record<string, unknown>[], index = 0) {
   return {
     attribute: 0,
     flag: 0,
@@ -219,12 +286,37 @@ function clipJson(transform: ClipTransform) {
 }
 
 function visualSegment(clip: VisualClip, materialId: string, materials: DraftMaterials) {
+  const refs = [speedMaterial(materials)];
+  // A CapCut intro animation: an animation material the segment points at.
+  if (clip.capcutIntro) {
+    const id = hexId();
+    materials.material_animations.push({
+      id,
+      type: "sticker_animation",
+      multi_language_current: "none",
+      animations: [
+        {
+          anim_adjust_params: null,
+          platform: "all",
+          panel: "video",
+          material_type: "video",
+          name: clip.capcutIntro.name,
+          id: clip.capcutIntro.effectId,
+          type: "in",
+          resource_id: clip.capcutIntro.resourceId,
+          start: 0,
+          duration: us(Math.min(clip.capcutIntro.durationMs, clip.durationMs)),
+        },
+      ],
+    });
+    refs.push(id);
+  }
   return {
     ...baseSegment(materialId, clip.startMs, clip.durationMs, visualKeyframes(clip)),
     source_timerange: timerange(0, clip.durationMs),
     speed: 1.0,
     volume: 1.0,
-    extra_material_refs: [speedMaterial(materials)],
+    extra_material_refs: refs,
     clip: clipJson(transformAt(clip, 0)),
     uniform_scale: { on: true, value: 1.0 },
     hdr_settings: { intensity: 1.0, mode: 1, nits: 1000 },

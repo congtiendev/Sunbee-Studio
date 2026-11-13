@@ -69,6 +69,7 @@ import type {
   CapcutExportRequest,
   CapcutExportResponse,
   EditPlanResponse,
+  EditRecipeChoices,
   EditStyleLearnRequest,
   EditStyleLearnResponse,
 } from "@shared/edit-plan";
@@ -420,6 +421,8 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify(req),
       }),
+    /** CapCut built-ins and sound-effect categories a recipe can use. */
+    recipeChoices: (): Promise<EditRecipeChoices> => request("/api/edit-plan/recipe-choices"),
     /** An editing skill learned from a sample video link (download, measure, AI read — about a minute). */
     learnStyle: (req: EditStyleLearnRequest): Promise<EditStyleLearnResponse> =>
       request("/api/edit-plan/learn-style", {

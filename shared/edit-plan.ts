@@ -14,7 +14,8 @@ export interface EditPlanWarning {
     | "skippedMedia"
     | "noNarration"
     | "downloadFailed"
-    | "spriteGrid";
+    | "spriteGrid"
+    | "sfxMissing";
   sceneIndex?: number;
   shotOrder?: number;
   /** The asset's description, or a count / detail depending on `code`. */
@@ -57,6 +58,15 @@ export interface CapcutExportResponse {
   folderPath: string;
   durationMs: number;
   warnings: EditPlanWarning[];
+}
+
+/** What a recipe can pick from: CapCut built-ins (by catalog key) and the library's sound-effect categories. */
+export interface EditRecipeChoices {
+  intros: { key: string; name: string; durationMs?: number }[];
+  transitions: { key: string; name: string; durationMs?: number }[];
+  effects: { key: string; name: string }[];
+  /** Sound-effect pack categories; `installed` = its sounds are in the user's library (usable now). */
+  sfxCategories: { id: string; title: string; installed: boolean }[];
 }
 
 /** What was measured on a sample video without AI (see `server/modules/edit-plan/learn/measure.ts`). */

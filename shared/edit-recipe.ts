@@ -40,6 +40,37 @@ export interface EditRecipe {
   subtitles: { enabled: boolean };
   /** Background music level relative to the voice, in dB (e.g. -20 = well under it). */
   music: { volumeDb: number };
+  /**
+   * CapCut's own built-ins (keys from its catalog, e.g. "in:Zoom_In",
+   * "transition:Flash", "scene:Shake"); null = not used. An intro set here
+   * replaces the keyframed reveal for those elements.
+   */
+  capcut: {
+    revealIntro: string | null;
+    textIntro: string | null;
+    /** On scene changes only (never every cut), at most one per `transitionMinGapSec`. */
+    sceneTransition: string | null;
+    transitionMinGapSec: number;
+    /** Over the first moments of a scene marked as a hero moment. */
+    heroEffect: string | null;
+    heroEffectMs: number;
+  };
+  /**
+   * Sound effects from the library's sound-effect packs (category ids, e.g.
+   * "whooshes", "pops"); null = none for that event. `smart` picks a sound
+   * from what an element is (a phone notification → "notifications"…).
+   */
+  sfx: {
+    enabled: boolean;
+    sceneChange: string | null;
+    reveal: string | null;
+    hero: string | null;
+    smart: boolean;
+    /** Level relative to the voice (dB). */
+    volumeDb: number;
+    /** Sparse on purpose: never more than this many a minute, and ≥ 1.2 s apart. */
+    maxPerMinute: number;
+  };
 }
 
 /** "pop": from small and see-through, overshooting a little, settling at full size. */
@@ -55,10 +86,30 @@ export const DEFAULT_EDIT_RECIPE: EditRecipe = {
   text: { animation: "none", durationMs: 200 },
   subtitles: { enabled: true },
   music: { volumeDb: -20 },
+  capcut: {
+    revealIntro: null,
+    textIntro: null,
+    sceneTransition: null,
+    transitionMinGapSec: 45,
+    heroEffect: null,
+    heroEffectMs: 400,
+  },
+  sfx: {
+    enabled: false,
+    sceneChange: null,
+    reveal: null,
+    hero: null,
+    smart: true,
+    volumeDb: -12,
+    maxPerMinute: 6,
+  },
 };
 
 const clamp = (value: unknown, min: number, max: number, fallback: number) =>
   typeof value === "number" && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
+
+/** A catalog/category key, or null for "not used". */
+const key = (value: unknown): string | null => (typeof value === "string" && value.trim() ? value.trim() : null);
 
 const pick = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
   allowed.includes(value as T) ? (value as T) : fallback;
@@ -86,5 +137,22 @@ export function normalizeEditRecipe(value: unknown): EditRecipe {
     },
     subtitles: { enabled: typeof v.subtitles?.enabled === "boolean" ? v.subtitles.enabled : d.subtitles.enabled },
     music: { volumeDb: clamp(v.music?.volumeDb, -40, 0, d.music.volumeDb) },
+    capcut: {
+      revealIntro: key(v.capcut?.revealIntro),
+      textIntro: key(v.capcut?.textIntro),
+      sceneTransition: key(v.capcut?.sceneTransition),
+      transitionMinGapSec: clamp(v.capcut?.transitionMinGapSec, 0, 600, d.capcut.transitionMinGapSec),
+      heroEffect: key(v.capcut?.heroEffect),
+      heroEffectMs: Math.round(clamp(v.capcut?.heroEffectMs, 100, 5000, d.capcut.heroEffectMs)),
+    },
+    sfx: {
+      enabled: typeof v.sfx?.enabled === "boolean" ? v.sfx.enabled : d.sfx.enabled,
+      sceneChange: key(v.sfx?.sceneChange),
+      reveal: key(v.sfx?.reveal),
+      hero: key(v.sfx?.hero),
+      smart: typeof v.sfx?.smart === "boolean" ? v.sfx.smart : d.sfx.smart,
+      volumeDb: clamp(v.sfx?.volumeDb, -40, 0, d.sfx.volumeDb),
+      maxPerMinute: Math.round(clamp(v.sfx?.maxPerMinute, 0, 30, d.sfx.maxPerMinute)),
+    },
   };
 }
