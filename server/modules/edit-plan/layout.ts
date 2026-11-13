@@ -22,6 +22,8 @@ export interface CutoutPlacement {
   below?: string;
   /** "căn lề trái cùng cột": left edge lined up with the element it sits under. */
   alignLeft: boolean;
+  /** "bên phải dòng “X”": right beside the element whose words quote X, on that side. */
+  beside?: { words: string; side: "left" | "right" };
 }
 
 const WORD_SHARES: Record<string, number> = {
@@ -113,7 +115,9 @@ export function parsePlacement(text: string | undefined): CutoutPlacement {
     y = Math.max(-1, 1 - size);
   }
   const below = /dưới (?:dòng|chữ|câu)\s*[“"]([^”"]+)[”"]/.exec(t)?.[1];
-  return { x, y, size, axis, sized: sized !== null, below, alignLeft: /căn (?:lề )?trái/.test(t) };
+  const next = /(?:bên |phía |cạnh )?(phải|trái) (?:của )?(?:dòng|chữ|câu)\s*[“"]([^”"]+)[”"]/.exec(t);
+  const beside = next ? { words: next[2]!, side: next[1] === "trái" ? ("left" as const) : ("right" as const) } : undefined;
+  return { x, y, size, axis, sized: sized !== null, below, beside, alignLeft: /căn (?:lề )?trái/.test(t) };
 }
 
 /**
@@ -166,7 +170,7 @@ export function fitInside(
   };
 }
 
-/** A layer's half-extents on screen (half-canvas units), "contain"-fitted at its scale. */
+/** A layer's half-extents on screen in half-canvas units (= its full width/height as a share of the frame), "contain"-fitted at its scale. */
 export function halfExtents(base: ClipTransform, image: { width: number; height: number }, canvas: { width: number; height: number }) {
   const contain = Math.min(canvas.width / image.width, canvas.height / image.height);
   return {

@@ -68,7 +68,7 @@ import {
 import { blobToDataUrl, sceneContextOf } from "./scene-context";
 import { trimToSubject } from "./trim-image";
 import { describeShotForAi, shotOf } from "@shared/shots";
-import { needsImage } from "@shared/types";
+import { isRealPhoto, needsImage } from "@shared/types";
 import {
   defaultModelFor,
   type AnalyzeProvider,
@@ -87,6 +87,8 @@ interface PromptGroup {
   /** Roster characters/objects this request's description names — their reference photos (if any) ground the generated prompt. */
   entries: (RecurringCharacter | RecurringObject)[];
   prompt?: string;
+  /** When the prompt was written — newer than the image picked for it means that image is out of date. */
+  promptUpdatedAt?: string;
   /** Whole frame or transparent cutout — the AI's call with the prompt, unless the user picked one. */
   layer?: ImageLayer;
   /** The user picked `layer` by hand; the next prompt is written for it. */
@@ -101,6 +103,7 @@ interface PromptGroup {
 interface SavedPrompt {
   prompt: string;
   layer?: ImageLayer;
+  updatedAt?: string;
 }
 
 /** Deduped prompt groups: identical-wording required assets across scenes collapse into one. */
@@ -123,7 +126,7 @@ function groupRequiredAssets(
       );
     inShotOrder.forEach(({ asset, assetIndex }) => {
       // Prompts are for pictures to generate: not editor text (CapCut writes it), not real photos (researched).
-      if (!needsImage(asset) || asset.source === "stock") return;
+      if (!needsImage(asset) || isRealPhoto(asset)) return;
       const normalized = asset.description.trim().toLowerCase();
       if (!normalized) return;
       const existing = byNormalized.get(normalized);
@@ -175,6 +178,7 @@ function withSavedPrompts(
     return {
       ...group,
       prompt: found.prompt,
+      promptUpdatedAt: found.updatedAt,
       layer: found.layer ?? group.layer,
     };
   });
@@ -329,7 +333,7 @@ export default function BatchPromptDialog({
           .filter((r) => r.frameRatio === frameRatio)
           .map((r) => [
             promptKeyOf(r.description),
-            { prompt: r.prompt, layer: r.layer },
+            { prompt: r.prompt, layer: r.layer, updatedAt: r.updatedAt },
           ]),
       );
       setSavedPrompts(saved);
@@ -377,6 +381,27 @@ export default function BatchPromptDialog({
     }
     return map;
   }, [groups, pickedBySlot]);
+  // Images to make again although one is picked: its prompt or description
+  // changed after it was picked, or the user asked for a new one here.
+  const [redoMarks, setRedoMarks] = useState<ReadonlyMap<string, boolean>>(() => new Map());
+  const redo = useMemo(() => {
+    const keys = new Set<string>();
+    for (const group of groups) {
+      if (!imported.has(group.key)) continue;
+      const mark = redoMarks.get(group.key);
+      const stale = group.slots.some((slot) => {
+        const pick = pickedBySlot.get(slot.assetId);
+        if (!pick) return false;
+        const changedText = pick.assetDescription.trim() !== group.description.trim();
+        const newerPrompt = Boolean(group.promptUpdatedAt && group.promptUpdatedAt > pick.createdAt);
+        return changedText || newerPrompt;
+      });
+      if (mark ?? stale) keys.add(group.key);
+    }
+    return keys;
+  }, [groups, imported, pickedBySlot, redoMarks]);
+  const toggleRedo = (key: string) =>
+    setRedoMarks((prev) => new Map(prev).set(key, !redo.has(key)));
   /** Code → the untrimmed file, for items whose import was cropped — so "use the original" can undo it. */
   const [originals, setOriginals] = useState<ReadonlyMap<string, File>>(
     () => new Map(),
@@ -732,7 +757,7 @@ export default function BatchPromptDialog({
           prev.map((g) => {
             const written = byKey.get(g.key);
             return written
-              ? { ...g, prompt: written.prompt, layer: written.layer }
+              ? { ...g, prompt: written.prompt, promptUpdatedAt: new Date().toISOString(), layer: written.layer }
               : g;
           }),
         );
@@ -785,12 +810,18 @@ export default function BatchPromptDialog({
   // Code order (p1, p2… = scene order) everywhere ChatGPT or "assign in order"
   // is involved — the tabs only split the list for reading.
   const orderedGroups = groups;
+  // The pack holds only the images still missing or to redo — ones already
+  // made stay in use when the script, shots or prompts change; codes stay the
+  // same (p7 is p7 whatever else is in the pack), so "assign in order" still
+  // lines up (it fills the codes still missing or to redo).
+  const packGroups = orderedGroups.filter((group) => !imported.has(group.key) || redo.has(group.key));
+  const packReady = packGroups.length > 0 && packGroups.every((group) => group.prompt);
   const packInput = (
     characterImages: PackInput["characterImages"] = [],
   ): PackInput => ({
     range,
     frameRatio,
-    groups: orderedGroups.map((group) => ({
+    groups: packGroups.map((group) => ({
       key: group.key,
       description: group.description,
       sceneContext: group.sceneContext,
@@ -808,10 +839,10 @@ export default function BatchPromptDialog({
     instructionsOverride: instructionsOverride ?? undefined,
   });
 
-  // Every roster character/object named in this range, once.
+  // Every roster character/object named in the pack, once.
   const rangeEntries = [
     ...new Map(
-      groups.flatMap((g) => g.entries).map((entry) => [entry.name, entry]),
+      packGroups.flatMap((g) => g.entries).map((entry) => [entry.name, entry]),
     ).values(),
   ];
   // For listing the pack's files before the photos are fetched (names only).
@@ -918,20 +949,33 @@ export default function BatchPromptDialog({
             <span
               className={cn(
                 "ms-auto inline-flex shrink-0 items-center gap-1 text-[11px]",
-                image || group.prompt
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-gray-400 dark:text-gray-500",
+                image && redo.has(group.key)
+                  ? "text-amber-600 dark:text-amber-400"
+                  : image || group.prompt
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-gray-400 dark:text-gray-500",
               )}
             >
-              {(image || group.prompt) && <CheckIcon className="size-3" />}
+              {(image || group.prompt) && !redo.has(group.key) && <CheckIcon className="size-3" />}
               {t(
                 image
-                  ? "statusImage"
+                  ? redo.has(group.key)
+                    ? "statusRedo"
+                    : "statusImage"
                   : group.prompt
                     ? "statusReady"
                     : "statusPending",
               )}
             </span>
+            {image && (
+              <button
+                type="button"
+                className="shrink-0 text-[11px] font-medium text-gray-500 underline-offset-2 hover:text-brand-500 hover:underline dark:text-gray-400"
+                onClick={() => toggleRedo(group.key)}
+              >
+                {t(redo.has(group.key) ? "keepImage" : "redoImage")}
+              </button>
+            )}
             <Button
               type="button"
               size="icon-xs"
@@ -1421,7 +1465,7 @@ export default function BatchPromptDialog({
                 <Button
                   type="button"
                   className="gap-1.5"
-                  disabled={packing || generating || !allPromptsReady}
+                  disabled={packing || generating || !packReady}
                   onClick={() => void downloadPack()}
                 >
                   {packing ? <Spinner /> : <DownloadIcon className="size-4" />}
@@ -1434,7 +1478,7 @@ export default function BatchPromptDialog({
                   className="h-auto"
                   title={t("copyAll")}
                   aria-label={t("copyAll")}
-                  disabled={generating || copyingAll || !allPromptsReady}
+                  disabled={generating || copyingAll || !packReady}
                   onClick={() => void copyAll()}
                 >
                   {copyingAll ? (
@@ -1446,11 +1490,17 @@ export default function BatchPromptDialog({
                   )}
                 </Button>
               </div>
-              {!allPromptsReady && groups.length > 0 ? (
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {t("packOnlyMissing", {
+                  count: packGroups.length,
+                  kept: groups.length - packGroups.length,
+                })}
+              </p>
+              {!packReady && packGroups.length > 0 ? (
                 <div className="space-y-1">
                   <p className="text-xs text-amber-600 dark:text-amber-400">
                     {t("packNeedsPrompts", {
-                      count: groups.length - generatedCount,
+                      count: packGroups.filter((group) => !group.prompt).length,
                     })}
                   </p>
                   <button
@@ -1559,7 +1609,7 @@ export default function BatchPromptDialog({
                   key: group.key,
                   label: `${group.key} · ${sceneList(group)}`,
                 }))}
-                imported={new Set(imported.keys())}
+                imported={new Set([...imported.keys()].filter((key) => !redo.has(key)))}
                 onAssign={assignImage}
                 onDone={onImported}
                 disabled={groups.length === 0}

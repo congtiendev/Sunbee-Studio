@@ -30,13 +30,13 @@ const PARALLEL_CALLS = 3;
 const MAX_PER_SHEET = 16;
 
 /** The smallest square-ish grid holding n icons. */
-function gridFor(n: number): { cols: number; rows: number } {
+export function gridFor(n: number): { cols: number; rows: number } {
   const cols = Math.ceil(Math.sqrt(n));
   return { cols, rows: Math.ceil(n / cols) };
 }
 
 /** How a sheet is described to the image prompt writer (and read back by the edit plan: cell count and grid). */
-function sheetDescription(labels: string[]): string {
+export function sheetDescription(labels: string[]): string {
   const { cols, rows } = gridFor(labels.length);
   return (
     `Sticker sheet ${labels.length} ô (${cols}×${rows}): bộ icon minh hoạ cùng một phong cách với video, ` +

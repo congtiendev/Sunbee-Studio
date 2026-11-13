@@ -43,7 +43,7 @@ import {
   FRAME_RATIOS,
   isFrameRatio,
 } from "@shared/frame-ratio";
-import { isEditorText, type FrameRatio } from "@shared/types";
+import { isEditorText, isRealPhoto, type FrameRatio } from "@shared/types";
 import type { StepComponentProps } from "../registry";
 import { useStepSave } from "../step-save";
 import BatchPromptDialog from "./batch-prompt-dialog";
@@ -650,10 +650,10 @@ export default function AssetsStep({
                                         ) : (
                                           <Badge
                                             variant="light"
-                                            color={asset.source === "stock" ? "primary" : "info"}
+                                            color={isRealPhoto(asset) ? "primary" : "info"}
                                             size="sm"
                                           >
-                                            {t(`assetSources.${asset.source}`)}
+                                            {isRealPhoto(asset) ? t("realPhoto") : t(`assetSources.${asset.source}`)}
                                           </Badge>
                                         )}
                                         {asset.layer && (

@@ -273,6 +273,11 @@ export interface ShotSticker {
   cell: number;
   /** What the icon is (for people reading the plan). */
   label: string;
+  /**
+   * Where it goes, when not just beside the speaker: e.g. "bên phải dòng “Ai từng
+   * quen ai”" — next to that line of text, coming on with it.
+   */
+  placement?: string;
 }
 
 export type RequiredAssetType = "image" | "video" | "audio" | "graphic";
@@ -311,6 +316,15 @@ export interface RequiredAsset {
 /** Words the editor writes itself (CapCut text), not a picture. */
 export function isEditorText(asset: Pick<RequiredAsset, "type" | "text">): boolean {
   return asset.type === "graphic" && Boolean(asset.text?.trim());
+}
+
+/**
+ * A real photo to find with research, never generated: its description starts
+ * with "Ảnh thật" (the analysis marks it so). Plain backgrounds marked "stock"
+ * aren't — they're still drawn.
+ */
+export function isRealPhoto(asset: Pick<RequiredAsset, "type" | "description">): boolean {
+  return asset.type === "image" && /^ảnh thật/i.test(asset.description.trim());
 }
 
 /** An asset that needs a picture found or generated (images and drawn graphics — not editor text, audio or video). */

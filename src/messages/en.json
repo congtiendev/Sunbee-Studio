@@ -1667,10 +1667,14 @@
         "enrich": "Add stickers & key words (scenes {from}–{to})",
         "enriching": "Adding stickers & key words…",
         "enrichHint": "For shots where the speaker is alone on a plain backdrop: icons that pop in beside them and a key phrase from the narration. The icons come as sticker sheets (one image per up to 16 icons) to generate like the other images; the edit plan places them.",
-        "enrichDone": "Added {stickers, plural, one {# sticker} other {# stickers}} on {sheets, plural, one {# sheet} other {# sheets}}, {photos, plural, one {# real photo} other {# real photos}} to search and {callouts, plural, one {# key phrase} other {# key phrases}}. Generate the sticker sheets with the other prompts below; find the real photos with Research."
+        "enrichDone": "Added {stickers, plural, one {# sticker} other {# stickers}} on {sheets, plural, one {# sheet} other {# sheets}}, {photos, plural, one {# real photo} other {# real photos}} to search and {callouts, plural, one {# key phrase} other {# key phrases}}. Generate the sticker sheets with the other prompts below; find the real photos with Research.",
+        "packOnlyMissing": "The pack has the {count, plural, one {# image} other {# images}} still missing or to redo; the {kept} already made stay as they are. An image is to redo when its prompt or description changed after it was picked (or you mark it).",
+        "statusRedo": "To redo",
+        "redoImage": "Redo",
+        "keepImage": "Keep"
       },
       "assetSources": {
-        "stock": "Real photo — search",
+        "stock": "Stock",
         "generate": "Generate",
         "provided": "Provided"
       },
@@ -1746,7 +1750,8 @@
       },
       "techniqueLabel": "Camera & transition",
       "editorText": "Text (CapCut)",
-      "editorTextHint": "Written with CapCut's text tool when the edit is built — no image needed."
+      "editorTextHint": "Written with CapCut's text tool when the edit is built — no image needed.",
+      "realPhoto": "Real photo — search"
     },
     "library": {
       "pageTitle": "Media library",

@@ -14,7 +14,7 @@ import {
   type TimelineMedia,
   type VisualClip,
 } from "../../../shared/timeline.js";
-import { isEditorText } from "../../../shared/types.js";
+import { isEditorText, isRealPhoto } from "../../../shared/types.js";
 import type { RequiredAsset, SceneResource, SceneShot, ScriptAnalysisRecord, User } from "../../../shared/types.js";
 import { capcutRef } from "../../services/capcut/lookup.js";
 import { probeMedia } from "../../services/capcut/probe.js";
@@ -219,6 +219,11 @@ function beatOf(asset: RequiredAsset): { k: number; n: number } | null {
   return k >= 1 && n >= 2 && k <= n ? { k, n } : null;
 }
 
+/** The words an element shows or is described by, lower-cased — what "dưới/bên phải dòng “X”" refers to. */
+function wordsOf(asset: RequiredAsset): string {
+  return `${asset.text ?? ""} ${asset.description}`.normalize("NFC").toLowerCase();
+}
+
 /** Words compared as the same line of text: case, quotes and spacing aside. */
 function normalizedWords(text: string): string {
   return text.normalize("NFC").toLowerCase().replace(/[“”"]/g, "").replace(/\s+/g, " ").trim();
@@ -382,7 +387,7 @@ export async function buildEditPlan(
       warnings.push({ code: "spriteGrid", sceneIndex, shotOrder, detail: asset.description });
     }
     // A real photo laid over the frame: a print with a white border.
-    if (asset.layer === "cutout" && asset.source === "stock") {
+    if (asset.layer === "cutout" && isRealPhoto(asset)) {
       const card = await photoCard({ ...image, cacheKey: image.fileId });
       if (card) return { paths: [card.path], width: card.width, height: card.height, photo: true };
     }
@@ -676,7 +681,7 @@ export async function buildEditPlan(
         }
         // "dưới dòng “X”": right under that line, in its column.
         const refIndex = placement.below
-          ? cutouts.findIndex((c, j) => j < placedBases.length && c.asset.description.toLowerCase().includes(placement.below!))
+          ? cutouts.findIndex((c, j) => j < placedBases.length && wordsOf(c.asset).includes(placement.below!))
           : -1;
         if (refIndex >= 0) {
           const ref = placedBases[refIndex]!;
@@ -751,7 +756,7 @@ export async function buildEditPlan(
         if (media.text) {
           const box = halfExtents(bases[i]!, media, canvas);
           const lines = media.text.value.split("\n").length;
-          const size = Math.min(0.16, Math.max(0.035, (box.hh * 2) / (lines * LINE_HEIGHT)));
+          const size = Math.min(0.16, Math.max(0.035, box.hh / (lines * LINE_HEIGHT)));
           const start = appearAt(i);
           texts.push({
             id: `s${scene.index}-${shot.order}-c${i + 1}`,
@@ -760,7 +765,7 @@ export async function buildEditPlan(
             text: media.text.value,
             ...animateLayer(knots, { ...bases[i]!, scale: 1 }, start, durationMs, intro),
             style: { size, bold: true, color: media.text.color, strokeColor: media.text.stroke, strokeWidth: 0.12 },
-            maxWidth: Math.min(0.96, box.hw * 2 + 0.06),
+            maxWidth: Math.min(0.96, box.hw + 0.06),
             align: media.text.align,
             origin: { sceneIndex: scene.index, shotOrder: shot.order },
           });
@@ -822,11 +827,35 @@ export async function buildEditPlan(
       }
       // ---- stickers & key words (from "enrich shots"): pop in beside the speaker, one after another ----
       const callouts = cutouts.some((c) => c.asset.type === "graphic") ? [] : (shot.callouts ?? []);
-      const stickers: { media: Media; label: string }[] = [];
+      const stickers: { media: Media; label: string; placement?: string }[] = [];
       for (const sticker of shot.stickers ?? []) {
         const cell = await stickerOf(sticker.sheetAssetId, sticker.cell, scene.index);
-        if (cell) stickers.push({ media: { paths: [cell.path], width: cell.width, height: cell.height }, label: sticker.label });
+        if (cell) {
+          stickers.push({
+            media: { paths: [cell.path], width: cell.width, height: cell.height },
+            label: sticker.label,
+            placement: sticker.placement,
+          });
+        }
       }
+      // A sticker set beside a line of text ("bên phải dòng “X”") sits right next to
+      // it, an icon a bit taller than the line, and comes on with it.
+      const besideOf = (placement: string | undefined, m: Media) => {
+        const beside = placement ? parsePlacement(placement).beside : undefined;
+        const ref = beside ? cutouts.findIndex((c) => wordsOf(c.asset).includes(beside.words.toLowerCase())) : -1;
+        if (!beside || ref < 0) return null;
+        const refBox = halfExtents(bases[ref]!, cutouts[ref]!.media, canvas);
+        const height = Math.min(0.26, Math.max(0.1, refBox.hh * 1.8));
+        const scale = placementScale({ x: 0, y: 0, size: height, axis: "height", sized: true, alignLeft: false }, m, canvas);
+        const box = halfExtents({ ...IDENTITY_TRANSFORM, scale }, m, canvas);
+        const dir = beside.side === "left" ? -1 : 1;
+        const base = fitInside(
+          { ...IDENTITY_TRANSFORM, scale, x: bases[ref]!.x + dir * (refBox.hw + box.hw + 0.03), y: bases[ref]!.y },
+          m,
+          canvas,
+        );
+        return { base, at: appearAt(ref) + 120 };
+      };
       if (!carried && (stickers.length > 0 || callouts.length > 0)) {
         // The free side: away from the speaker (the shot's main subject); a centred speaker gets both sides.
         const speakerX = main >= 0 ? bases[main]!.x : 0;
@@ -844,8 +873,13 @@ export async function buildEditPlan(
           const halfH = box.height / H;
           return { ...IDENTITY_TRANSFORM, x: textSide * 0.5, y: -0.9 + halfH + k * 0.25, scale: 1 / Math.min(W / box.width, H / box.height) };
         });
-        const stickerBases = stickers.map(({ media: m }, k) => {
-          const n = stickers.length;
+        const besides = stickers.map(({ media: m, placement }) => besideOf(placement, m));
+        const free = stickers.filter((_, k) => !besides[k]);
+        const stickerBases = stickers.map(({ media: m }, index) => {
+          const beside = besides[index];
+          if (beside) return beside.base;
+          const k = free.indexOf(stickers[index]!);
+          const n = free.length;
           const scale = Math.min(
             placementScale({ x: 0, y: 0, size: STICKER_HEIGHT, axis: "height", sized: true, alignLeft: false }, m, canvas),
             placementScale({ x: 0, y: 0, size: STICKER_WIDTH, axis: "width", sized: true, alignLeft: false }, m, canvas),
@@ -861,7 +895,7 @@ export async function buildEditPlan(
           [
             ...cutouts.map(({ media: m }, i) => ({ base: bases[i]!, size: m, pinned: true })),
             ...calloutBoxes.map((box, k) => ({ base: calloutBases[k]!, size: box, pinned: true })),
-            ...stickers.map(({ media: m }, k) => ({ base: stickerBases[k]!, size: m })),
+            ...stickers.map(({ media: m }, k) => ({ base: stickerBases[k]!, size: m, pinned: Boolean(besides[k]) })),
           ],
           canvas,
         ).slice(cutouts.length + calloutBoxes.length);
@@ -886,7 +920,9 @@ export async function buildEditPlan(
         const last = Math.round(durationMs * 0.8);
         const nextLayer = cutouts.length + 1 + (insert ? 1 : 0);
         stickers.forEach(({ media: m }, k) => {
-          const at = stickers.length === 1 ? first : first + Math.round(((last - first) * k) / (stickers.length - 1));
+          const j = free.indexOf(stickers[k]!);
+          const at =
+            besides[k]?.at ?? (free.length === 1 ? first : first + Math.round(((last - first) * j) / (free.length - 1)));
           if (at >= durationMs - 200) return;
           pushLayer(
             `s${scene.index}-${shot.order}-k${k + 1}`,
