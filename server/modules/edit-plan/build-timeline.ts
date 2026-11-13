@@ -36,7 +36,7 @@ import {
   TEXT_SAFE_EDGE,
   type LayerIntro,
 } from "./layout.js";
-import { gridFromDescription, gridFromImage, isSpriteSheet, spriteFrames } from "./sprites.js";
+import { gridFromDescription, gridFromImage, isSpriteSheet, spriteFrames, type CutSides } from "./sprites.js";
 
 type Caller = Pick<User, "id" | "role">;
 
@@ -62,8 +62,10 @@ interface Media {
   paths: string[];
   width: number;
   height: number;
-  /** Ends in a straight cut along its bottom row (a bust, a hand from below): it belongs on the frame's bottom edge. */
+  /** Ends in a cut along its bottom row (a bust, a hand from below): it belongs on the frame's bottom edge. */
   cutBottom?: boolean;
+  /** Sides drawn as a straight cut (read off the pixels): each belongs on that edge of the frame. */
+  cut?: CutSides;
 }
 
 /** A character cut off at the waist/chest/shoulders (its cut edge belongs on the frame's bottom). */
@@ -299,15 +301,23 @@ export async function buildEditPlan(
     return result;
   };
 
+  /** What the words say about a cutout's subject, for cutting its frames. */
+  const hintsOf = (asset: RequiredAsset) => {
+    const character = asset.layer === "cutout" && isCharacter(asset);
+    return { character, bust: character && BUST_SHOT.test(`${asset.description} ${asset.placement ?? ""}`) };
+  };
+
   /** A pick as timeline media: its frames when it's a sprite sheet (grid from its description, else read off the image). */
   const mediaOf = async (asset: RequiredAsset, image: LocalImage, sceneIndex: number, shotOrder: number): Promise<Media> => {
     if (isSpriteSheet(asset.description)) {
       const grid = gridFromDescription(asset.description) ?? (await gridFromImage(image.path, image.width, image.height));
-      if (grid) return spriteFrames({ ...image, cacheKey: image.fileId }, grid);
+      if (grid) return spriteFrames({ ...image, cacheKey: image.fileId }, grid, hintsOf(asset));
       warnings.push({ code: "spriteGrid", sceneIndex, shotOrder, detail: asset.description });
     }
-    // A cutout picture: cropped to what's drawn, and checked for a cut edge at its bottom.
-    if (asset.layer === "cutout") return spriteFrames({ ...image, cacheKey: image.fileId }, { cols: 1, rows: 1, frames: 1 });
+    // A cutout picture: cropped to what's drawn, and checked for cut edges.
+    if (asset.layer === "cutout") {
+      return spriteFrames({ ...image, cacheKey: image.fileId }, { cols: 1, rows: 1, frames: 1 }, hintsOf(asset));
+    }
     return { paths: [image.path], width: image.width, height: image.height };
   };
 
@@ -535,9 +545,8 @@ export async function buildEditPlan(
           asset.type === "graphic" && !parsed.sized ? { ...parsed, size: 0.4, axis: "width" as const } : parsed;
         // A full-figure character smaller than ~a third of the frame reads as a speck.
         const character = isCharacter(asset);
-        // Cut off at the bottom — read off the picture itself, else from the words.
-        const cut = asset.type !== "graphic" && media.cutBottom === true;
-        const bust = cut || (character && BUST_SHOT.test(`${asset.description} ${asset.placement ?? ""}`));
+        // Cut off at the bottom — read off the picture itself, or from the words (its frames are cut to match).
+        const bust = asset.type !== "graphic" && media.cutBottom === true;
         const minHeight = bust ? (MIN_CHARACTER_HEIGHT[shot.shotSize] ?? 0.4) : MIN_FIGURE_HEIGHT;
         if (character && placement.axis === "height" && placement.size < minHeight) {
           placement = { ...placement, size: minHeight };
@@ -556,6 +565,17 @@ export async function buildEditPlan(
         if (bust) {
           const box = halfExtents(base, media, canvas);
           base = { ...base, y: Math.round((1 - box.hh + 0.01) * 10000) / 10000 };
+        }
+        // The same for a cut at the top or a side (a face filling the frame from its left edge…).
+        const sideCut = asset.type !== "graphic" && media.cut && (media.cut.top || media.cut.left || media.cut.right);
+        if (sideCut) {
+          const box = halfExtents(base, media, canvas);
+          const edge = (half: number) => Math.round((1 - half + 0.01) * 10000) / 10000;
+          base = {
+            ...base,
+            x: media.cut!.left ? -edge(box.hw) : media.cut!.right ? edge(box.hw) : base.x,
+            y: media.cut!.top && !bust ? -edge(box.hh) : base.y,
+          };
         }
         // "dưới dòng “X”": right under that line, in its column.
         const refIndex = placement.below
@@ -577,7 +597,7 @@ export async function buildEditPlan(
           );
         }
         placedBases.push(base);
-        pinned.push(refIndex >= 0);
+        pinned.push(refIndex >= 0 || Boolean(sideCut));
         // A character standing on (or cut off at) the bottom edge stays on it when moved.
         const box = halfExtents(base, media, canvas);
         grounded.push(bust || (character && base.y + box.hh >= 0.9));

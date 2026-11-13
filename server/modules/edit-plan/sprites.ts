@@ -113,18 +113,30 @@ interface Box {
   bottom: number;
 }
 
-/** One cell of a sheet: where its own drawing may be (`clip`) and what's drawn there (`box`, null when empty). */
-interface Cell {
-  clip: Box;
-  box: Box | null;
+/** Which sides of a picture are a straight cut (the subject continues past the frame there). */
+export interface CutSides {
+  top: boolean;
+  bottom: boolean;
+  left: boolean;
+  right: boolean;
+}
+
+/** What the caller knows about the subject from its words. */
+export interface FrameHints {
+  /** A character: its frames are lined up on its head (AI sheets draw it a little off from cell to cell). */
+  character?: boolean;
+  /** Said to be cut off at the bottom ("trung cảnh ngang hông"): its frames share one bottom line even when a hand hangs lower. */
+  bust?: boolean;
 }
 
 /** Opaque enough to be drawing (not the soft fringe of a transparent background). */
 const DRAWN = 8;
 /** A strip at a cell's edge cut off from the rest by a clear gap, this thin or less, is a neighbour's spill. */
 const SPILL_SHARE = 0.12;
-/** Share of the subject's width that a straight cut must span to count as one (a bust's chest, not two feet). */
+/** Share of a side that a straight cut must span to count as one (a bust's chest, not two feet). */
 const CUT_EDGE_SHARE = 0.45;
+/** A character drawn this far off between frames is a drawing wobble, lined up; further is real movement, left alone. */
+const WOBBLE_SHARE = 0.1;
 
 /**
  * Where a cell's own drawing is: the whole cell minus any thin strip along an
@@ -136,7 +148,6 @@ function clipOf(has: (i: number) => boolean, length: number): [number, number] {
   const limit = Math.round(length * SPILL_SHARE);
   let from = 0;
   let to = length - 1;
-  // From the start: drawing, then a gap, within the limit → skip past the gap.
   let i = 0;
   while (i < limit && !has(i)) i++;
   if (i < limit) {
@@ -154,51 +165,99 @@ function clipOf(has: (i: number) => boolean, length: number): [number, number] {
   return from < to ? [from, to] : [0, length - 1];
 }
 
-/**
- * Whether the subject ends in a straight cut at its bottom (a figure cut off at
- * the chest/waist, a hand coming up from below): its lowest row is one
- * unbroken run of opaque pixels spanning a good part of its width, about as
- * wide as a few rows higher — feet, a round object or a shadow aren't.
- */
-function cutAtBottom(alpha: (x: number, y: number) => number, box: Box): boolean {
-  const run = (y: number) => {
-    let best = 0;
-    let current = 0;
-    for (let x = box.left; x <= box.right; x++) {
-      if (alpha(x, y) > 128) best = Math.max(best, ++current);
-      else current = 0;
-    }
-    return best;
-  };
-  const width = box.right - box.left + 1;
-  const height = box.bottom - box.top + 1;
-  if (height < 8) return false;
-  // A pixel or two above the very last row: anti-aliasing can thin it.
-  const edge = Math.max(run(box.bottom), run(box.bottom - 1));
-  const above = run(Math.max(box.top, box.bottom - Math.round(height * 0.04) - 2));
-  return edge >= width * CUT_EDGE_SHARE && edge >= above * 0.8;
+/** Longest unbroken run of solid pixels along a line. */
+function longestRun(solid: (k: number) => boolean, from: number, to: number): number {
+  let best = 0;
+  let current = 0;
+  for (let k = from; k <= to; k++) {
+    if (solid(k)) best = Math.max(best, ++current);
+    else current = 0;
+  }
+  return best;
 }
 
-/** Bump when the crop rules change, so cached frames are cut again. */
-const CROP_VERSION = 3;
+/**
+ * Which sides of the subject are a straight cut: its outermost line there is
+ * one unbroken run of solid pixels spanning a good part of that side, about as
+ * long as a few lines further in — feet, a round head or a shadow aren't.
+ */
+function cutSidesOf(alpha: (x: number, y: number) => number, box: Box): CutSides {
+  const solid = (x: number, y: number) => alpha(x, y) > 128;
+  const width = box.right - box.left + 1;
+  const height = box.bottom - box.top + 1;
+  const inset = (n: number) => Math.round(n * 0.04) + 2;
+  const row = (y: number) => longestRun((x) => solid(x, y), box.left, box.right);
+  const col = (x: number) => longestRun((y) => solid(x, y), box.top, box.bottom);
+  const cut = (edge: number, inner: number, length: number) => edge >= length * CUT_EDGE_SHARE && edge >= inner * 0.8;
+  if (width < 8 || height < 8) return { top: false, bottom: false, left: false, right: false };
+  return {
+    // A pixel or two in from the very edge: anti-aliasing can thin it.
+    bottom: cut(Math.max(row(box.bottom), row(box.bottom - 1)), row(box.bottom - inset(height)), width),
+    top: cut(Math.max(row(box.top), row(box.top + 1)), row(box.top + inset(height)), width),
+    left: cut(Math.max(col(box.left), col(box.left + 1)), col(box.left + inset(width)), height),
+    right: cut(Math.max(col(box.right), col(box.right - 1)), col(box.right - inset(width)), height),
+  };
+}
+
+/** Horizontal middle of the subject's head: the drawing in the top quarter of its box. */
+function headCenter(alpha: (x: number, y: number) => number, box: Box): number {
+  const rows = Math.max(1, Math.round((box.bottom - box.top + 1) * 0.25));
+  let sum = 0;
+  let count = 0;
+  for (let y = box.top; y < box.top + rows; y++) {
+    for (let x = box.left; x <= box.right; x++) {
+      if (alpha(x, y) > 128) {
+        sum += x;
+        count++;
+      }
+    }
+  }
+  return count ? sum / count : (box.left + box.right) / 2;
+}
 
 /**
- * Cuts a sheet into its frames (equal cells, row by row), each cropped tight to
- * the box that holds the subject in EVERY frame — so its size stays true to its
- * placement (cells carry wide empty margins) and frames don't jump around.
- * Anything a neighbouring cell spilled over the line is left out. A subject
- * cut off at the bottom (a bust) has each frame shifted so its cut is the
- * picture's last row: placed on the frame's bottom edge, it never shows a gap.
- * Cached under `<dataDir>/cache/sprites/<key>/` so a rebuild doesn't redo it.
- * A single picture is a 1×1 sheet: its transparent margins go the same way
- * (and with no transparency at all it's used as it is).
+ * The body's cut line: the lowest row (up from the bottom, within its lower
+ * 40%) drawn solid across a good part of its width — a hand hanging lower is
+ * narrower, and goes past the frame's edge like it would in a real shot.
+ */
+function cutLineOf(alpha: (x: number, y: number) => number, box: Box): number {
+  const width = box.right - box.left + 1;
+  const stop = box.bottom - Math.round((box.bottom - box.top + 1) * 0.4);
+  for (let y = box.bottom; y >= stop; y--) {
+    if (longestRun((x) => alpha(x, y) > 128, box.left, box.right) >= width * CUT_EDGE_SHARE) return y;
+  }
+  return box.bottom;
+}
+
+const median = (values: number[]) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? 0;
+};
+
+/** Bump when the crop rules change, so cached frames are cut again. */
+const CROP_VERSION = 4;
+
+/**
+ * Cuts a sheet into its frames (equal cells, row by row) and crops them tight
+ * to the subject — its size stays true to its placement (cells carry wide
+ * empty margins). Anything a neighbouring cell spilled over the line is left
+ * out. A character's frames are lined up on its head (and, cut off at the
+ * bottom, on its cut), since AI sheets draw it a little off from cell to cell
+ * — played in turn, that reads as jitter; bigger moves (standing up) are kept.
+ * A subject cut off at the bottom (from its pixels, or `hints.bust`) has every
+ * frame's lowest line on the picture's last row: placed on the frame's bottom
+ * edge, it never shows a gap. Cached under `<dataDir>/cache/sprites/<key>/`
+ * so a rebuild doesn't redo it. A single picture is a 1×1 sheet (with no
+ * transparency at all it's used as it is).
  */
 export async function spriteFrames(
   source: { path: string; width: number; height: number; cacheKey: string },
   grid: SpriteGrid,
-): Promise<{ paths: string[]; width: number; height: number; cutBottom: boolean }> {
+  hints: FrameHints = {},
+): Promise<{ paths: string[]; width: number; height: number; cut: CutSides; cutBottom: boolean }> {
+  const none: CutSides = { top: false, bottom: false, left: false, right: false };
   const single = grid.cols * grid.rows === 1;
-  const asIs = { paths: [source.path], width: source.width, height: source.height, cutBottom: false };
+  const asIs = { paths: [source.path], width: source.width, height: source.height, cut: none, cutBottom: false };
   const cellW = Math.floor(source.width / grid.cols);
   const cellH = Math.floor(source.height / grid.rows);
   let data: Buffer;
@@ -211,8 +270,7 @@ export async function spriteFrames(
   const origin = (i: number) => ({ ox: (i % grid.cols) * cellW, oy: Math.floor(i / grid.cols) * cellH });
 
   let transparent = false;
-  let cuts = 0;
-  const cells: Cell[] = [];
+  const frames: { clip: Box; box: Box | null; cut: CutSides; head: number; cutLine: number }[] = [];
   for (let i = 0; i < grid.frames; i++) {
     const { ox, oy } = origin(i);
     const alpha = (x: number, y: number) => data[((oy + y) * source.width + ox + x) * 4 + 3]!;
@@ -241,28 +299,69 @@ export async function spriteFrames(
         }
       }
     }
-    cells.push({ clip, box });
-    if (box && cutAtBottom(alpha, box)) cuts++;
+    frames.push({
+      clip,
+      box,
+      cut: box ? cutSidesOf(alpha, box) : none,
+      head: box ? headCenter(alpha, box) : 0,
+      cutLine: box ? cutLineOf(alpha, box) : 0,
+    });
   }
-  const drawn = cells.map((c) => c.box).filter((b): b is Box => b !== null);
+  const drawn = frames.filter((f) => f.box !== null);
   if (single && (!transparent || drawn.length === 0)) return asIs;
-  // Most frames end in a straight cut: the subject is cut off at the bottom.
-  const cutBottom = drawn.length > 0 && cuts * 2 > drawn.length;
+  // A side is cut when most frames say so.
+  const majority = (side: keyof CutSides) => drawn.length > 0 && drawn.filter((f) => f.cut[side]).length * 2 > drawn.length;
+  const cut: CutSides = { top: majority("top"), bottom: majority("bottom"), left: majority("left"), right: majority("right") };
+  // Straight on both opposite sides is a shape (a card, a screen, a framed photo), not a cut.
+  if (cut.top && cut.bottom) cut.top = cut.bottom = false;
+  if (cut.left && cut.right) cut.left = cut.right = false;
+  const alignBottom = cut.bottom || hints.bust === true;
 
-  // The frame: tight around the subject in every frame (the whole cell when nothing's see-through).
-  const left = drawn.length ? Math.min(...drawn.map((b) => b.left)) : 0;
-  const right = drawn.length ? Math.max(...drawn.map((b) => b.right)) : cellW - 1;
-  const top = drawn.length ? Math.min(...drawn.map((b) => b.top)) : 0;
-  const bottom = drawn.length ? Math.max(...drawn.map((b) => b.bottom)) : cellH - 1;
+  // Each frame's shift onto the others: the head's middle and (cut off) the bottom line, or (whole) the head's top.
+  const shifts = frames.map(() => ({ dx: 0, dy: 0 }));
+  if (drawn.length > 1) {
+    const refX = median(drawn.map((f) => f.head));
+    const refY = alignBottom ? median(drawn.map((f) => f.cutLine)) : median(drawn.map((f) => f.box!.top));
+    frames.forEach((f, i) => {
+      if (!f.box) return;
+      const dx = Math.round(refX - f.head);
+      const dy = Math.round(refY - (alignBottom ? f.cutLine : f.box.top));
+      // Line up a character's wobble; a cut line always; anything else (or a real move) stays as drawn.
+      if (hints.character && Math.abs(dx) <= cellW * WOBBLE_SHARE) shifts[i]!.dx = dx;
+      if (alignBottom || (hints.character && Math.abs(dy) <= cellH * WOBBLE_SHARE)) shifts[i]!.dy = dy;
+    });
+  }
+  // The picture: every frame's subject, shifted, in one box.
+  const placed = frames.map((f, i) =>
+    f.box
+      ? {
+          left: f.box.left + shifts[i]!.dx,
+          right: f.box.right + shifts[i]!.dx,
+          top: f.box.top + shifts[i]!.dy,
+          bottom: f.box.bottom + shifts[i]!.dy,
+        }
+      : null,
+  );
+  const boxes = placed.filter((b): b is Box => b !== null);
+  const left = boxes.length ? Math.min(...boxes.map((b) => b.left)) : 0;
+  const right = boxes.length ? Math.max(...boxes.map((b) => b.right)) : cellW - 1;
+  const top = boxes.length ? Math.min(...boxes.map((b) => b.top)) : 0;
+  // Cut off at the bottom: the shared cut line is the last row (a hand lower than it goes past the edge).
+  const bottom =
+    alignBottom && drawn.length
+      ? median(drawn.map((f) => f.cutLine))
+      : boxes.length
+        ? Math.max(...boxes.map((b) => b.bottom))
+        : cellH - 1;
   const w = right - left + 1;
-  // Cut off at the bottom: tall enough for the tallest frame from its top down to its cut.
-  const h = cutBottom ? Math.max(...drawn.map((b) => b.bottom - b.top + 1)) : bottom - top + 1;
+  const h = bottom - top + 1;
 
+  const tag = `${alignBottom ? "b" : ""}${hints.character ? "c" : ""}`;
   const dir = join(
     dataDir(),
     "cache",
     "sprites",
-    `${source.cacheKey}_${grid.cols}x${grid.rows}_v${CROP_VERSION}_${left}-${top}-${w}x${h}${cutBottom ? "_cut" : ""}`,
+    `${source.cacheKey}_${grid.cols}x${grid.rows}_v${CROP_VERSION}_${left}-${top}-${w}x${h}${tag ? `_${tag}` : ""}`,
   );
   await mkdir(dir, { recursive: true });
   const paths: string[] = [];
@@ -270,15 +369,14 @@ export async function spriteFrames(
     const out = join(dir, `${i + 1}.png`);
     if (!existsSync(out)) {
       const { ox, oy } = origin(i);
-      const { clip, box } = cells[i]!;
-      // Which cell row lands on the frame's first row: a cut-off subject's cut sits on the last row.
-      const startY = cutBottom && box ? box.bottom + 1 - h : top;
+      const { clip } = frames[i]!;
+      const { dx, dy } = shifts[i]!;
       const pixels = Buffer.alloc(w * h * 4);
       for (let y = 0; y < h; y++) {
-        const cy = startY + y;
+        const cy = top + y - dy;
         if (cy < clip.top || cy > clip.bottom) continue;
         for (let x = 0; x < w; x++) {
-          const cx = left + x;
+          const cx = left + x - dx;
           if (cx < clip.left || cx > clip.right) continue;
           const from = ((oy + cy) * source.width + ox + cx) * 4;
           data.copy(pixels, (y * w + x) * 4, from, from + 4);
@@ -288,5 +386,5 @@ export async function spriteFrames(
     }
     paths.push(out);
   }
-  return { paths, width: w, height: h, cutBottom };
+  return { paths, width: w, height: h, cut, cutBottom: alignBottom };
 }
