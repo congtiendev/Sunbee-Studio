@@ -4,11 +4,20 @@ import { createCategory } from "./db/categories-repo.js";
 import { createVideo } from "./db/videos-repo.js";
 import { listScriptAnalyses, saveScriptVersion } from "../modules/script/repo.js";
 import { listTemplates, saveTemplate } from "./db/style-templates-repo.js";
+import {
+  listAssetPrompts,
+  listSceneResources,
+  saveAssetPrompt,
+  setSceneResource,
+} from "../modules/assets/repo.js";
 import { addAnthropicKey, getSettings, setSettings } from "../settings-store.js";
 import type {
+  AssetPromptRecord,
   Category,
   DataExportBundle,
   DataImportResult,
+  SceneResource,
+  ScriptScene,
   Video,
 } from "../../shared/types.js";
 
@@ -67,15 +76,25 @@ function listAllVideosForUser(userId: string): Video[] {
 
 export function buildExport(userId: string): DataExportBundle {
   const settings = getSettings(userId);
+  const videos = listAllVideosForUser(userId);
+  const sceneResources: SceneResource[] = videos.flatMap((video) =>
+    listSceneResources(video.id),
+  );
+  const assetPrompts: (AssetPromptRecord & { videoId: string })[] = videos.flatMap(
+    (video) =>
+      listAssetPrompts(video.id).map((record) => ({ ...record, videoId: video.id })),
+  );
 
   return {
     version: 1,
     exportedAt: new Date().toISOString(),
     projects: listProjects(userId, false),
     categories: listAllCategoriesForUser(userId),
-    videos: listAllVideosForUser(userId),
+    videos,
     scriptAnalyses: listScriptAnalyses(userId, false),
     styleTemplates: listTemplates(userId, false),
+    sceneResources,
+    assetPrompts,
     settings: {
       openaiApiKey: settings.openaiApiKey,
       anthropicApiKeys: settings.anthropicApiKeys,
@@ -325,6 +344,55 @@ export function importBundle(
       if (id) restoreTimestamps("videos", id, video.createdAt, video.updatedAt);
     }
 
+    // Step 2 picks and prompts — both upsert by their own natural key
+    // (video+asset id; video+description), so re-running the same import
+    // just overwrites with the same data instead of duplicating. Imported
+    // versions keep their scenes' asset ids, so a pick's `assetId` still
+    // points at its asset; a backup from before asset ids existed names the
+    // slot by position instead — that position in the video's newest
+    // analyzed version (what the Assets step showed then).
+    const newestAnalyzedScenes = new Map<string, ScriptScene[]>();
+    const assetAt = (videoId: string, sceneIndex?: number, assetIndex?: number): string | undefined => {
+      if (sceneIndex === undefined || assetIndex === undefined) return undefined;
+      if (!newestAnalyzedScenes.has(videoId)) {
+        const row = db
+          .prepare(
+            "SELECT scenes_json FROM script_analyses WHERE video_id = ? AND kind = 'analyzed' ORDER BY created_at DESC LIMIT 1",
+          )
+          .get(videoId) as { scenes_json: string } | undefined;
+        newestAnalyzedScenes.set(videoId, row ? (JSON.parse(row.scenes_json) as ScriptScene[]) : []);
+      }
+      return newestAnalyzedScenes.get(videoId)!.find((s) => s.index === sceneIndex)?.requiredAssets[assetIndex]?.id;
+    };
+    let newSceneResources = 0;
+    for (const pick of bundle.sceneResources ?? []) {
+      const videoId = videoIdMap.get(pick.videoId);
+      if (!videoId) continue;
+      const legacy = pick as Partial<SceneResource> & { sceneIndex?: number; assetIndex?: number };
+      const assetId = legacy.assetId ?? assetAt(videoId, legacy.sceneIndex, legacy.assetIndex);
+      if (!assetId) continue;
+      setSceneResource(userId, {
+        videoId,
+        assetId,
+        assetDescription: pick.assetDescription,
+        candidate: pick.candidate,
+      });
+      newSceneResources++;
+    }
+    let newAssetPrompts = 0;
+    for (const record of bundle.assetPrompts ?? []) {
+      const videoId = videoIdMap.get(record.videoId);
+      if (!videoId) continue;
+      saveAssetPrompt(userId, {
+        videoId,
+        description: record.description,
+        prompt: record.prompt,
+        frameRatio: record.frameRatio,
+        layer: record.layer,
+      });
+      newAssetPrompts++;
+    }
+
     if (bundle.settings.openaiApiKey) {
       setSettings(userId, { openaiApiKey: bundle.settings.openaiApiKey });
     }
@@ -348,6 +416,8 @@ export function importBundle(
       videos: newVideos,
       scriptAnalyses: newScriptAnalyses,
       styleTemplates: newStyleTemplates,
+      sceneResources: newSceneResources,
+      assetPrompts: newAssetPrompts,
       anthropicKeys,
       openaiKeyImported: Boolean(bundle.settings.openaiApiKey),
       recoveredCategories,

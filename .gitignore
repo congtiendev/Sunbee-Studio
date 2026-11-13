@@ -19,6 +19,10 @@ release
 # Local server runtime data (SQLite DB, encrypted settings, encryption key)
 data/
 
+# Python bytecode cache (server/services/voice/python/)
+__pycache__/
+*.pyc
+
 # Environment variables
 .env
 .env.*

@@ -148,7 +148,8 @@
       "documents": "Tài liệu",
       "skills": "Skill (phong cách AI)",
       "training": "Huấn luyện AI",
-      "voices": "Giọng nói"
+      "voices": "Giọng nói",
+      "soundEffects": "Hiệu ứng âm thanh"
     }
   },
   "header": {
@@ -1171,7 +1172,7 @@
       "description": "Xuất dự án, video, bản phân tích kịch bản, skill và API key ra một file — nhập file đó trên máy khác để mang dữ liệu theo.",
       "exportButton": "Xuất dữ liệu",
       "importButton": "Nhập dữ liệu",
-      "importSummary": "Đã nhập {projects} dự án, {categories} danh mục, {videos} video, {scriptAnalyses} bản phân tích, {styleTemplates} skill, {anthropicKeys} key Claude.",
+      "importSummary": "Đã nhập {projects} dự án, {categories} danh mục, {videos} video, {scriptAnalyses} bản phân tích, {styleTemplates} skill, {sceneResources} tài nguyên đã chọn, {assetPrompts} prompt ảnh, {anthropicKeys} key Claude.",
       "warning": "File xuất ra chứa API key ở dạng văn bản thường. Hãy cất giữ riêng tư và không chia sẻ.",
       "importOpenaiKey": "Đã nhập cả OpenAI key.",
       "importRecovered": "{categories} danh mục và {videos} video không còn dự án/danh mục gốc trong file đã được đưa vào dự án “Khôi phục từ sao lưu”.",
@@ -2323,6 +2324,27 @@
       "working": "Đang xử lý…",
       "workingHint": "Có thể mất vài phút trên máy này.",
       "useThisButton": "Dùng đoạn này"
+    }
+  },
+  "soundEffects": {
+    "pageTitle": "Hiệu ứng âm thanh",
+    "pageDescription": "Thêm các gói hiệu ứng âm thanh có sẵn (CC0, dùng thương mại được) hoặc tự tải lên, chia sẵn theo danh mục.",
+    "deleteButton": "Xoá",
+    "deleteTitle": "Xoá âm thanh này?",
+    "deleteDescription": "\"{name}\" sẽ bị xoá.",
+    "packs": {
+      "title": "Gói có sẵn",
+      "empty": "Hiện chưa có gói nào.",
+      "soundCount": "{count, plural, other {# âm thanh}}",
+      "folderCount": "{count, plural, other {# danh mục}}",
+      "installButton": "Thêm",
+      "installedBadge": "Đã thêm"
+    },
+    "library": {
+      "title": "Âm thanh của bạn",
+      "empty": "Chưa có âm thanh nào — thêm một gói có sẵn ở trên, hoặc tự tải lên ở Kho media.",
+      "allCategories": "Tất cả ({count})",
+      "uncategorized": "Chưa phân loại"
     }
   }
 }

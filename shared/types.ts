@@ -708,6 +708,10 @@ export interface DataExportBundle {
   videos: Video[];
   scriptAnalyses: ScriptAnalysisRecord[];
   styleTemplates: StyleTemplate[];
+  /** Step 2 picks (which candidate was chosen for each scene's required asset). Image files themselves aren't backed up. */
+  sceneResources: SceneResource[];
+  /** Step 2's cached written prompts, with the video they belong to (not on `AssetPromptRecord` itself). */
+  assetPrompts: (AssetPromptRecord & { videoId: string })[];
   settings: {
     openaiApiKey?: string;
     anthropicApiKeys?: NamedApiKey[];
@@ -721,6 +725,8 @@ export interface DataImportResult {
   videos: number;
   scriptAnalyses: number;
   styleTemplates: number;
+  sceneResources: number;
+  assetPrompts: number;
   anthropicKeys: number;
   openaiKeyImported: boolean;
   /** Categories whose project wasn't in the backup, put into a recovery project. */
@@ -901,12 +907,34 @@ export interface LibraryAsset {
   fileId: string;
   mediaType: LibraryMediaType;
   name: string;
+  /** Folder-like grouping, mainly used for sound effects (e.g. "whooshes"); free-form, unset for most assets. */
+  category?: string;
   tags: string[];
   description: string;
   mime: string;
   size: number;
   createdAt: string;
   ownerEmail?: string;
+  /** The catalog pack (see `SoundEffectPack`) this was installed from, if any. */
+  sourcePackId?: string;
+}
+
+/**
+ * A ready-made sound-effect pack listed in the catalog
+ * (`server/modules/assets/sound-effects/`) that the user can add to their
+ * library with one click — a whole category's worth of sounds at once.
+ */
+export interface SoundEffectPack {
+  /** `sfxkit:<category>` or `kenney:<slug>` — also what `POST /sound-packs/:id/install` takes. */
+  id: string;
+  title: string;
+  description?: string;
+  /** How many sounds this pack adds. */
+  soundCount: number;
+  source: "SFX Kit (Wyzowl)" | "Kenney.nl";
+  license: string;
+  /** Whether the caller already installed this pack (at least one asset with this `sourcePackId`). */
+  installed: boolean;
 }
 
 /**

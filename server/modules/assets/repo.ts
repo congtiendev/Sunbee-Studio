@@ -19,6 +19,8 @@ interface AssetRow {
   file_id: string;
   media_type: LibraryMediaType;
   name: string;
+  category: string | null;
+  source_pack_id: string | null;
   tags_json: string;
   description: string;
   created_at: string;
@@ -33,18 +35,20 @@ function rowToAsset(row: AssetRow): LibraryAsset {
     fileId: row.file_id,
     mediaType: row.media_type,
     name: row.name,
+    category: row.category ?? undefined,
     tags: JSON.parse(row.tags_json) as string[],
     description: row.description,
     mime: row.mime,
     size: row.size,
     createdAt: row.created_at,
     ownerEmail: row.owner_email ?? undefined,
+    sourcePackId: row.source_pack_id ?? undefined,
   };
 }
 
 const ASSET_SELECT = `
-  SELECT a.id, a.user_id, a.file_id, a.media_type, a.name, a.tags_json, a.description, a.created_at,
-         f.mime, f.size, u.email AS owner_email
+  SELECT a.id, a.user_id, a.file_id, a.media_type, a.name, a.category, a.source_pack_id,
+         a.tags_json, a.description, a.created_at, f.mime, f.size, u.email AS owner_email
   FROM assets a
   JOIN files f ON f.id = a.file_id
   LEFT JOIN users u ON u.id = a.user_id
@@ -52,25 +56,44 @@ const ASSET_SELECT = `
 
 export function createLibraryAsset(
   userId: string,
-  input: { fileId: string; mediaType: LibraryMediaType; name: string; tags: string[]; description: string },
+  input: {
+    fileId: string;
+    mediaType: LibraryMediaType;
+    name: string;
+    tags: string[];
+    description: string;
+    category?: string;
+    sourcePackId?: string;
+  },
 ): string {
   const id = randomUUID();
   getDb()
     .prepare(
-      `INSERT INTO assets (id, user_id, file_id, media_type, name, tags_json, description, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO assets (id, user_id, file_id, media_type, name, category, source_pack_id, tags_json, description, created_at)
+       VALUES (@id, @user_id, @file_id, @media_type, @name, @category, @source_pack_id, @tags_json, @description, @created_at)`,
     )
-    .run(
+    .run({
       id,
-      userId,
-      input.fileId,
-      input.mediaType,
-      input.name,
-      JSON.stringify(input.tags),
-      input.description,
-      new Date().toISOString(),
-    );
+      user_id: userId,
+      file_id: input.fileId,
+      media_type: input.mediaType,
+      name: input.name,
+      category: input.category ?? null,
+      source_pack_id: input.sourcePackId ?? null,
+      tags_json: JSON.stringify(input.tags),
+      description: input.description,
+      created_at: new Date().toISOString(),
+    });
   return id;
+}
+
+/** Whether `sourcePackId` was already installed for this user (install is idempotent). */
+export function countAssetsBySourcePack(userId: string, sourcePackId: string): number {
+  return (
+    getDb()
+      .prepare("SELECT COUNT(*) AS n FROM assets WHERE user_id = ? AND source_pack_id = ?")
+      .get(userId, sourcePackId) as { n: number }
+  ).n;
 }
 
 export function getLibraryAsset(userId: string, isAdmin: boolean, id: string): LibraryAsset | null {
@@ -114,7 +137,7 @@ export function deleteLibraryAsset(userId: string, isAdmin: boolean, id: string)
 export function searchLibrary(
   userId: string,
   isAdmin: boolean,
-  options: { query?: string; mediaType?: LibraryMediaType; limit?: number } = {},
+  options: { query?: string; mediaType?: LibraryMediaType; category?: string; limit?: number } = {},
 ): LibraryAsset[] {
   const where: string[] = [];
   const params: unknown[] = [];
@@ -125,6 +148,10 @@ export function searchLibrary(
   if (options.mediaType) {
     where.push("a.media_type = ?");
     params.push(options.mediaType);
+  }
+  if (options.category) {
+    where.push("a.category = ?");
+    params.push(options.category);
   }
   const rows = getDb()
     .prepare(

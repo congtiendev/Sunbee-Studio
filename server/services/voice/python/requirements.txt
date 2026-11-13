@@ -1,0 +1,14 @@
+fastapi>=0.115
+uvicorn>=0.32
+pydantic>=2.9
+
+# VieNeu-TTS (engine.py) — real TTS, both built-in voices and instant cloning
+# from a sample. Apache-2.0 (code + weights), github.com/pnnbao97/VieNeu-TTS.
+# CPU install is torch-free (ONNX Runtime) — no GPU needed, no heavy torch pin.
+vieneu
+
+# Add for vocal separation once needed (see separation.py):
+#   demucs
+# demucs pulls in torch; if that ever conflicts with vieneu's own pins,
+# split this into a second venv/sidecar (copy engine-process.ts's pattern)
+# rather than fighting the resolver. Don't do this preemptively.
