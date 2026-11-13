@@ -923,17 +923,31 @@ export interface SceneResourceSelectRequest {
 }
 
 /**
- * The video-render module's (`server/modules/video-render/`) small, fixed
- * catalog of Remotion shot components (see `renderer/src/shots.tsx`) — adding
- * one is a code change, not data, by design: it keeps every render
- * deterministic instead of having an AI author code per video. "kenBurns"
- * is a slow push-in/drift on the still image; "titleCard" is a full-frame
- * typography card (hook/outro beats, or a scene with no image).
+ * The video-render module's (`server/modules/video-render/`) fixed catalog of
+ * Remotion shot components (see `renderer/src/shots/`) — adding one is a code
+ * change, not data, by design: it keeps every render deterministic instead of
+ * having an AI author code per video. The base four are Sunbee's own; the
+ * rest adapt video-shotcraft shot cards (`vendor/video-shotcraft/`), named in
+ * `SHOT_KIND_CARDS` (`shared/render.ts`).
  */
-export type ShotKind = "staticHold" | "kenBurns" | "lowerThirdCaption" | "titleCard";
+export type ShotKind =
+  | "staticHold"
+  | "kenBurns"
+  | "lowerThirdCaption"
+  | "titleCard"
+  | "blurSlideTitle"
+  | "markerTitle"
+  | "textMask"
+  | "crashZoom"
+  | "jumpCut"
+  | "pullBack";
 
-/** v1: an opacity ramp at the clip's own edges, not a true cross-dissolve between two clips. */
-export type ClipTransition = "cut" | "fade";
+/**
+ * Applied at the clip's own edges (no overlap between clips): "fade" an
+ * opacity ramp, "whipPan" a fast blurred slide (video-shotcraft whip-pan),
+ * "lightLeak" a warm film-leak burn (video-shotcraft light-leak-burn).
+ */
+export type ClipTransition = "cut" | "fade" | "whipPan" | "lightLeak";
 
 export type RenderCaptionStyle = "none" | "lowerThird" | "title";
 
@@ -947,7 +961,12 @@ export interface RenderManifestClip {
   imageFileId?: string;
   transitionIn: ClipTransition;
   transitionOut: ClipTransition;
-  caption?: { text: string; style: "lowerThird" | "title" };
+  caption?: {
+    text: string;
+    style: "lowerThird" | "title";
+    /** A word/phrase of `text` to highlight (marker underline, accent colour). */
+    emphasis?: string;
+  };
   /** Unused until a TTS narration step exists — kept so that integration is additive, not a schema break. */
   voiceoverFileId?: string;
 }
@@ -987,6 +1006,10 @@ export interface RenderScene {
   /** What picture the scene needs — written by the AI, a hint for picking/uploading one. */
   imageHint: string;
   imageFileId?: string;
+  /** A word/phrase of `text` to highlight (marker underline, accent colour). */
+  emphasis?: string;
+  /** The video-shotcraft shot card the AI director drew this scene from — display only. */
+  shotCard?: string;
 }
 
 /**
@@ -1080,9 +1103,17 @@ export interface VideoRender {
  */
 export interface VideoRenderJob {
   projectId: string;
-  status: "running" | "done" | "failed";
-  /** 0–1, from Remotion's own progress callback. */
+  /** "render": the MP4 only. "auto": storyboard (when there are no scenes yet) → find pictures → render. */
+  kind: "render" | "auto";
+  /** Where the job is now ("rendering" for a plain render throughout). */
+  stage: "directing" | "images" | "rendering";
+  status: "running" | "done" | "failed" | "cancelled";
+  /** 0–1 within the current stage (images done / to find, or Remotion's render progress). */
   progress: number;
+  /** "auto": scenes needing a picture, how many were looked up, how many had none found. */
+  imagesTotal?: number;
+  imagesDone?: number;
+  imagesFailed?: number;
   startedAt: string;
   error?: string;
   /** Set once `status` is "done". */

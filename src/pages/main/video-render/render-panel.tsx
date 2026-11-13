@@ -3,7 +3,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress-bar";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale, useTranslations } from "@/i18n";
-import { DownloadIcon, PlayIcon } from "@/icons";
+import { DownloadIcon, PlayIcon, SparkIcon } from "@/icons";
 import { formatDuration } from "@/pages/main/library/sound-effects/category-style";
 import type { RenderProjectState } from "@/pages/main/video-render/use-render-project";
 import { RENDER_DIMENSIONS } from "@shared/frame-ratio";
@@ -17,6 +17,15 @@ export default function RenderPanel({ state }: { state: RenderProjectState }) {
   const { width, height } = RENDER_DIMENSIONS[project.frameRatio];
   const poster = project.scenes.find((scene) => scene.imageFileId)?.imageFileId;
   const percent = Math.floor(state.renderProgress * 100);
+  const job = state.job;
+  // What the running job is doing, in words (an automatic run goes through three stages).
+  const stageText = !state.rendering || !job
+    ? ""
+    : job.stage === "directing"
+      ? t("stages.directing")
+      : job.stage === "images"
+        ? t("stages.images", { done: job.imagesDone ?? 0, total: job.imagesTotal ?? 0 })
+        : t("stages.rendering", { percent });
 
   return (
     <Card className="flex flex-col gap-4 p-4 sm:p-5">
@@ -34,7 +43,8 @@ export default function RenderPanel({ state }: { state: RenderProjectState }) {
             <div className="relative flex flex-col items-center gap-2 px-4 text-center text-white">
               {state.rendering ? (
                 <>
-                  <span className="text-3xl font-semibold tabular-nums">{percent}%</span>
+                  <span className="text-3xl font-semibold tabular-nums">{job?.stage === "rendering" ? `${percent}%` : ""}</span>
+                  <span className="text-sm text-white/90">{stageText}</span>
                   <span className="text-xs text-white/70">{formatDuration(state.renderElapsedSec)}</span>
                 </>
               ) : (
@@ -53,7 +63,24 @@ export default function RenderPanel({ state }: { state: RenderProjectState }) {
       {state.rendering && <Progress value={percent} />}
 
       <div className="flex flex-col gap-2">
+        {!state.rendering && (
+          <Button
+            className="w-full gap-1.5 rounded-full"
+            size="lg"
+            onClick={() => void state.autoMake()}
+            disabled={state.busy || (!project.scriptText.trim() && !project.scenes.length)}
+          >
+            <SparkIcon className="size-4" />
+            {t("autoButton")}
+          </Button>
+        )}
+        {state.rendering && (
+          <Button className="w-full rounded-full" variant="outline" onClick={() => void state.cancelJob()}>
+            {t("cancel")}
+          </Button>
+        )}
         <Button
+          variant="outline"
           className="w-full gap-1.5 rounded-full"
           size="lg"
           onClick={() => void state.render()}
@@ -61,7 +88,7 @@ export default function RenderPanel({ state }: { state: RenderProjectState }) {
         >
           {state.rendering ? <Spinner /> : <PlayIcon className="size-4" />}
           {state.rendering
-            ? t("rendering", { percent, elapsed: formatDuration(state.renderElapsedSec) })
+            ? `${stageText} · ${formatDuration(state.renderElapsedSec)}`
             : latest
               ? t("rerender")
               : t("button")}
@@ -76,7 +103,11 @@ export default function RenderPanel({ state }: { state: RenderProjectState }) {
             {t("download")}
           </a>
         )}
-        <p className="text-xs text-gray-500 dark:text-gray-400">{state.rendering ? t("renderingHint") : t("hint")}</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400">{state.rendering ? t("renderingHint") : t("autoHint")}</p>
+        {job?.status === "done" && job.kind === "auto" && (job.imagesFailed ?? 0) > 0 && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">{t("imagesMissing", { count: job.imagesFailed ?? 0 })}</p>
+        )}
+        {job?.status === "cancelled" && <p className="text-xs text-gray-500 dark:text-gray-400">{t("cancelled")}</p>}
       </div>
 
       <dl className="grid grid-cols-3 gap-2 rounded-xl bg-gray-50 p-3 text-center dark:bg-white/[0.03]">

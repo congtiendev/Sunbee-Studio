@@ -10,7 +10,7 @@ import type {
   VideoRender,
   VideoRenderJob,
 } from "@shared/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const POLL_MS = 2000;
 
@@ -61,6 +61,8 @@ export function useRenderProject(projectId: string) {
   const [job, setJob] = useState<VideoRenderJob | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const rendering = job?.status === "running";
+  // The last polled job, to notice when an automatic run changed the project server-side.
+  const lastJob = useRef<VideoRenderJob | null>(null);
 
   const loadSaved = (next: RenderProject) => {
     setProject(next);
@@ -101,7 +103,16 @@ export function useRenderProject(projectId: string) {
             setError(renderInterrupted());
             return;
           }
+          const before = lastJob.current;
+          lastJob.current = next;
           setJob(next);
+          // An automatic run writes scenes/pictures as it goes: show them as they land.
+          if (
+            next.kind === "auto" &&
+            (next.stage !== before?.stage || next.imagesDone !== before?.imagesDone || next.status !== "running")
+          ) {
+            void apiClient.videoRender.get(projectId).then(loadSaved).catch(() => undefined);
+          }
           if (next.status === "done" && next.render) {
             const finished = next.render;
             setRenders((current) => [finished, ...current.filter((r) => r.id !== finished.id)]);
@@ -184,6 +195,28 @@ export function useRenderProject(projectId: string) {
     }
   };
 
+  /** Hands-off: storyboard with the skill (if no scenes), find pictures on the web, render. */
+  const autoMake = async () => {
+    if (!(await save())) return;
+    setError(null);
+    try {
+      setNow(Date.now());
+      const started = await apiClient.videoRender.auto(projectId);
+      lastJob.current = started;
+      setJob(started);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  const cancelJob = async () => {
+    try {
+      await apiClient.videoRender.cancel(projectId);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
   const setScenes = (update: (scenes: RenderScene[]) => RenderScene[]) =>
     setProject((current) => current && { ...current, scenes: update(current.scenes) });
 
@@ -246,6 +279,7 @@ export function useRenderProject(projectId: string) {
     renders,
     rendering,
     renderProgress: job?.progress ?? 0,
+    job,
     renderElapsedSec: job ? Math.max(0, Math.floor((now - Date.parse(job.startedAt)) / 1000)) : 0,
     patch,
     patchSource,
@@ -254,6 +288,8 @@ export function useRenderProject(projectId: string) {
     uploadScript,
     splitScenes,
     render,
+    autoMake,
+    cancelJob,
     updateScene,
     removeScene,
     moveScene,

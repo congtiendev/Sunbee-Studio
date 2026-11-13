@@ -1,38 +1,29 @@
-import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, Sequence } from "remotion";
 import type { RenderInputProps } from "../../shared/render";
 import type { RenderManifestClip } from "../../shared/types";
 import { Caption } from "./caption";
-import { ClipVisual } from "./shots";
-
-const FADE_FRAMES = 12;
-const CLAMP = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+import { ClipVisual, TEXT_SHOTS } from "./shots";
+import { TransitionEdges } from "./transitions";
 
 function dbToGain(db: number | undefined): number {
   return db === undefined ? 1 : Math.pow(10, db / 20);
 }
 
-/** One clip, with its fade in/out applied at its own edges (v1: no cross-dissolve between clips). */
+/** One clip: its shot, the caption on top (unless the shot typesets the text itself), its transitions at the edges. */
 function ClipLayer({ clip, src }: { clip: RenderManifestClip; src?: string }) {
-  const frame = useCurrentFrame();
-  const fade = Math.min(FADE_FRAMES, Math.floor(clip.durationInFrames / 3));
-  const fadeIn =
-    clip.transitionIn === "fade" && fade > 0 ? interpolate(frame, [0, fade], [0, 1], CLAMP) : 1;
-  const fadeOut =
-    clip.transitionOut === "fade" && fade > 0
-      ? interpolate(frame, [clip.durationInFrames - fade, clip.durationInFrames], [1, 0], CLAMP)
-      : 1;
-
   return (
-    <AbsoluteFill style={{ opacity: Math.min(fadeIn, fadeOut) }}>
+    <TransitionEdges clip={clip}>
       <ClipVisual clip={clip} src={src} />
-      {clip.caption && clip.caption.text.trim() && clip.shotKind !== "titleCard" && (
+      {clip.caption && clip.caption.text.trim() && !TEXT_SHOTS.includes(clip.shotKind) && (
         <Caption
           text={clip.caption.text}
           style={clip.caption.style}
+          emphasis={clip.caption.emphasis}
+          durationInFrames={clip.durationInFrames}
           reveal={clip.shotKind === "lowerThirdCaption"}
         />
       )}
-    </AbsoluteFill>
+    </TransitionEdges>
   );
 }
 

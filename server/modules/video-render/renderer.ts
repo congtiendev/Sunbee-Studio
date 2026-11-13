@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { bundle } from "@remotion/bundler";
-import { renderMedia, selectComposition } from "@remotion/renderer";
+import { makeCancelSignal, renderMedia, selectComposition } from "@remotion/renderer";
 import { RENDER_COMPOSITION_ID, type RenderInputProps } from "../../../shared/render.js";
 
 /**
@@ -30,20 +30,28 @@ function bundledServeUrl(): Promise<string> {
   return pending;
 }
 
-/** Renders the manifest to an H.264 MP4 at `outputLocation`. Remotion fetches its own headless Chrome on first use. */
+/**
+ * Renders the manifest to an H.264 MP4 at `outputLocation`. Remotion fetches
+ * its own headless Chrome on first use. Aborting `signal` stops the render.
+ */
 export async function renderToFile(
   inputProps: RenderInputProps,
   outputLocation: string,
   onProgress?: (progress: number) => void,
+  signal?: AbortSignal,
 ): Promise<void> {
   const url = await bundledServeUrl();
+  signal?.throwIfAborted();
   const composition = await selectComposition({ serveUrl: url, id: RENDER_COMPOSITION_ID, inputProps });
+  const { cancelSignal, cancel } = makeCancelSignal();
+  signal?.addEventListener("abort", () => cancel(), { once: true });
   await renderMedia({
     composition,
     serveUrl: url,
     codec: "h264",
     outputLocation,
     inputProps,
+    cancelSignal,
     onProgress: ({ progress }) => onProgress?.(progress),
   });
 }

@@ -46,7 +46,7 @@ export function createOpenAiProvider(apiKey: string): LlmProvider {
 
   return {
     key: "openai",
-    capabilities: { vision: true, webSearch: true, imageSearch: false },
+    capabilities: { vision: true, webSearch: true, imageSearch: false, skills: false },
 
     async generateText(req) {
       const response = await client.chat.completions.create({

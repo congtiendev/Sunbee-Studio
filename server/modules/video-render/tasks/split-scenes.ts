@@ -1,4 +1,5 @@
 import { frameRatioForAi } from "../../../../shared/frame-ratio.js";
+import { CLIP_TRANSITIONS, SHOT_KINDS } from "../../../../shared/render.js";
 import { defaultModelFor } from "../../../../shared/script-cost-estimate.js";
 import type { FrameRatio, RenderScene } from "../../../../shared/types.js";
 import { SCRIPT_WITH_SCENES_OUTPUT_TOKENS } from "../../../services/ai/limits.js";
@@ -13,7 +14,6 @@ export interface SplitRenderScenesInput {
   effort?: AiEffort;
 }
 
-const SHOT_KINDS = ["staticHold", "kenBurns", "lowerThirdCaption", "titleCard"] as const;
 
 const SCHEMA = {
   type: "object",
@@ -27,7 +27,7 @@ const SCHEMA = {
           durationSec: { type: "number" },
           shotKind: { type: "string", enum: SHOT_KINDS },
           captionStyle: { type: "string", enum: ["none", "lowerThird", "title"] },
-          transitionOut: { type: "string", enum: ["cut", "fade"] },
+          transitionOut: { type: "string", enum: CLIP_TRANSITIONS },
           imageHint: { type: "string" },
         },
         required: ["text", "durationSec", "shotKind", "captionStyle", "transitionOut", "imageHint"],

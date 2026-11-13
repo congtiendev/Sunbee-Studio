@@ -191,7 +191,13 @@
       "staticHold": "Ảnh tĩnh",
       "kenBurns": "Ken Burns (lia/zoom chậm)",
       "lowerThirdCaption": "Ảnh + phụ đề trồi lên",
-      "titleCard": "Thẻ tiêu đề (chỉ chữ)"
+      "titleCard": "Thẻ tiêu đề (chỉ chữ)",
+      "blurSlideTitle": "Tiêu đề tạp chí (chữ hiện từ mờ)",
+      "markerTitle": "Tiêu đề + gạch chân bút dạ",
+      "textMask": "Ảnh xuyên qua chữ lớn",
+      "crashZoom": "Zoom gấp",
+      "jumpCut": "Cắt nhảy dí sát",
+      "pullBack": "Lùi xa chậm"
     },
     "captionStyleLabel": "Phụ đề",
     "captionStyles": {
@@ -202,7 +208,9 @@
     "transitionOutLabel": "Chuyển cảnh ra",
     "transitions": {
       "cut": "Cắt thẳng",
-      "fade": "Mờ dần"
+      "fade": "Mờ dần",
+      "whipPan": "Lia gấp",
+      "lightLeak": "Loé sáng"
     },
     "content": {
       "frameRatioLabel": "Khung hình",
@@ -256,7 +264,17 @@
       "noRenderYet": "Chưa xuất lần nào",
       "statDuration": "Thời lượng",
       "statScenes": "Cảnh",
-      "statResolution": "Độ phân giải"
+      "statResolution": "Độ phân giải",
+      "autoButton": "Tạo video tự động",
+      "autoHint": "AI đạo diễn kịch bản bằng skill video-shotcraft (nếu chưa có cảnh), tự tìm ảnh trên web cho từng cảnh rồi xuất. Hoặc xuất các cảnh bạn tự làm bằng nút bên dưới.",
+      "stages": {
+        "directing": "Đang đạo diễn bằng skill…",
+        "images": "Đang tìm ảnh {done}/{total}…",
+        "rendering": "Đang xuất {percent}%"
+      },
+      "cancel": "Dừng",
+      "cancelled": "Đã dừng.",
+      "imagesMissing": "{count} cảnh không tìm được ảnh — sẽ chỉ hiện chữ; hãy chọn ảnh tay rồi xuất lại."
     },
     "sceneCount": "{count, plural, other {# cảnh}}",
     "scenesHint": "Bấm vào ảnh để chọn hoặc đổi ảnh. Dòng thời gian cho thấy nhịp video — ô vàng là cảnh còn thiếu ảnh.",

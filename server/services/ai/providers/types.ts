@@ -47,6 +47,20 @@ export interface ProviderCapabilities {
   webSearch: boolean;
   /** Can search the web for actual, directly-linkable image files. */
   imageSearch: boolean;
+  /** Can load an Agent Skill folder into the model's sandbox (`generateWithSkill`). */
+  skills: boolean;
+}
+
+/** An Agent Skill on disk: a folder with `SKILL.md` at its root. */
+export interface SkillFolder {
+  /** Folder name the skill is uploaded under (lowercase, hyphens). */
+  name: string;
+  /** Absolute path of the folder. */
+  dir: string;
+}
+
+export interface AiSkillRequest extends AiRequest {
+  skill: SkillFolder;
 }
 
 /**
@@ -63,4 +77,6 @@ export interface LlmProvider {
   webSearch(req: AiRequest): Promise<AiWebSearchResult>;
   /** Search the web for real images matching the brief (only when `capabilities.imageSearch`). */
   findImages?(req: AiRequest): Promise<FoundImage[]>;
+  /** Answer with the skill's files available to the model in a sandbox (only when `capabilities.skills`); returns the final text. */
+  generateWithSkill?(req: AiSkillRequest): Promise<string>;
 }

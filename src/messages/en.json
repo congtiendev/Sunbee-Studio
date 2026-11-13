@@ -190,7 +190,13 @@
       "staticHold": "Static image",
       "kenBurns": "Ken Burns (slow pan/zoom)",
       "lowerThirdCaption": "Image + rising caption",
-      "titleCard": "Title card (text only)"
+      "titleCard": "Title card (text only)",
+      "blurSlideTitle": "Editorial title (blur slide)",
+      "markerTitle": "Title + marker underline",
+      "textMask": "Picture through giant text",
+      "crashZoom": "Crash zoom",
+      "jumpCut": "Jump-cut punch-in",
+      "pullBack": "Slow pull-back"
     },
     "captionStyleLabel": "Caption",
     "captionStyles": {
@@ -201,7 +207,9 @@
     "transitionOutLabel": "Transition out",
     "transitions": {
       "cut": "Cut",
-      "fade": "Fade"
+      "fade": "Fade",
+      "whipPan": "Whip pan",
+      "lightLeak": "Light leak"
     },
     "content": {
       "frameRatioLabel": "Frame",
@@ -255,7 +263,17 @@
       "noRenderYet": "Not exported yet",
       "statDuration": "Length",
       "statScenes": "Scenes",
-      "statResolution": "Resolution"
+      "statResolution": "Resolution",
+      "autoButton": "Make the video automatically",
+      "autoHint": "AI directs the script with the video-shotcraft skill (if there are no scenes yet), finds a picture on the web for every scene, then renders. Or render your own scenes with the button below.",
+      "stages": {
+        "directing": "Directing with the skill…",
+        "images": "Finding pictures {done}/{total}…",
+        "rendering": "Rendering {percent}%"
+      },
+      "cancel": "Stop",
+      "cancelled": "Stopped.",
+      "imagesMissing": "{count, plural, one {# scene} other {# scenes}} had no picture found — they render as text; pick one by hand and render again."
     },
     "sceneCount": "{count, plural, one {# scene} other {# scenes}}",
     "scenesHint": "Click a picture to pick or change it. The timeline shows the video's pacing — amber blocks are scenes still missing a picture.",

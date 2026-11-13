@@ -533,6 +533,12 @@ export const apiClient = {
       request(`/api/video-render/projects/${encodeURIComponent(id)}/render`, { method: "POST" }),
     renderStatus: (id: string): Promise<VideoRenderJob | null> =>
       request(`/api/video-render/projects/${encodeURIComponent(id)}/render-status`),
+    /** Hands-off: storyboard with the video-shotcraft skill (if no scenes yet), find pictures on the web, render. */
+    auto: (id: string): Promise<VideoRenderJob> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}/auto`, { method: "POST" }),
+    /** Stops the project's running render/auto job. */
+    cancel: (id: string): Promise<{ cancelled: boolean }> =>
+      request(`/api/video-render/projects/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
     renders: (id: string): Promise<VideoRender[]> =>
       request(`/api/video-render/projects/${encodeURIComponent(id)}/renders`),
   },

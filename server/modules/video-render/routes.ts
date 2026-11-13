@@ -3,11 +3,10 @@ import multer from "multer";
 import { isFrameRatio } from "../../../shared/frame-ratio.js";
 import type { RenderProject, RenderProjectUpdate, RenderSourceOptions } from "../../../shared/types.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { firstAvailableProvider, runTask, taskContextFor } from "../../services/ai/task.js";
-import { deleteFile, getFileForUser } from "../../services/storage/files.js";
-import { buildManifest } from "./build.js";
-import { getRenderJob, isRenderRunning, startRenderJob } from "./jobs.js";
-import { grantedFile, type GrantedFile } from "./media-grants.js";
+import { hasProviderKey, taskContextFor } from "../../services/ai/task.js";
+import { deleteFile } from "../../services/storage/files.js";
+import { cancelRenderJob, getRenderJob, isRenderRunning, startAutoJob, startRenderJob } from "./jobs.js";
+import { grantedFile } from "./media-grants.js";
 import { MAX_UPLOAD_BYTES } from "../script/sources/upload.js";
 import {
   createRenderProject,
@@ -15,7 +14,6 @@ import {
   getRenderProject,
   listRenderProjects,
   listVideoRenders,
-  renderProjectOwner,
   SOURCE_MODES,
   updateRenderProject,
 } from "./repo.js";
@@ -25,7 +23,7 @@ import {
   scriptFromUpload,
   type RenderScriptSource,
 } from "./script-sources.js";
-import { splitRenderScenesTask } from "./tasks/split-scenes.js";
+import { planScenes } from "./plan.js";
 
 const router = Router();
 
@@ -178,34 +176,12 @@ router.post("/projects/:id/script/:source", requireAuth, async (req, res) => {
   }
 });
 
-/** Breaks the project's script into scenes with AI, replacing the current scenes. */
+/** Storyboards the script into scenes (Claude + the video-shotcraft skill when available), replacing the current scenes. */
 router.post("/projects/:id/split-scenes", requireAuth, async (req, res) => {
   const project = projectOr404(req, res);
   if (!project) return;
-  if (!project.scriptText.trim()) {
-    res.status(400).json({ error: "Kịch bản đang trống." });
-    return;
-  }
-  const ctx = taskContextFor(req.user!.id);
-  const { sourceOptions } = project;
-  const provider = firstAvailableProvider(ctx, sourceOptions.provider ?? "claude");
-  if (!provider) {
-    res.status(400).json({ error: "Chưa có API key AI — thêm trong Cài đặt." });
-    return;
-  }
   try {
-    const scenes = await runTask(
-      splitRenderScenesTask,
-      {
-        scriptText: project.scriptText,
-        frameRatio: project.frameRatio,
-        provider,
-        // The picked model only applies to the provider it belongs to.
-        model: provider === sourceOptions.provider ? sourceOptions.model : undefined,
-        effort: sourceOptions.effort,
-      },
-      ctx,
-    );
+    const scenes = await planScenes(req.user!.id, project);
     updateRenderProject(project.id, { scenes });
     res.json(getRenderProject(req.user!.id, isAdmin(req), project.id));
   } catch (err) {
@@ -226,28 +202,39 @@ router.post("/projects/:id/render", requireAuth, (req, res) => {
     return;
   }
   if (isRenderRunning()) {
-    res.status(409).json({ error: "Đang xuất một video khác — đợi xong rồi thử lại." });
+    res.status(409).json({ error: "Đang chạy một việc xuất video khác — đợi xong rồi thử lại." });
     return;
   }
-  const manifest = buildManifest(project);
-  // Only files the caller may read go into the render; a missing one leaves its scene text-only / its cue silent.
-  const files = new Map<string, GrantedFile>();
-  for (const fileId of [
-    ...manifest.clips.flatMap((clip) => (clip.imageFileId ? [clip.imageFileId] : [])),
-    ...manifest.audio.map((cue) => cue.fileId),
-  ]) {
-    const file = getFileForUser(req.user!.id, isAdmin(req), fileId);
-    if (file) files.set(fileId, { absolutePath: file.absolutePath, mime: file.mime });
+  res.status(202).json(startRenderJob(req.user!, project.id));
+});
+
+/**
+ * The hands-off flow, in the background: Claude storyboards the script with
+ * the video-shotcraft skill (when there are no scenes yet), finds a picture
+ * on the web for each scene, then the MP4 is rendered.
+ */
+router.post("/projects/:id/auto", requireAuth, (req, res) => {
+  const project = projectOr404(req, res);
+  if (!project) return;
+  if (project.scenes.length === 0 && !project.scriptText.trim()) {
+    res.status(400).json({ error: "Kịch bản đang trống." });
+    return;
   }
-  res.status(202).json(
-    startRenderJob({
-      projectId: project.id,
-      name: project.name,
-      ownerId: renderProjectOwner(project.id) ?? req.user!.id,
-      manifest,
-      files,
-    }),
-  );
+  if (!hasProviderKey(taskContextFor(req.user!.id), "claude")) {
+    res.status(400).json({ error: "Làm video tự động cần Anthropic (Claude) API key — thêm trong Cài đặt." });
+    return;
+  }
+  if (isRenderRunning()) {
+    res.status(409).json({ error: "Đang chạy một việc xuất video khác — đợi xong rồi thử lại." });
+    return;
+  }
+  res.status(202).json(startAutoJob(req.user!, project.id));
+});
+
+/** Stops the project's running render/auto job. */
+router.post("/projects/:id/cancel", requireAuth, (req, res) => {
+  const project = projectOr404(req, res);
+  if (project) res.json({ cancelled: cancelRenderJob(project.id) });
 });
 
 /** The project's latest render job (running, or how the last one ended) — null when none since the server started. */

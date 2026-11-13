@@ -1,8 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { jsonSchemaOutputFormat } from "@anthropic-ai/sdk/helpers/json-schema";
+import { ensureSkill } from "./anthropic-skills.js";
 import { dedupeSources } from "./openai.js";
 import type {
   AiRequest,
+  AiSkillRequest,
   AiStructuredRequest,
   AiWebSearchResult,
   FoundImage,
@@ -62,6 +64,9 @@ async function withFriendlyErrors<T>(run: () => Promise<T>): Promise<T> {
 const NON_STREAMING_MAX_TOKENS = 16000;
 // A long web search can pause mid-turn; resume it at most this many times.
 const MAX_WEB_SEARCH_CONTINUATIONS = 3;
+// Reading a skill's files in the sandbox takes many tool calls; a turn can pause several times.
+const MAX_SKILL_CONTINUATIONS = 8;
+const DEFAULT_SKILL_MAX_TOKENS = 64000;
 
 type JsonSchemaParam = Parameters<typeof jsonSchemaOutputFormat>[0];
 
@@ -114,7 +119,7 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
 
   return {
     key: "claude",
-    capabilities: { vision: true, webSearch: true, imageSearch: true },
+    capabilities: { vision: true, webSearch: true, imageSearch: true, skills: true },
 
     async generateText(req) {
       return withFriendlyErrors(async () => {
@@ -271,6 +276,48 @@ export function createAnthropicProvider(apiKey: string): LlmProvider {
         } catch {
           return [];
         }
+      });
+    },
+
+    /**
+     * The skill folder is uploaded once as a custom skill (see
+     * anthropic-skills.ts) and loaded into a code-execution container, where
+     * the model reads whatever files of it the task needs. The container has
+     * no internet access — it's for reading the skill, not for running tools.
+     */
+    async generateWithSkill(req: AiSkillRequest): Promise<string> {
+      return withFriendlyErrors(async () => {
+        const skillId = await ensureSkill(client, apiKey, req.skill);
+        const skills: Anthropic.SkillParams[] = [{ type: "custom", skill_id: skillId, version: "latest" }];
+        const messages: Anthropic.MessageParam[] = [{ role: "user", content: buildContent(req) }];
+        let containerId: string | undefined;
+
+        for (let turn = 0; turn <= MAX_SKILL_CONTINUATIONS; turn++) {
+          const message = await client.messages
+            .stream({
+              model: req.model,
+              max_tokens: req.maxTokens ?? DEFAULT_SKILL_MAX_TOKENS,
+              system: req.system,
+              messages,
+              container: { id: containerId, skills },
+              tools: [{ type: "code_execution_20260521", name: "code_execution" }],
+              ...(req.effort ? { output_config: { effort: req.effort } } : {}),
+            })
+            .finalMessage();
+          containerId = message.container?.id ?? containerId;
+          if (message.stop_reason === "pause_turn") {
+            // Hand the paused turn back (same container) so the model carries on.
+            messages.push({ role: "assistant", content: message.content });
+            continue;
+          }
+          assertComplete(message);
+          return message.content
+            .filter((block): block is Anthropic.TextBlock => block.type === "text")
+            .map((block) => block.text)
+            .join("")
+            .trim();
+        }
+        throw new Error("Claude chưa xong sau nhiều lượt đọc skill — hãy thử lại với kịch bản ngắn hơn.");
       });
     },
   };

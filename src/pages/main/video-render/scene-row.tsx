@@ -12,11 +12,10 @@ import { useTranslations } from "@/i18n";
 import { ChevronDownIcon, PlusIcon, SparkIcon, TrashBinIcon, XIcon } from "@/icons";
 import ImagePickerDialog from "@/pages/main/video-render/image-picker-dialog";
 import { cn } from "@/utils";
-import type { ClipTransition, FrameRatio, RenderCaptionStyle, RenderScene, ShotKind } from "@shared/types";
+import type { FrameRatio, RenderCaptionStyle, RenderScene } from "@shared/types";
 import { useState, type ReactNode } from "react";
+import { CLIP_TRANSITIONS, SHOT_KINDS } from "@shared/render";
 
-const SHOT_KINDS: ShotKind[] = ["staticHold", "kenBurns", "lowerThirdCaption", "titleCard"];
-const TRANSITIONS: ClipTransition[] = ["cut", "fade"];
 const CAPTION_STYLES: RenderCaptionStyle[] = ["none", "lowerThird", "title"];
 
 /** Thumbnail width per frame shape, so tall and wide pictures take a similar area. */
@@ -238,7 +237,7 @@ export default function SceneRow({
           <OptionSelect
             label={t("transitionOutLabel")}
             value={scene.transitionOut}
-            options={TRANSITIONS}
+            options={CLIP_TRANSITIONS}
             disabled={disabled}
             labelOf={(transition) => t(`transitions.${transition}`)}
             onChange={(transitionOut) => onChange({ transitionOut })}
