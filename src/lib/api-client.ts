@@ -5,6 +5,8 @@ import type {
   AssetPromptBatchResponse,
   AssetPromptRecord,
   AssetSplitLayersRequest,
+  AssetEnrichRequest,
+  AssetEnrichResponse,
   AssetSplitLayersResponse,
   FrameRatio,
   AssetQuerySuggestRequest,
@@ -458,6 +460,12 @@ export const apiClient = {
       req: AssetSplitLayersRequest,
     ): Promise<AssetSplitLayersResponse> =>
       request("/api/assets/split-layers", {
+        method: "POST",
+        body: JSON.stringify(req),
+      }),
+    /** Stickers + pop-up key words for the shots where the speaker is alone on a plain backdrop. */
+    enrich: (req: AssetEnrichRequest): Promise<AssetEnrichResponse> =>
+      request("/api/assets/enrich", {
         method: "POST",
         body: JSON.stringify(req),
       }),

@@ -35,6 +35,7 @@ import { apiClient } from "@/lib/api-client";
 import { cn } from "@/utils";
 import type {
   AssetCandidate,
+  AssetEnrichResponse,
   AssetPromptRecord,
   RecurringCharacter,
   RecurringObject,
@@ -388,6 +389,8 @@ export default function BatchPromptDialog({
     total: number;
   } | null>(null);
   const stopSplitRef = useRef(false);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState<AssetEnrichResponse | null>(null);
 
   // A new version (after "split layers") brings new scenes: rebuild the list
   // for the same range, during render rather than in an effect.
@@ -465,6 +468,30 @@ export default function BatchPromptDialog({
     } finally {
       setSplitting(false);
       setSplitProgress(null);
+    }
+  };
+  /** Stickers + pop-up key words for the range's shots where the speaker is alone on a plain backdrop. */
+  const enrich = async () => {
+    setEnriching(true);
+    setError(null);
+    setEnrichResult(null);
+    try {
+      const result = await apiClient.assets.enrich({
+        videoId,
+        versionId,
+        fromScene: range.from,
+        toScene: range.to,
+        provider: aiProvider,
+        model: aiModel,
+        effort: aiEffort,
+      });
+      onScenesChanged(result.version);
+      onImported();
+      setEnrichResult(result);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setEnriching(false);
     }
   };
   const [tab, setTab] = useState<PromptGroup["category"]>("character");
@@ -1233,6 +1260,25 @@ export default function BatchPromptDialog({
                   void splitLayers();
                 }}
               />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-1.5"
+                disabled={enriching || splitting || generating || imageAssetsInRange.length === 0}
+                onClick={() => void enrich()}
+              >
+                {enriching ? <Spinner /> : <LayerIcon className="size-4" />}
+                {t(enriching ? "enriching" : "enrich", { from: range.from, to: range.to })}
+              </Button>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {enrichResult
+                  ? t("enrichDone", {
+                      sheets: enrichResult.sheets,
+                      stickers: enrichResult.stickers,
+                      callouts: enrichResult.callouts,
+                    })
+                  : t("enrichHint")}
+              </p>
             </WorkflowStep>
 
             {/* ③ Prompts: the AI folds in scene context and the locked look

@@ -6,7 +6,8 @@
     "public/maplibre/**",
     "dist/**",
     "dist-electron/**",
-    "release/**"
+    "release/**",
+    "data/**"
   ],
   "overrides": [
     {

@@ -1663,7 +1663,11 @@
         "splitConfirmDescription": "The AI re-plans scenes {from}–{to}: breaks them into shots like a director and lists the images each shot needs (backgrounds, PNGs, sprite sheets — as many as each scene needs). The result is saved as a new (approved) script version. Picks of the scenes that change are cleared.",
         "splitConfirm": "Plan shots",
         "placementLabel": "Position & angle",
-        "promptsNeedLayers": "These scenes haven't been planned into shots & layers (②) yet — their images have no shot, layer or position/angle, so prompts written now lack that and will need rewriting. Do step ② first."
+        "promptsNeedLayers": "These scenes haven't been planned into shots & layers (②) yet — their images have no shot, layer or position/angle, so prompts written now lack that and will need rewriting. Do step ② first.",
+        "enrich": "Add stickers & key words (scenes {from}–{to})",
+        "enriching": "Adding stickers & key words…",
+        "enrichHint": "For shots where the speaker is alone on a plain backdrop: icons that pop in beside them and a key phrase from the narration. The icons come as sticker sheets (one image per up to 16 icons) to generate like the other images; the edit plan places them.",
+        "enrichDone": "Added {stickers, plural, one {# sticker} other {# stickers}} on {sheets, plural, one {# sheet} other {# sheets}} and {callouts, plural, one {# key phrase} other {# key phrases}}. Generate the sticker sheets with the other prompts below."
       },
       "assetSources": {
         "stock": "Stock",

@@ -1,3 +1,4 @@
+import { enrichShotsTask } from "./enrich-shots.js";
 import { findImagesTask } from "./find-images.js";
 import { imagePromptTask } from "./image-prompt.js";
 import { searchQueryTask } from "./search-query.js";
@@ -11,6 +12,7 @@ export const assetTasks = [
   imagePromptTask,
   findImagesTask,
   splitLayersTask,
+  enrichShotsTask,
 ];
 
-export { findImagesTask, imagePromptTask, searchQueryTask, splitLayersTask, webResearchTask };
+export { enrichShotsTask, findImagesTask, imagePromptTask, searchQueryTask, splitLayersTask, webResearchTask };

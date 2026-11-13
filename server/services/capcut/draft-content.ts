@@ -6,6 +6,7 @@ import {
   type ClipTransform,
   type SubtitleCue,
   type SubtitleStyle,
+  type TextClip,
   type Timeline,
   type VisualClip,
 } from "../../../shared/timeline.js";
@@ -205,9 +206,25 @@ export function buildDraftContent(input: DraftContentInput): Record<string, unkn
     tracks.push(track("text", "subtitles", segments, TEXT_RENDER_INDEX));
   }
 
+  // ---- pop-up text (key words): one track, below the subtitles ----
+  const texts = [...(timeline.texts ?? [])].sort((a, b) => a.startMs - b.startMs);
+  if (texts.length) {
+    // Overlapping texts can't share a track: each goes on the first track free at its start.
+    const lanes: TextClip[][] = [];
+    for (const clip of texts) {
+      const lane = lanes.find((l) => l.at(-1)!.startMs + l.at(-1)!.durationMs <= clip.startMs);
+      if (lane) lane.push(clip);
+      else lanes.push([clip]);
+    }
+    lanes.forEach((lane, i) => {
+      const segments = lane.map((clip) => popupTextSegment(clip, input.subtitleFont, materials));
+      tracks.push(track("text", i === 0 ? "callouts" : `callouts_${i + 1}`, segments, TEXT_RENDER_INDEX - 100 + i));
+    });
+  }
+
   const durationUs = Math.max(
     0,
-    ...[...timeline.visual, ...timeline.audio, ...cues].map((clip) => us(clip.startMs + clip.durationMs)),
+    ...[...timeline.visual, ...timeline.audio, ...cues, ...texts].map((clip) => us(clip.startMs + clip.durationMs)),
   );
   return {
     ...emptyDraftInfo(),
@@ -361,6 +378,22 @@ function textSegment(cue: SubtitleCue, style: SubtitleStyle, font: DraftContentI
   };
 }
 
+/** A pop-up text: positioned and keyframed like a picture, styled by its own style. */
+function popupTextSegment(clip: TextClip, font: DraftContentInput["subtitleFont"], materials: DraftMaterials) {
+  const materialId = hexId();
+  materials.texts.push(textMaterial(materialId, clip.text, { ...clip.style, y: 0 }, font, clip.maxWidth));
+  const motion = { ...clip, keyframes: clip.keyframes ?? [] } as unknown as VisualClip;
+  return {
+    ...baseSegment(materialId, clip.startMs, clip.durationMs, visualKeyframes(motion)),
+    source_timerange: null,
+    speed: 1.0,
+    volume: 1.0,
+    extra_material_refs: [speedMaterial(materials)],
+    clip: clipJson(transformAt(motion, 0)),
+    uniform_scale: { on: true, value: 1.0 },
+  };
+}
+
 /** CapCut rejects overlapping subtitles: each line ends just before the next begins (as Người Que's clean_srt). */
 export function nonOverlapping(cues: SubtitleCue[]): SubtitleCue[] {
   const sorted = [...cues].sort((a, b) => a.startMs - b.startMs).map((cue) => ({ ...cue }));
@@ -505,7 +538,13 @@ function audioMaterial(id: string, audio: DraftAudio) {
   };
 }
 
-function textMaterial(id: string, text: string, style: SubtitleStyle, font: DraftContentInput["subtitleFont"]) {
+function textMaterial(
+  id: string,
+  text: string,
+  style: SubtitleStyle,
+  font: DraftContentInput["subtitleFont"],
+  maxWidth = 0.82,
+) {
   const stroke = style.strokeColor && style.strokeWidth
     ? [{ content: { solid: { alpha: 1.0, color: rgb(style.strokeColor) } }, width: round(style.strokeWidth * CAPCUT_STROKE_PER_SIZE) }]
     : [];
@@ -528,7 +567,7 @@ function textMaterial(id: string, text: string, style: SubtitleStyle, font: Draf
     letter_spacing: 0,
     line_spacing: 0.02,
     line_feed: 1,
-    line_max_width: 0.82,
+    line_max_width: maxWidth,
     force_apply_line_max_width: false,
     check_flag: stroke.length ? 7 | 8 : 7,
     type: "text",

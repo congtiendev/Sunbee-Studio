@@ -1681,7 +1681,11 @@
         "splitConfirmDescription": "AI lên lại kế hoạch quay cho cảnh {from}–{to}: chia shot như đạo diễn và liệt kê ảnh cho từng shot (nền, PNG, sprite sheet — số lượng tuỳ cảnh). Kết quả lưu thành phiên bản kịch bản mới (đã duyệt). Tư liệu đã chọn của các cảnh bị thay đổi sẽ được bỏ chọn.",
         "splitConfirm": "Phân shot",
         "placementLabel": "Vị trí & góc",
-        "promptsNeedLayers": "Các cảnh này chưa được phân shot & tách lớp (②) — ảnh chưa gắn với shot, lớp và vị trí/góc, nên prompt viết ra sẽ thiếu thông tin và phải viết lại. Nên làm bước ② trước."
+        "promptsNeedLayers": "Các cảnh này chưa được phân shot & tách lớp (②) — ảnh chưa gắn với shot, lớp và vị trí/góc, nên prompt viết ra sẽ thiếu thông tin và phải viết lại. Nên làm bước ② trước.",
+        "enrich": "Bổ sung sticker & chữ khoá (cảnh {from}–{to})",
+        "enriching": "Đang bổ sung sticker & chữ khoá…",
+        "enrichHint": "Cho các shot chỉ có người dẫn trên nền trơn: icon bật ra cạnh người dẫn và cụm chữ khoá từ lời thoại. Icon được gom thành các tấm sticker (mỗi ảnh tối đa 16 icon) để tạo như các ảnh khác; bộ dựng tự đặt vào.",
+        "enrichDone": "Đã thêm {stickers} sticker trên {sheets} tấm và {callouts} chữ khoá. Tạo các tấm sticker cùng các prompt bên dưới."
       },
       "assetSources": {
         "stock": "Stock",

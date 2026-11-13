@@ -163,6 +163,24 @@ export const DEFAULT_SUBTITLE_STYLE: SubtitleStyle = {
   y: 0.82,
 };
 
+/**
+ * Text placed like a picture (a pop-up key word), written with the editor's own
+ * text tool so it stays editable there. Scale 1 = `style.size`.
+ */
+export interface TextClip {
+  id: string;
+  startMs: number;
+  durationMs: number;
+  text: string;
+  transform: ClipTransform;
+  /** Motion over the clip (a pop-in). Sorted by `atMs`. */
+  keyframes?: TimelineKeyframe[];
+  style: Omit<SubtitleStyle, "y">;
+  /** Lines wrap at this share of the canvas width. */
+  maxWidth: number;
+  origin?: ClipOrigin;
+}
+
 export interface Timeline {
   version: typeof TIMELINE_VERSION;
   videoId: string;
@@ -180,6 +198,8 @@ export interface Timeline {
   transitions?: { afterClipId: string; ref: CapcutRef }[];
   /** CapCut video effects over the whole picture for a stretch of time (shake on a hit…). */
   effects?: { id: string; startMs: number; durationMs: number; ref: CapcutRef }[];
+  /** Pop-up text (key words), above the pictures and below the subtitles. */
+  texts?: TextClip[];
 }
 
 export const IDENTITY_TRANSFORM: ClipTransform = { x: 0, y: 0, scale: 1, rotation: 0, opacity: 1 };
@@ -249,6 +269,11 @@ export function validateTimeline(timeline: Timeline): string[] {
     if (!Number.isInteger(clip.startMs) || clip.startMs < 0) errors.push(`${label}: startMs must be a non-negative integer`);
     if (!Number.isInteger(clip.durationMs) || clip.durationMs <= 0) errors.push(`${label}: durationMs must be a positive integer`);
   };
+
+  for (const clip of timeline.texts ?? []) {
+    timing(`text ${clip.id}`, clip);
+    if (!clip.text.trim()) errors.push(`text ${clip.id}: empty`);
+  }
 
   const byLayer = new Map<number, VisualClip[]>();
   for (const clip of timeline.visual) {

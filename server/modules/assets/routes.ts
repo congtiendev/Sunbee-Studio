@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import type {
   AssetCandidate,
+  AssetEnrichRequest,
   AssetPromptBatchRequest,
   AssetQuerySuggestRequest,
   AssetResearchRequest,
@@ -36,6 +37,7 @@ import {
   setSceneResource,
   updateLibraryAsset,
 } from "./repo.js";
+import { enrichScenes } from "./enrich.js";
 import { installSoundPack, listSoundPacks } from "./sound-effects/install.js";
 import { imagePromptTask } from "./tasks/image-prompt.js";
 import { searchQueryTask } from "./tasks/search-query.js";
@@ -512,6 +514,24 @@ router.get("/sound-packs", requireAuth, async (req, res) => {
 router.post("/sound-packs/:id/install", requireAuth, async (req, res) => {
   try {
     res.json(await installSoundPack(req.user!.id, req.params.id as string));
+  } catch (err) {
+    res.status(400).json({ error: errorMessage(err) });
+  }
+});
+
+/**
+ * Adds stickers and pop-up key words to the shots where the speaker is alone
+ * on a plain backdrop (see ./enrich.ts); overwrites the version in place.
+ */
+router.post("/enrich", requireAuth, async (req, res) => {
+  const body = req.body as AssetEnrichRequest;
+  const admin = isAdmin(req.user!);
+  if (!body.videoId || !canAccessVideo(req.user!.id, admin, body.videoId)) {
+    res.status(404).json({ error: "Không tìm thấy video." });
+    return;
+  }
+  try {
+    res.json(await enrichScenes(req.user!, body));
   } catch (err) {
     res.status(400).json({ error: errorMessage(err) });
   }

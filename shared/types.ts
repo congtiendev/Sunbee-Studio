@@ -255,6 +255,24 @@ export interface SceneShot {
    * J/L-cut, pop-up text) are left to the edit plan step.
    */
   technique?: string;
+  /**
+   * Icons/stickers that pop in beside the speaker while this shot holds (so a
+   * talking head is never alone on a plain backdrop) — each one cell of a
+   * sticker-sheet asset. Added by "enrich shots"; the edit plan places them.
+   */
+  stickers?: ShotSticker[];
+  /** Key words (a few words each, from the narration) shown as pop-up text in this shot. */
+  callouts?: string[];
+}
+
+/** One icon of a sticker sheet, shown in a shot. */
+export interface ShotSticker {
+  /** The sticker-sheet asset (a grid of icons in one image). */
+  sheetAssetId: string;
+  /** 1-based cell of the sheet, row by row. */
+  cell: number;
+  /** What the icon is (for people reading the plan). */
+  label: string;
 }
 
 export type RequiredAssetType = "image" | "video" | "audio" | "graphic";
@@ -1047,6 +1065,26 @@ export interface AssetSplitLayersResponse {
   version: ScriptAnalysisRecord;
   /** Scenes whose asset list changed (their earlier picks were cleared). */
   changedScenes: number[];
+}
+
+/** Adds stickers and pop-up key words to the shots of a scene range where the speaker is alone on a plain backdrop. */
+export interface AssetEnrichRequest {
+  videoId: string;
+  /** The analyzed version to enrich; overwritten in place, no new version (existing assets and picks stay). */
+  versionId: string;
+  fromScene: number;
+  toScene: number;
+  provider?: "openai" | "claude";
+  model?: string;
+  effort?: "low" | "medium" | "high";
+}
+
+export interface AssetEnrichResponse {
+  version: ScriptAnalysisRecord;
+  /** Sticker-sheet assets added (one image each to generate). */
+  sheets: number;
+  stickers: number;
+  callouts: number;
 }
 
 /** A saved AI-written image prompt of one of a video's required assets, matched by its description. */

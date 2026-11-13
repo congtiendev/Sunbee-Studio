@@ -7,7 +7,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  globalIgnores(["dist", "dist-electron", "release", "public/maplibre"]),
+  globalIgnores(["dist", "dist-electron", "release", "public/maplibre", "data"]),
   {
     files: ["**/*.{ts,tsx}"],
     ignores: ["electron/**"],

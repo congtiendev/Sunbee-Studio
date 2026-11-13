@@ -26,7 +26,7 @@ export function gridFromDescription(description: string): SpriteGrid | null {
   const cols = Number(grid[1]);
   const rows = Number(grid[2]);
   if (!(cols >= 1 && rows >= 1 && cols * rows <= 64)) return null;
-  const count = /(\d+)\s*(khung|frames?)/i.exec(description);
+  const count = /(\d+)\s*(khung|frames?|ô)/i.exec(description);
   const frames = count ? Math.min(cols * rows, Number(count[1])) : cols * rows;
   return { cols, rows, frames: Math.max(1, frames) };
 }
@@ -387,4 +387,67 @@ export async function spriteFrames(
     paths.push(out);
   }
   return { paths, width: w, height: h, cut, cutBottom: alignBottom };
+}
+
+/**
+ * The icons of a sticker sheet ("Sticker sheet 9 ô (3×3): …"), each cell cut
+ * on its own and cropped tight to its drawing (stickers differ in shape, so
+ * unlike a sprite's frames they don't share one box). Empty cells come back as
+ * null. Cached like sprite frames.
+ */
+export async function stickerCells(
+  source: { path: string; width: number; height: number; cacheKey: string },
+  grid: SpriteGrid,
+): Promise<({ path: string; width: number; height: number } | null)[]> {
+  const cellW = Math.floor(source.width / grid.cols);
+  const cellH = Math.floor(source.height / grid.rows);
+  const data = await readRgba(source.path, source.width, source.height);
+  const dir = join(dataDir(), "cache", "sprites", `${source.cacheKey}_cells${grid.cols}x${grid.rows}_v${CROP_VERSION}`);
+  await mkdir(dir, { recursive: true });
+  const cells: ({ path: string; width: number; height: number } | null)[] = [];
+  for (let i = 0; i < grid.frames; i++) {
+    const ox = (i % grid.cols) * cellW;
+    const oy = Math.floor(i / grid.cols) * cellH;
+    const alpha = (x: number, y: number) => data[((oy + y) * source.width + ox + x) * 4 + 3]!;
+    const rowHas = (y: number) => {
+      for (let x = 0; x < cellW; x++) if (alpha(x, y) > DRAWN) return true;
+      return false;
+    };
+    const colHas = (x: number) => {
+      for (let y = 0; y < cellH; y++) if (alpha(x, y) > DRAWN) return true;
+      return false;
+    };
+    const [top, bottom] = clipOf(rowHas, cellH);
+    const [left, right] = clipOf(colHas, cellW);
+    let box: Box | null = null;
+    for (let y = top; y <= bottom; y++) {
+      for (let x = left; x <= right; x++) {
+        if (alpha(x, y) <= DRAWN) continue;
+        if (!box) box = { left: x, top: y, right: x, bottom: y };
+        else {
+          if (x < box.left) box.left = x;
+          if (x > box.right) box.right = x;
+          if (y < box.top) box.top = y;
+          if (y > box.bottom) box.bottom = y;
+        }
+      }
+    }
+    if (!box) {
+      cells.push(null);
+      continue;
+    }
+    const w = box.right - box.left + 1;
+    const h = box.bottom - box.top + 1;
+    const out = join(dir, `${i + 1}.png`);
+    if (!existsSync(out)) {
+      const pixels = Buffer.alloc(w * h * 4);
+      for (let y = 0; y < h; y++) {
+        const from = ((oy + box.top + y) * source.width + ox + box.left) * 4;
+        data.copy(pixels, y * w * 4, from, from + w * 4);
+      }
+      await writePng(out, pixels, w, h);
+    }
+    cells.push({ path: out, width: w, height: h });
+  }
+  return cells;
 }

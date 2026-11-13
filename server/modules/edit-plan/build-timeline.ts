@@ -9,6 +9,7 @@ import {
   type CapcutRef,
   type ClipTransform,
   type SubtitleCue,
+  type TextClip,
   type Timeline,
   type TimelineMedia,
   type VisualClip,
@@ -36,7 +37,15 @@ import {
   TEXT_SAFE_EDGE,
   type LayerIntro,
 } from "./layout.js";
-import { gridFromDescription, gridFromImage, isSpriteSheet, spriteFrames, type CutSides } from "./sprites.js";
+import { isStickerSheet } from "../assets/enrich.js";
+import {
+  gridFromDescription,
+  gridFromImage,
+  isSpriteSheet,
+  spriteFrames,
+  stickerCells,
+  type CutSides,
+} from "./sprites.js";
 
 type Caller = Pick<User, "id" | "role">;
 
@@ -105,6 +114,15 @@ const SMART_SFX: [RegExp, string][] = [
   [/lật (?:hồ sơ|trang|tờ|giấy)|xấp (?:giấy|hồ sơ)|tập hồ sơ/i, "everyday-props"],
   [/quát|hét|đập bàn|giật mình|choáng|sốc|ngã|nổ tung|sụp/i, "impacts"],
 ];
+/** A sticker's size: a share of the frame's height (or width, for a wide one). */
+const STICKER_HEIGHT = 0.26;
+const STICKER_WIDTH = 0.28;
+/** Stickers lean a little, like stuck on. */
+const STICKER_TILT = [-6, 5, -4, 7];
+/** Pop-up key words: dark red with a white outline (readable on paper and photos alike). */
+const CALLOUT_STYLE: TextClip["style"] = { size: 0.075, bold: true, color: "#8b1a1a", strokeColor: "#ffffff", strokeWidth: 0.14 };
+const CALLOUT_MAX_WIDTH = 0.42;
+
 /** Hero-moment hits (effect + sound) at most once per this long. */
 const HERO_MIN_GAP_MS = 30_000;
 /** Sound effects never closer than this. */
@@ -256,6 +274,7 @@ export async function buildEditPlan(
   const media = new Map<string, TimelineMedia>();
   const visual: VisualClip[] = [];
   const subtitles: SubtitleCue[] = [];
+  const texts: TextClip[] = [];
   const scenes: EditPlanScene[] = [];
   const images = new Map<string, LocalImage | null>();
 
@@ -321,6 +340,23 @@ export async function buildEditPlan(
     return { paths: [image.path], width: image.width, height: image.height };
   };
 
+  // Sticker sheets (from "enrich shots"), by asset id, wherever they live; cut into icons on first use.
+  const sheetAssets = new Map(
+    version.scenes.flatMap((scene) => scene.requiredAssets.filter(isStickerSheet).map((asset) => [asset.id, asset] as const)),
+  );
+  const sheetCells = new Map<string, ({ path: string; width: number; height: number } | null)[] | null>();
+  const stickerOf = async (sheetId: string, cell: number, sceneIndex: number) => {
+    if (!sheetCells.has(sheetId)) {
+      const asset = sheetAssets.get(sheetId);
+      const pick = asset ? picks.get(sheetId) : undefined;
+      const image = pick ? await localImageOf(pick, sceneIndex) : null;
+      const grid = asset ? gridFromDescription(asset.description) : null;
+      if (asset && !image) warnings.push({ code: "missingPick", sceneIndex, detail: asset.description });
+      sheetCells.set(sheetId, image && grid ? await stickerCells({ ...image, cacheKey: image.fileId }, grid) : null);
+    }
+    return sheetCells.get(sheetId)?.[cell - 1] ?? null;
+  };
+
   // Who the story's characters are: a shot's character is its main subject.
   const characterNames = (version.characterRoster ?? []).map((c) => c.name.toLowerCase()).filter(Boolean);
   const isCharacter = (asset: RequiredAsset) =>
@@ -384,7 +420,10 @@ export async function buildEditPlan(
         warnings.push({ code: "skippedMedia", sceneIndex: scene.index, detail: asset.description });
       }
     }
-    const imageAssets = scene.requiredAssets.filter((a) => a.type === "image" || a.type === "graphic");
+    // (A sticker sheet isn't placed whole: its icons go where shots ask for them.)
+    const imageAssets = scene.requiredAssets.filter(
+      (a) => (a.type === "image" || a.type === "graphic") && !isStickerSheet(a),
+    );
     let placed = 0;
     const fallbackShotMs = Math.max(1000, Math.round((scene.estimatedDurationSec * 1000) / shots.length));
 
@@ -703,6 +742,88 @@ export async function buildEditPlan(
           if (category) sfxEvents.push({ atMs: cursor + landsAt, category, priority: smart ? 2 : 0 });
         }
       }
+      // ---- stickers & key words (from "enrich shots"): pop in beside the speaker, one after another ----
+      const callouts = cutouts.some((c) => c.asset.type === "graphic") ? [] : (shot.callouts ?? []);
+      const stickers: { media: Media; label: string }[] = [];
+      for (const sticker of shot.stickers ?? []) {
+        const cell = await stickerOf(sticker.sheetAssetId, sticker.cell, scene.index);
+        if (cell) stickers.push({ media: { paths: [cell.path], width: cell.width, height: cell.height }, label: sticker.label });
+      }
+      if (!carried && (stickers.length > 0 || callouts.length > 0)) {
+        // The free side: away from the speaker (the shot's main subject); a centred speaker gets both sides.
+        const speakerX = main >= 0 ? bases[main]!.x : 0;
+        const side = speakerX > 0.05 ? -1 : speakerX < -0.05 ? 1 : 0;
+        const textSide = side === 0 ? -1 : side;
+        const W = canvas.width;
+        const H = canvas.height;
+        // A key word's box, in pixels, for keeping stickers off it.
+        const calloutBoxes = callouts.map((text) => {
+          const lineW = Array.from(text).length * 0.55 * CALLOUT_STYLE.size * H;
+          const lines = Math.max(1, Math.ceil(lineW / (CALLOUT_MAX_WIDTH * W)));
+          return { width: Math.min(lineW, CALLOUT_MAX_WIDTH * W), height: lines * 1.3 * CALLOUT_STYLE.size * H };
+        });
+        const calloutBases = calloutBoxes.map((box, k) => {
+          const halfH = box.height / H;
+          return { ...IDENTITY_TRANSFORM, x: textSide * 0.5, y: -0.9 + halfH + k * 0.25, scale: 1 / Math.min(W / box.width, H / box.height) };
+        });
+        const stickerBases = stickers.map(({ media: m }, k) => {
+          const n = stickers.length;
+          const scale = Math.min(
+            placementScale({ x: 0, y: 0, size: STICKER_HEIGHT, axis: "height", sized: true, alignLeft: false }, m, canvas),
+            placementScale({ x: 0, y: 0, size: STICKER_WIDTH, axis: "width", sized: true, alignLeft: false }, m, canvas),
+          );
+          const column = side === 0 ? (k % 2 === 0 ? -1 : 1) : side;
+          const row = side === 0 ? Math.floor(k / 2) : k;
+          const rows = side === 0 ? Math.ceil(n / 2) : n;
+          const y = rows === 1 ? 0.2 : -0.2 + (row * 0.75) / (rows - 1);
+          const x = column * 0.6 + (side === 0 ? 0 : (k % 2 === 0 ? -0.08 : 0.08) * column);
+          return fitInside({ ...IDENTITY_TRANSFORM, x, y, scale, rotation: STICKER_TILT[k % STICKER_TILT.length]! }, m, canvas);
+        });
+        const placedAll = avoidOverlap(
+          [
+            ...cutouts.map(({ media: m }, i) => ({ base: bases[i]!, size: m, pinned: true })),
+            ...calloutBoxes.map((box, k) => ({ base: calloutBases[k]!, size: box, pinned: true })),
+            ...stickers.map(({ media: m }, k) => ({ base: stickerBases[k]!, size: m })),
+          ],
+          canvas,
+        ).slice(cutouts.length + calloutBoxes.length);
+        // Key words come on early; stickers follow, spread over the shot.
+        const textAt = Math.min(300, Math.round(durationMs * 0.1));
+        callouts.forEach((text, k) => {
+          const from = textAt + k * 400;
+          if (from >= durationMs - 300) return;
+          texts.push({
+            id: `s${scene.index}-${shot.order}-t${k + 1}`,
+            startMs: cursor + from,
+            durationMs: durationMs - from,
+            text,
+            ...animateLayer(knots, { ...calloutBases[k]!, scale: 1 }, 0, durationMs - from, { kind: "pop", durationMs: 220 }),
+            style: CALLOUT_STYLE,
+            maxWidth: CALLOUT_MAX_WIDTH,
+            origin: { sceneIndex: scene.index, shotOrder: shot.order },
+          });
+        });
+        const first = Math.max(500, Math.round(durationMs * 0.18));
+        const last = Math.round(durationMs * 0.8);
+        const nextLayer = cutouts.length + 1 + (insert ? 1 : 0);
+        stickers.forEach(({ media: m }, k) => {
+          const at = stickers.length === 1 ? first : first + Math.round(((last - first) * k) / (stickers.length - 1));
+          if (at >= durationMs - 200) return;
+          pushLayer(
+            `s${scene.index}-${shot.order}-k${k + 1}`,
+            m,
+            nextLayer + k,
+            "cutout",
+            "contain",
+            placedAll[k]!,
+            at,
+            false,
+            introOf(recipe.reveal.animation === "none" ? "pop" : recipe.reveal.animation, recipe.reveal.durationMs || 160),
+            revealIntroRef,
+          );
+        });
+      }
+
       cursor += durationMs;
     }
 
@@ -794,6 +915,7 @@ export async function buildEditPlan(
     audio,
     subtitles,
     subtitleStyle: DEFAULT_SUBTITLE_STYLE,
+    texts,
     transitions,
     effects,
   };
