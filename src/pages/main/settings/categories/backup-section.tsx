@@ -81,6 +81,8 @@ export default function BackupSection() {
                 videos: result.videos,
                 scriptAnalyses: result.scriptAnalyses,
                 styleTemplates: result.styleTemplates,
+                sceneResources: result.sceneResources,
+                assetPrompts: result.assetPrompts,
                 anthropicKeys: result.anthropicKeys,
               })}
               {result.openaiKeyImported && ` ${t("importOpenaiKey")}`}
