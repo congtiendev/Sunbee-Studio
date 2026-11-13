@@ -52,6 +52,7 @@ import type {
   ScriptSaveTextRequest,
   SceneResource,
   SceneResourceSelectRequest,
+  SoundEffectPack,
   StyleTemplate,
   TrashItem,
   TrashItemType,
@@ -435,11 +436,12 @@ export const apiClient = {
       }),
     library: {
       list: (
-        params: { q?: string; type?: LibraryMediaType } = {},
+        params: { q?: string; type?: LibraryMediaType; category?: string } = {},
       ): Promise<LibraryAsset[]> => {
         const query = new URLSearchParams();
         if (params.q) query.set("q", params.q);
         if (params.type) query.set("type", params.type);
+        if (params.category) query.set("category", params.category);
         const qs = query.toString();
         return request(`/api/assets/library${qs ? `?${qs}` : ""}`);
       },
@@ -473,6 +475,12 @@ export const apiClient = {
           method: "POST",
           body: JSON.stringify({ candidate, ...meta }),
         }),
+    },
+    /** Ready-made sound-effect packs the user can add to the library with one click. */
+    soundPacks: {
+      list: (): Promise<SoundEffectPack[]> => request("/api/assets/sound-packs"),
+      install: (id: string): Promise<LibraryAsset[]> =>
+        request(`/api/assets/sound-packs/${encodeURIComponent(id)}/install`, { method: "POST" }),
     },
   },
   /** AI training: skills learned from videos and documents, one version per run. */

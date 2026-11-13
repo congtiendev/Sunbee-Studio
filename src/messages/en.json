@@ -147,7 +147,8 @@
       "documents": "Documents",
       "skills": "Skills",
       "training": "AI training",
-      "voices": "Voices"
+      "voices": "Voices",
+      "soundEffects": "Sound Effects"
     }
   },
   "header": {
@@ -1111,7 +1112,7 @@
       "description": "Export your projects, videos, script analyses, style templates, and API keys into one file — import it on another machine to bring your data with you.",
       "exportButton": "Export data",
       "importButton": "Import data",
-      "importSummary": "Imported {projects} projects, {categories} categories, {videos} videos, {scriptAnalyses} script analyses, {styleTemplates} style templates, {anthropicKeys} Claude keys.",
+      "importSummary": "Imported {projects} projects, {categories} categories, {videos} videos, {scriptAnalyses} script analyses, {styleTemplates} style templates, {sceneResources} picked assets, {assetPrompts} image prompts, {anthropicKeys} Claude keys.",
       "warning": "The exported file contains your API keys in plain text. Keep it somewhere private and don't share it.",
       "importOpenaiKey": "OpenAI key imported too.",
       "importRecovered": "{categories} categories and {videos} videos whose project or category wasn't in the file were put into the “Khôi phục từ sao lưu” project.",
@@ -2130,6 +2131,27 @@
       "working": "Working…",
       "workingHint": "This can take a few minutes on this machine.",
       "useThisButton": "Use this clip"
+    }
+  },
+  "soundEffects": {
+    "pageTitle": "Sound Effects",
+    "pageDescription": "Add ready-made sound effect packs (CC0, free for commercial use) or your own uploads, organized by category.",
+    "deleteButton": "Delete",
+    "deleteTitle": "Delete this sound?",
+    "deleteDescription": "\"{name}\" will be deleted.",
+    "packs": {
+      "title": "Ready-made packs",
+      "empty": "No packs available right now.",
+      "soundCount": "{count, plural, one {# sound} other {# sounds}}",
+      "folderCount": "{count, plural, one {# folder} other {# folders}}",
+      "installButton": "Add",
+      "installedBadge": "Added"
+    },
+    "library": {
+      "title": "Your sounds",
+      "empty": "No sounds yet — add a ready-made pack above, or upload your own in Media Library.",
+      "allCategories": "All ({count})",
+      "uncategorized": "Uncategorized"
     }
   }
 }

@@ -25,7 +25,15 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        "/api": { target: `http://localhost:${apiPort}`, changeOrigin: true },
+        // Voice preview/separate-vocals can cold-start a local model for
+        // minutes on first use — the proxy's own default timeout would cut
+        // that off as a bogus 502 well before the backend actually fails.
+        "/api": {
+          target: `http://localhost:${apiPort}`,
+          changeOrigin: true,
+          timeout: 30 * 60_000,
+          proxyTimeout: 30 * 60_000,
+        },
       },
     },
   };
